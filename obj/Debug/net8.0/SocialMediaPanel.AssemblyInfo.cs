@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SocialMediaPanel")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+523a85e944e13e4d1d12a15dff29127e248630d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("SocialMediaPanel")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SocialMediaPanel")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
