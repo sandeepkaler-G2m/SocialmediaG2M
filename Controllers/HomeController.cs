@@ -10,7 +10,12 @@ namespace SocialMediaPanel.Controllers
         {
             return View();
         }
-        public IActionResult About()
+        public IActionResult san()
+        {
+            return View();
+        }
+
+        public IActionResult sand()
         {
             return View();
         }
