@@ -1,0 +1,494 @@
+﻿@model SocialMediaPanel.Models.ViewModels.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Login – Go2MarketSocialMediaPanel";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --green: #4BB543;
+            --green-d: #3a9e34;
+            --teal: #1DA1A1;
+            --dark: #0f1923;
+            --dark2: #172230;
+            --card: #1b2c3e;
+            --border: rgba(255,255,255,0.08);
+            --text: #e2eaf3;
+            --muted: #7a95b0;
+            --accent: #56cfb2;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── LEFT PANEL ── */
+        .panel-left {
+            flex: 1;
+            background: linear-gradient(145deg, #0d2137 0%, #0f2a3f 50%, #0d1e2e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 48px 56px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .panel-left::before {
+                content: '';
+                position: absolute;
+                top: -120px;
+                left: -120px;
+                width: 480px;
+                height: 480px;
+                background: radial-gradient(circle, rgba(75,181,67,0.12) 0%, transparent 70%);
+                pointer-events: none;
+            }
+
+            .panel-left::after {
+                content: '';
+                position: absolute;
+                bottom: -80px;
+                right: -80px;
+                width: 360px;
+                height: 360px;
+                background: radial-gradient(circle, rgba(29,161,161,0.1) 0%, transparent 70%);
+                pointer-events: none;
+            }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--green), var(--teal));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .logo-icon svg {
+                width: 22px;
+                height: 22px;
+                fill: white;
+            }
+
+        .logo-text {
+            font-family: 'Sora', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+
+        .hero-content {
+            z-index: 1;
+        }
+
+            .hero-content h1 {
+                font-family: 'Sora', sans-serif;
+                font-size: 42px;
+                font-weight: 700;
+                line-height: 1.15;
+                color: #fff;
+                margin-bottom: 20px;
+            }
+
+                .hero-content h1 span {
+                    background: linear-gradient(90deg, var(--green), var(--accent));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+
+            .hero-content p {
+                font-size: 16px;
+                color: var(--muted);
+                line-height: 1.7;
+                max-width: 380px;
+            }
+
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 1;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 18px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            backdrop-filter: blur(6px);
+        }
+
+        .feature-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .feature-item span {
+            font-size: 14px;
+            color: #a8c0d6;
+            font-weight: 400;
+        }
+
+        /* ── RIGHT PANEL ── */
+        .panel-right {
+            width: 480px;
+            background: var(--card);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 56px 48px;
+            position: relative;
+            border-left: 1px solid var(--border);
+        }
+
+        .form-header {
+            margin-bottom: 36px;
+        }
+
+            .form-header h2 {
+                font-family: 'Sora', sans-serif;
+                font-size: 26px;
+                font-weight: 700;
+                color: #fff;
+                margin-bottom: 8px;
+            }
+
+            .form-header p {
+                font-size: 14px;
+                color: var(--muted);
+            }
+
+                .form-header p a {
+                    color: var(--accent);
+                    text-decoration: none;
+                    font-weight: 500;
+                }
+
+                    .form-header p a:hover {
+                        text-decoration: underline;
+                    }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 13px;
+                font-weight: 500;
+                color: #a8c0d6;
+                margin-bottom: 8px;
+                letter-spacing: 0.3px;
+            }
+
+        .input-wrap {
+            position: relative;
+        }
+
+            .input-wrap svg {
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 16px;
+                height: 16px;
+                stroke: var(--muted);
+                pointer-events: none;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 13px 14px 13px 42px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            transition: border-color 0.2s, background 0.2s;
+            outline: none;
+        }
+
+            .form-control:focus {
+                border-color: var(--green);
+                background: rgba(75,181,67,0.05);
+            }
+
+            .form-control::placeholder {
+                color: var(--muted);
+            }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+            .remember input[type="checkbox"] {
+                accent-color: var(--green);
+            }
+
+        .forgot {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+            .forgot:hover {
+                text-decoration: underline;
+            }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--green), var(--green-d));
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: opacity 0.2s, transform 0.15s;
+            box-shadow: 0 4px 20px rgba(75,181,67,0.3);
+        }
+
+            .btn-submit:hover {
+                opacity: 0.92;
+                transform: translateY(-1px);
+            }
+
+        .divider {
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin: 24px 0;
+            position: relative;
+        }
+
+            .divider::before, .divider::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                width: 42%;
+                height: 1px;
+                background: var(--border);
+            }
+
+            .divider::before {
+                left: 0;
+            }
+
+            .divider::after {
+                right: 0;
+            }
+
+        .social-btns {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-social {
+            flex: 1;
+            padding: 11px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+            .btn-social:hover {
+                background: rgba(255,255,255,0.09);
+            }
+
+        .validation-error {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .alert-error {
+            background: rgba(255,107,107,0.1);
+            border: 1px solid rgba(255,107,107,0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #ff8a8a;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        @@media (max-width: 900px) {
+            .panel-left {
+                display: none;
+            }
+
+            .panel-right {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LEFT PANEL -->
+    <div class="panel-left">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" /></svg>
+            </div>
+            <span class="logo-text">sproutsocial</span>
+        </div>
+
+        <div class="hero-content">
+            <h1>Manage your<br /><span>social presence</span><br />smarter.</h1>
+            <p>Schedule posts, track analytics, monitor brand sentiment and grow your audience — all from one powerful platform.</p>
+        </div>
+
+        <div class="features">
+            <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Performance Overview — track all your metrics in one place</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Publishing Tools — draft, schedule & publish posts instantly</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-dot"></span>
+                <span>Brand Sentiment — know what people are saying about you</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel-right">
+        <div class="form-header">
+            <h2>Welcome back 👋</h2>
+            <p>Don't have an account? <a asp-action="Register">Sign up free</a></p>
+        </div>
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert-error">@TempData["Error"]</div>
+        }
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="alert-error" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <div class="input-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                    </svg>
+                    <input asp-for="Email" class="form-control" placeholder="you@company.com" autocomplete="email" />
+                </div>
+                <span asp-validation-for="Email" class="validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <input asp-for="Password" class="form-control" placeholder="Enter your password" autocomplete="current-password" />
+                </div>
+                <span asp-validation-for="Password" class="validation-error"></span>
+            </div>
+
+            <div class="form-row">
+                <label class="remember">
+                    <input asp-for="RememberMe" type="checkbox" /> Remember me
+                </label>
+                <a href="#" class="forgot">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit">Sign In</button>
+
+            <div class="divider">or continue with</div>
+
+            <div class="social-btns">
+                <button type="button" class="btn-social">
+                    <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                    Google
+                </button>
+                <button type="button" class="btn-social">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#0077b5">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
+                        <circle cx="4" cy="4" r="2" />
+                    </svg>
+                    LinkedIn
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>
