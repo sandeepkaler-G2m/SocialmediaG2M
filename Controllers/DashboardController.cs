@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
-using System;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -14,13 +13,13 @@ namespace SocialMediaPanel.Controllers
             _context = context;
         }
 
+        // ==================== DASHBOARD INDEX ====================
         public async Task<IActionResult> Index()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
-            // Fetch logged-in user via LINQ
             var user = await _context.Users
                 .Where(u => u.Id == userId)
                 .FirstOrDefaultAsync();
@@ -36,6 +35,31 @@ namespace SocialMediaPanel.Controllers
             ViewBag.CompanyName = user.CompanyName ?? "Your Workspace";
 
             return View();
+        }
+
+        // ==================== COMPOSE POST ====================
+        // Dashboard "Compose Post" button → Dashboard/Compose view
+        public async Task<IActionResult> Compose()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return RedirectToAction("Login", "Account");
+
+            var user = await _context.Users
+                .Where(u => u.Id == userId)
+                .FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction("Login", "Account");
+            }
+
+            ViewBag.UserName = user.Name;
+            ViewBag.UserEmail = user.Email;
+            ViewBag.CompanyName = user.CompanyName ?? "Your Workspace";
+
+            return View(); // Views/Dashboard/Compose.cshtml load hoga
         }
     }
 }
