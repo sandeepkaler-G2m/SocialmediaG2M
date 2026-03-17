@@ -6,7 +6,6 @@ using SocialMediaPanel.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
 
@@ -19,7 +18,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Session
 builder.Services.AddDistributedMemoryCache();
-
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -41,16 +39,17 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
 app.UseSession();
-builder.Services.AddHttpContextAccessor();
-
 app.UseAuthorization();
 
+// MVC Route
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
+app.MapControllers();
+
+// Auto Migrate
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

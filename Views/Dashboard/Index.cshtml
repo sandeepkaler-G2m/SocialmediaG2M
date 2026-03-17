@@ -595,7 +595,10 @@
                 </div>
                 <h4>Publish your first post.</h4>
                 <p>Publish, schedule or queue to reach<br>your audience at the perfect time.</p>
-                <button class="compose-btn">Compose Post</button>
+                <button class="compose-btn"
+                        onclick="window.location.href='@Url.Action("Compose", "Dashboard")'">
+                    Compose Post
+                </button>
             </div>
 
             <!-- Uncomment below and remove pub-empty above when posts exist:
