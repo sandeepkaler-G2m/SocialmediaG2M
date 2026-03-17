@@ -19,7 +19,6 @@
         </button>
     </div>
 }
-
 @if (integrationSuccess != null)
 {
     <script>
@@ -34,7 +33,304 @@
 }
 
 <style>
-    /* ── Dashboard two-column layout ─── */
+    /* ── Shared ─────────────────────────────────────── */
+    .sec-title {
+        font-family: 'Sora',sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+
+    .sec-subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 18px;
+    }
+
+    /* ── Integrations strip ─────────────────────────── */
+    .integ-section {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px 24px;
+        margin-bottom: 20px;
+    }
+
+    .integ-strip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .integ-icon-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color .15s,box-shadow .15s;
+        padding: 6px;
+        flex-shrink: 0;
+    }
+
+        .integ-icon-btn img {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+        }
+
+        .integ-icon-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .integ-icon-btn:hover {
+            border-color: var(--green);
+            box-shadow: 0 2px 8px rgba(75,181,67,.15);
+        }
+
+    .browse-btn {
+        padding: 8px 18px;
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: border-color .15s,background .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .browse-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .browse-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    /* ── Browse modal overlay ───────────────────────── */
+    .browse-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        z-index: 400;
+        align-items: flex-start;
+        justify-content: center;
+        padding-top: 60px;
+    }
+
+        .browse-backdrop.open {
+            display: flex;
+        }
+
+    .browse-modal {
+        background: #f4f5f7;
+        border-radius: 18px;
+        width: 860px;
+        max-width: calc(100vw - 32px);
+        max-height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 24px 64px rgba(0,0,0,.22);
+        animation: bsIn .18s ease;
+    }
+
+
+    .browse-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 28px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+        .browse-modal-head h2 {
+            font-family: 'Sora',sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+    .browse-close {
+        width: 32px;
+        height: 32px;
+        background: #f4f5f7;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+    }
+
+        .browse-close:hover {
+            background: #e3e6ea;
+            color: var(--text);
+        }
+
+    .browse-body {
+        overflow-y: auto;
+        padding: 24px 28px;
+        flex: 1;
+    }
+
+    .browse-sub {
+        font-family: 'Sora',sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+
+    .browse-desc {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 20px;
+    }
+
+    /* ── Platform cards grid ────────────────────────── */
+    .plat-grid {
+        display: grid;
+        grid-template-columns: repeat(3,1fr);
+        gap: 14px;
+        margin-bottom: 28px;
+    }
+
+    .plat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+        transition: box-shadow .15s,border-color .15s;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .plat-card:hover {
+            box-shadow: 0 4px 18px rgba(0,0,0,.1);
+            border-color: #ccc;
+        }
+
+    .plat-card-logo {
+        height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fafafa;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .plat-card-logo svg {
+            width: 52px;
+            height: 52px;
+        }
+
+        .plat-card-logo .logo-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    .plat-card-body {
+        padding: 16px 18px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .plat-card-body h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .plat-card-body p {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+            flex: 1;
+            margin-bottom: 14px;
+        }
+
+    .plat-conn-btn {
+        width: 100%;
+        padding: 9px;
+        border: none;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: opacity .15s;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+
+        .plat-conn-btn:hover {
+            opacity: .88;
+        }
+
+        .plat-conn-btn.connected {
+            background: #4BB543;
+        }
+
+    .plat-learn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color .15s;
+    }
+
+        .plat-learn:hover {
+            color: var(--text);
+        }
+
+        .plat-learn svg {
+            width: 11px;
+            height: 11px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    /* ── Dashboard two-column ───────────────────────── */
+    .act-label {
+        font-family: 'Sora',sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 14px;
+    }
+
     .db-grid {
         display: grid;
         grid-template-columns: 1fr 1.6fr;
@@ -42,7 +338,6 @@
         align-items: start;
     }
 
-    /* ── Left column ─── */
     .db-left {
         display: flex;
         flex-direction: column;
@@ -82,7 +377,6 @@
                 text-decoration: underline;
             }
 
-    /* Empty publish state */
     .pub-empty {
         display: flex;
         flex-direction: column;
@@ -154,83 +448,15 @@
         color: #fff;
         font-size: 13px;
         font-weight: 600;
-        font-family: 'DM Sans', sans-serif;
+        font-family: 'DM Sans',sans-serif;
         cursor: pointer;
-        transition: background .15s;
     }
 
         .compose-btn:hover {
             background: #2d3a4a;
         }
 
-    /* Scheduled post items */
-    .pub-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 12px 18px;
-        border-bottom: 1px solid var(--border);
-    }
-
-        .pub-item:last-child {
-            border-bottom: none;
-        }
-
-    .pub-plat {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: #f4f5f7;
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        flex-shrink: 0;
-    }
-
-    .pub-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-        .pub-info p {
-            font-size: 12px;
-            color: var(--text);
-            line-height: 1.4;
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .pub-info span {
-            font-size: 11px;
-            color: var(--muted);
-        }
-
-    .pub-status {
-        font-size: 10px;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-weight: 600;
-        white-space: nowrap;
-        flex-shrink: 0;
-        align-self: center;
-    }
-
-    .ps-sched {
-        background: rgba(75,181,67,.10);
-        color: var(--green);
-    }
-
-    .ps-draft {
-        background: #f4f5f7;
-        color: var(--muted);
-        border: 1px solid var(--border);
-    }
-
-    /* To Do card */
+    /* To Do */
     .todo-card {
         background: #fff;
         border: 1px solid var(--border);
@@ -300,11 +526,10 @@
             text-decoration: underline;
         }
 
-    /* ── Right column ─── */
+    /* Recent posts */
     .db-right {
         display: flex;
         flex-direction: column;
-        gap: 0;
     }
 
     .recent-card {
@@ -329,27 +554,16 @@
         }
 
     .sort-select {
-        display: flex;
-        align-items: center;
-        gap: 6px;
         padding: 6px 12px;
         background: #fff;
         border: 1px solid var(--border);
         border-radius: 8px;
         font-size: 12px;
         color: var(--text);
-        font-family: 'DM Sans', sans-serif;
+        font-family: 'DM Sans',sans-serif;
         cursor: pointer;
     }
 
-        .sort-select svg {
-            width: 12px;
-            height: 12px;
-            stroke: var(--muted);
-            fill: none;
-        }
-
-    /* Empty recent posts state */
     .recent-empty {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -370,7 +584,6 @@
         border: 1px solid var(--border);
         border-radius: 12px;
         padding: 16px;
-        margin-bottom: 12px;
         position: relative;
     }
 
@@ -395,11 +608,6 @@
 
         .post-preview-line.medium {
             width: 80%;
-        }
-
-        .post-preview-line.tall {
-            height: 60px;
-            margin-bottom: 10px;
         }
 
     .post-preview-badge {
@@ -453,7 +661,6 @@
             font-size: 12px;
             color: var(--muted);
             line-height: 1.6;
-            margin-bottom: 0;
         }
 
         .recent-empty-right a {
@@ -466,7 +673,6 @@
                 text-decoration: underline;
             }
 
-    /* Date range footer */
     .recent-footer {
         display: flex;
         align-items: center;
@@ -490,95 +696,59 @@
         font-weight: 600;
         color: var(--text);
         cursor: pointer;
-        font-family: 'DM Sans', sans-serif;
-        transition: background .15s;
+        font-family: 'DM Sans',sans-serif;
     }
 
         .report-btn:hover {
             background: #f4f5f7;
         }
-
-    /* Real post items for recent posts */
-    .recent-post-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px 20px;
-        border-bottom: 1px solid var(--border);
-    }
-
-        .recent-post-item:last-child {
-            border-bottom: none;
-        }
-
-    .recent-post-thumb {
-        width: 52px;
-        height: 52px;
-        border-radius: 8px;
-        background: #f4f5f7;
-        border: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0;
-    }
-
-    .recent-post-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-        .recent-post-info p {
-            font-size: 13px;
-            color: var(--text);
-            line-height: 1.4;
-            margin-bottom: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-    .recent-post-meta {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-        .recent-post-meta span {
-            font-size: 11px;
-            color: var(--muted);
-        }
-
-    .recent-post-stat {
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        font-size: 11px;
-        color: var(--muted);
-    }
-
-        .recent-post-stat svg {
-            width: 11px;
-            height: 11px;
-            stroke: var(--muted);
-            fill: none;
-        }
 </style>
 
+<!-- ══ INTEGRATIONS SECTION ══════════════════════════════════════════ -->
+<div class="integ-section">
+    <div class="sec-title">SocialMediaPanel Integrations</div>
+    <div class="sec-subtitle">Unify your workflow by connecting your social platforms. Select a platform to get started.</div>
+
+    <div class="integ-strip">
+        <!-- Social platforms as icon buttons — click opens connect modal -->
+        <button class="integ-icon-btn" title="Facebook" onclick="toggleConnect(this);event.stopPropagation()" data-platform="facebook">
+            <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+        </button>
+        <button class="integ-icon-btn" title="LinkedIn" onclick="toggleConnect(this);event.stopPropagation()" data-platform="linkedin">
+            <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+        </button>
+        <button class="integ-icon-btn" title="X (Twitter)" onclick="toggleConnect(this);event.stopPropagation()" data-platform="twitter">
+            <svg viewBox="0 0 24 24" fill="#000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+        </button>
+        <button class="integ-icon-btn" title="Instagram" onclick="toggleConnect(this);event.stopPropagation()" data-platform="instagram">
+            <svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="igDB" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igDB)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg>
+        </button>
+        <button class="integ-icon-btn" title="WhatsApp" onclick="toggleConnect(this);event.stopPropagation()" data-platform="whatsapp">
+            <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
+        </button>
+        <button class="integ-icon-btn" title="Gmail" onclick="toggleConnect(this);event.stopPropagation()" data-platform="gmail">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" /><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64V9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#4285F4" /></svg>
+        </button>
+    
+    </div>
+
+    <button class="browse-btn" onclick="openBrowse()">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        Browse all integrations
+    </button>
+</div>
+
+<!-- ══ ACTIVITY SECTION ═══════════════════════════════════════════════ -->
+<div class="act-label">Your Latest Activity</div>
+
 <div class="db-grid">
-
-    <!-- ═══ LEFT COLUMN ═══ -->
+    <!-- Left -->
     <div class="db-left">
-
-        <!-- Today's Publishing -->
         <div class="pub-card">
             <div class="pub-card-header">
                 <h3>Today's Publishing</h3>
                 <a href="#">View calendar →</a>
             </div>
-
-            <!-- Empty state (show when no posts scheduled) -->
             <div class="pub-empty">
                 <div class="pub-empty-icon">
                     <div class="icon-bg">
@@ -590,76 +760,48 @@
                         </svg>
                     </div>
                     <div class="icon-badge">
-                        <svg viewBox="0 0 24 24" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <svg viewBox="0 0 24 24" stroke-width="3" stroke="white" fill="none"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                     </div>
                 </div>
                 <h4>Publish your first post.</h4>
                 <p>Publish, schedule or queue to reach<br>your audience at the perfect time.</p>
                 <button class="compose-btn">Compose Post</button>
             </div>
-
-            <!-- Uncomment below and remove pub-empty above when posts exist:
-            <div class="pub-item">
-                <div class="pub-plat">📸</div>
-                <div class="pub-info"><p>New product launch — Q2 Campaign</p><span>Instagram · 2:30 PM</span></div>
-                <span class="pub-status ps-sched">Scheduled</span>
-            </div>
-            <div class="pub-item">
-                <div class="pub-plat">🐦</div>
-                <div class="pub-info"><p>Weekly tips thread — Best Practices</p><span>Twitter · 5:00 PM</span></div>
-                <span class="pub-status ps-draft">Draft</span>
-            </div>
-            <div class="pub-item">
-                <div class="pub-plat">💼</div>
-                <div class="pub-info"><p>Company culture spotlight</p><span>LinkedIn · 6:30 PM</span></div>
-                <span class="pub-status ps-sched">Scheduled</span>
-            </div>
-            -->
         </div>
 
-        <!-- To Do -->
         <div class="todo-card">
             <div class="todo-header">To Do</div>
-
             <div class="todo-item">
                 <div class="todo-left">
                     <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                        </svg>
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
                     </div>
                     <div class="todo-count">0</div>
                 </div>
                 <a class="todo-link" href="#">Go to Cases</a>
             </div>
-
             <div class="todo-item">
                 <div class="todo-left">
                     <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                        </svg>
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
                     <div class="todo-count">0</div>
                 </div>
                 <a class="todo-link" href="#">Open Approvals</a>
             </div>
-
             <div class="todo-item">
                 <div class="todo-left">
                     <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                        </svg>
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                     </div>
                     <div class="todo-count">0</div>
                 </div>
                 <a class="todo-link" href="#">Open Inbox Tasks</a>
             </div>
         </div>
+    </div>
 
-    </div><!-- /.db-left -->
-    <!-- ═══ RIGHT COLUMN ═══ -->
+    <!-- Right -->
     <div class="db-right">
         <div class="recent-card">
             <div class="recent-header">
@@ -670,11 +812,8 @@
                     <option>Most Engaged</option>
                 </select>
             </div>
-
-            <!-- Empty state (show when no posts yet) -->
             <div class="recent-empty">
                 <div class="recent-empty-left">
-                    <!-- Post preview card mockup -->
                     <div class="post-preview-card">
                         <div class="post-preview-badge">1</div>
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -684,48 +823,137 @@
                                 <div class="post-preview-line short" style="margin-top:4px;height:6px;"></div>
                             </div>
                         </div>
-                        <div class="post-preview-line tall" style="border-radius:8px;"></div>
+                        <div class="post-preview-line" style="height:60px;border-radius:8px;margin-bottom:10px;"></div>
                         <div class="post-preview-stats">
                             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                             100
                         </div>
                     </div>
                 </div>
-
                 <div class="recent-empty-right">
                     <h4>Easily compare your top performing posts once you have at least 3 posts per week.</h4>
-                    <p>
-                        Discover more ways to
-                        <a href="#">level-up your content strategy</a>.
-                    </p>
+                    <p>Discover more ways to <a href="#">level-up your content strategy</a>.</p>
                 </div>
             </div>
-
-            <!-- Uncomment below and remove recent-empty above when posts exist:
-            <div class="recent-post-item">
-                <div class="recent-post-thumb">📸</div>
-                <div class="recent-post-info">
-                    <p>Behind-the-scenes product development reel</p>
-                    <div class="recent-post-meta">
-                        <span>2 days ago</span>
-                        <div class="recent-post-stat">
-                            <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                            1.2K
-                        </div>
-                        <div class="recent-post-stat">
-                            <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                            342
-                        </div>
-                    </div>
-                </div>
-            </div>
-            -->
-
             <div class="recent-footer">
                 <span>Published from @DateTime.Now.AddDays(-7).ToString("MM/dd/yy") - @DateTime.Now.ToString("MM/dd/yy")</span>
                 <button class="report-btn">Post Performance Report</button>
             </div>
         </div>
-    </div><!-- /.db-right -->
+    </div>
+</div>
 
-</div><!-- /.db-grid -->
+<!-- ══ BROWSE INTEGRATIONS MODAL ═════════════════════════════════════ -->
+<div class="browse-backdrop" id="browseBackdrop" onclick="if(event.target===this)closeBrowse()">
+    <div class="browse-modal">
+        <div class="browse-modal-head">
+            <h2>Integrations</h2>
+            <button class="browse-close" onclick="closeBrowse()">✕</button>
+        </div>
+        <div class="browse-body">
+            <div class="browse-sub">Social Media Platforms</div>
+            <div class="browse-desc">Connect your social accounts to publish, schedule and track performance.</div>
+            <div class="plat-grid">
+
+                <!-- Facebook -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#e7f0ff;">
+                            <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>Facebook</h4>
+                        <p>Publish to Pages, track engagement metrics, and manage comments directly from the panel.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="facebook" style="background:#1877F2" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+                <!-- LinkedIn -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#e8f0fe;">
+                            <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>LinkedIn</h4>
+                        <p>Manage your LinkedIn Pages, schedule posts and track professional audience analytics.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="linkedin" style="background:#0A66C2" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+                <!-- X (Twitter) -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#f0f0f0;">
+                            <svg viewBox="0 0 24 24" fill="#000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>X (Twitter)</h4>
+                        <p>Schedule tweets, monitor mentions, and track impressions and engagement from one place.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="twitter" style="background:#000" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+                <!-- Instagram -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#fef0f8;">
+                            <svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="igCard" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igCard)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>Instagram</h4>
+                        <p>Schedule feed posts, Reels and Stories. View reach, profile visits and follower growth.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="instagram" style="background:linear-gradient(135deg,#f09433,#dc2743,#bc1888)" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+                <!-- WhatsApp -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#e8f8f0;">
+                            <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>WhatsApp Business</h4>
+                        <p>Manage customer conversations, send message templates and track delivery stats.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="whatsapp" style="background:#25D366" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+                <!-- Gmail -->
+                <div class="plat-card">
+                    <div class="plat-card-logo">
+                        <div class="logo-wrap" style="background:#fef2f2;">
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" /><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64V9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#4285F4" /></svg>
+                        </div>
+                    </div>
+                    <div class="plat-card-body">
+                        <h4>Gmail</h4>
+                        <p>Sync email campaigns, import subscriber data and trigger newsletters from the panel.</p>
+                        <button class="plat-conn-btn connect-btn" data-platform="gmail" style="background:#EA4335" onclick="toggleConnect(this);closeBrowse()">Connect</button>
+                        <a class="plat-learn" href="#">Learn more <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg></a>
+                    </div>
+                </div>
+
+            </div><!-- /.plat-grid -->
+        </div><!-- /.browse-body -->
+    </div><!-- /.browse-modal -->
+</div><!-- /.browse-backdrop -->
+
+<script>
+    function openBrowse()  { document.getElementById('browseBackdrop').classList.add('open'); }
+    function closeBrowse() { document.getElementById('browseBackdrop').classList.remove('open'); }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeBrowse();
+    });
+</script>
