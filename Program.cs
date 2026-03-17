@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using SocialMediaPanel.Data;
+using SocialMediaPanel.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<FacebookService>();
 
 // MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -39,6 +43,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseSession();
+builder.Services.AddHttpContextAccessor();
+
 app.UseAuthorization();
 
 app.MapControllerRoute(

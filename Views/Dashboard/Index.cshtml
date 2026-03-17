@@ -1,673 +1,731 @@
 ﻿@{
-    Layout = null;
     ViewData["Title"] = "Dashboard";
-    var userName = ViewBag.UserName as string ?? "User";
-    var userEmail = ViewBag.UserEmail as string ?? "";
-    var companyName = ViewBag.CompanyName as string ?? "Your Workspace";
+    ViewData["PageTitle"] = "Welcome, " + (ViewBag.UserName as string ?? "User") + "! 👋";
+
+    var integrationSuccess = TempData["IntegrationSuccess"] as string;
+    var integrationError = TempData["IntegrationError"] as string;
+    var fbPageName = TempData["FacebookPageName"] as string;
 }
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard – SocialMediaPanel</title>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
 
-        :root {
-            --green: #4BB543;
-            --green-d: #3a9e34;
-            --teal: #1DA1A1;
-            --bg: #f4f5f7;
-            --sidebar: #fff;
-            --topbar: #fff;
-            --card: #fff;
-            --border: #e3e6ea;
-            --text: #1a2332;
-            --muted: #8a97a8;
-            --accent: #1DA1A1;
-        }
+@if (integrationError != null)
+{
+    <div id="intErrBanner" style="background:#fff0f0;border:1px solid #ffcdd2;border-radius:10px;
+             padding:12px 18px;margin-bottom:16px;font-size:13px;color:#c62828;
+             display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <span>❌ @integrationError</span>
+        <button onclick="this.parentElement.remove()"
+                style="background:none;border:none;cursor:pointer;color:#c62828;font-size:16px;">
+            ✕
+        </button>
+    </div>
+}
 
-        body {
-            font-family: 'DM Sans',sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-        }
-
-        .sidebar {
-            width: 220px;
-            background: var(--sidebar);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            position: sticky;
-            top: 0;
-            flex-shrink: 0;
-        }
-
-        .sidebar-logo {
-            padding: 22px 20px 18px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo-icon {
-            width: 34px;
-            height: 34px;
-            background: linear-gradient(135deg,var(--green),var(--teal));
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-            .logo-icon svg {
-                width: 18px;
-                height: 18px;
-                fill: white;
-            }
-
-        .logo-text {
-            font-family: 'Sora',sans-serif;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .workspace-badge {
-            margin: 12px 12px 8px;
-            padding: 10px 12px;
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ws-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg,#6c5ce7,#a29bfe);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .ws-name {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text);
-            line-height: 1.2;
-        }
-
-        .ws-sub {
-            font-size: 11px;
-            color: var(--muted);
-        }
-
-        .nav {
-            flex: 1;
-            padding: 8px 0;
-            overflow-y: auto;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            text-decoration: none;
-            border-left: 3px solid transparent;
-            transition: color 0.15s,background 0.15s;
-        }
-
-            .nav-item svg {
-                width: 16px;
-                height: 16px;
-                stroke: currentColor;
-                flex-shrink: 0;
-            }
-
-            .nav-item:hover {
-                color: var(--text);
-                background: #f4f5f7;
-            }
-
-            .nav-item.active {
-                color: var(--green);
-                background: rgba(75,181,67,0.07);
-                border-left-color: var(--green);
-            }
-
-                .nav-item.active svg {
-                    stroke: var(--green);
+@if (integrationSuccess != null)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                if (window.PlatformAuth) {
+                    PlatformAuth.openSuccess('@integrationSuccess', '@Html.Raw(fbPageName ?? integrationSuccess)');
                 }
+            }, 400);
+        });
+    </script>
+}
 
-        .sidebar-bottom {
-            padding: 14px 12px;
-            border-top: 1px solid var(--border);
+<style>
+    /* ── Dashboard two-column layout ─── */
+    .db-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr;
+        gap: 18px;
+        align-items: start;
+    }
+
+    /* ── Left column ─── */
+    .db-left {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* Publishing card */
+    .pub-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .pub-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 14px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .pub-card-header h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
         }
 
-        .user-info {
+        .pub-card-header a {
+            font-size: 12px;
+            color: var(--green);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+            .pub-card-header a:hover {
+                text-decoration: underline;
+            }
+
+    /* Empty publish state */
+    .pub-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 24px;
+        text-align: center;
+    }
+
+    .pub-empty-icon {
+        width: 56px;
+        height: 56px;
+        margin-bottom: 14px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .pub-empty-icon .icon-bg {
+            width: 44px;
+            height: 44px;
+            background: #f0f0f0;
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: #f4f5f7;
-            border-radius: 9px;
+            justify-content: center;
         }
 
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg,var(--green),var(--teal));
+        .pub-empty-icon .icon-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 22px;
+            height: 22px;
+            background: var(--green);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-            flex-shrink: 0;
+            border: 2px solid #fff;
         }
 
-        .user-name {
-            font-size: 13px;
-            font-weight: 500;
+            .pub-empty-icon .icon-badge svg {
+                width: 10px;
+                height: 10px;
+                stroke: white;
+                fill: none;
+            }
+
+    .pub-empty h4 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 8px;
+    }
+
+    .pub-empty p {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 18px;
+    }
+
+    .compose-btn {
+        padding: 9px 20px;
+        background: var(--text);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .compose-btn:hover {
+            background: #2d3a4a;
+        }
+
+    /* Scheduled post items */
+    .pub-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .pub-item:last-child {
+            border-bottom: none;
+        }
+
+    .pub-plat {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .pub-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+        .pub-info p {
+            font-size: 12px;
             color: var(--text);
-        }
-
-        .user-email {
-            font-size: 11px;
-            color: var(--muted);
+            line-height: 1.4;
+            margin-bottom: 3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 120px;
         }
 
-        .logout-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 12px;
-            margin-top: 8px;
-            background: rgba(220,53,69,0.07);
-            border: 1px solid rgba(220,53,69,0.18);
-            border-radius: 7px;
-            color: #dc3545;
-            font-size: 12px;
-            font-weight: 500;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
-            text-decoration: none;
-            width: 100%;
-            justify-content: center;
-            transition: background 0.15s;
-        }
-
-            .logout-btn:hover {
-                background: rgba(220,53,69,0.13);
-            }
-
-            .logout-btn svg {
-                width: 14px;
-                height: 14px;
-                stroke: currentColor;
-            }
-
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .topbar {
-            height: 58px;
-            background: var(--topbar);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 28px;
-            flex-shrink: 0;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        }
-
-            .topbar h1 {
-                font-family: 'Sora',sans-serif;
-                font-size: 16px;
-                font-weight: 700;
-                color: var(--text);
-            }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .trial-badge {
-            font-size: 12px;
+        .pub-info span {
+            font-size: 11px;
             color: var(--muted);
         }
 
-            .trial-badge span {
-                color: var(--green);
-                font-weight: 600;
-            }
+    .pub-status {
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+        align-self: center;
+    }
 
-        .btn-trial {
-            padding: 7px 14px;
-            background: rgba(75,181,67,0.08);
-            border: 1px solid rgba(75,181,67,0.25);
-            border-radius: 7px;
-            color: var(--green);
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
+    .ps-sched {
+        background: rgba(75,181,67,.10);
+        color: var(--green);
+    }
+
+    .ps-draft {
+        background: #f4f5f7;
+        color: var(--muted);
+        border: 1px solid var(--border);
+    }
+
+    /* To Do card */
+    .todo-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .todo-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .todo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .todo-item:last-child {
+            border-bottom: none;
         }
 
-        .btn-subscribe {
-            padding: 7px 14px;
-            background: linear-gradient(135deg,var(--green),var(--green-d));
-            border: none;
-            border-radius: 7px;
-            color: #fff;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
+    .todo-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .todo-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .todo-icon svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--muted);
+            fill: none;
         }
 
-        .btn-compose {
-            width: 32px;
-            height: 32px;
-            background: var(--green);
-            border: none;
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+    .todo-count {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        min-width: 28px;
+    }
+
+    .todo-link {
+        font-size: 12px;
+        color: var(--green);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .todo-link:hover {
+            text-decoration: underline;
         }
 
-            .btn-compose svg {
-                width: 16px;
-                height: 16px;
-                stroke: white;
-            }
+    /* ── Right column ─── */
+    .db-right {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
 
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 28px;
-        }
+    .recent-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4,1fr);
-            gap: 14px;
-            margin-bottom: 24px;
-        }
+    .recent-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px 14px;
+        border-bottom: 1px solid var(--border);
+    }
 
-        .stat-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-            .stat-card:hover {
-                border-color: rgba(75,181,67,0.35);
-                box-shadow: 0 4px 16px rgba(75,181,67,0.1);
-            }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-family: 'Sora',sans-serif;
-            font-size: 26px;
+        .recent-header h3 {
+            font-size: 15px;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 5px;
         }
 
-        .stat-change {
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+    .sort-select {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+    }
+
+        .sort-select svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--muted);
+            fill: none;
         }
 
-            .stat-change.up {
-                color: var(--green);
-            }
+    /* Empty recent posts state */
+    .recent-empty {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+    }
 
-            .stat-change.down {
-                color: #dc3545;
-            }
+    .recent-empty-left {
+        border-right: 1px solid var(--border);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 260px;
+    }
 
-        .section-head {
-            font-family: 'Sora',sans-serif;
-            font-size: 16px;
+    .post-preview-card {
+        background: #f8f9fb;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        position: relative;
+    }
+
+    .post-preview-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        margin-bottom: 10px;
+    }
+
+    .post-preview-line {
+        height: 8px;
+        border-radius: 4px;
+        background: #e0e0e0;
+        margin-bottom: 6px;
+    }
+
+        .post-preview-line.short {
+            width: 60%;
+        }
+
+        .post-preview-line.medium {
+            width: 80%;
+        }
+
+        .post-preview-line.tall {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+
+    .post-preview-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 22px;
+        height: 22px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+    }
+
+    .post-preview-stats {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+        .post-preview-stats svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--muted);
+            fill: none;
+        }
+
+    .recent-empty-right {
+        padding: 32px 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+        .recent-empty-right h4 {
+            font-size: 14px;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
+            line-height: 1.4;
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3,1fr);
-            gap: 14px;
-            margin-bottom: 24px;
-        }
-
-        .feature-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            cursor: pointer;
-            transition: border-color 0.2s,transform 0.15s,box-shadow 0.2s;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-
-            .feature-card:hover {
-                border-color: rgba(75,181,67,0.35);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            }
-
-        .feature-card-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-
-            .feature-card-icon svg {
-                width: 18px;
-                height: 18px;
-            }
-
-        .ic-green {
-            background: rgba(75,181,67,0.12);
-        }
-
-        .ic-pink {
-            background: rgba(255,107,157,0.12);
-        }
-
-        .ic-blue {
-            background: rgba(86,207,178,0.12);
-        }
-
-        .ic-yellow {
-            background: rgba(255,204,77,0.12);
-        }
-
-        .ic-purple {
-            background: rgba(162,155,254,0.12);
-        }
-
-        .ic-teal {
-            background: rgba(29,161,161,0.12);
-        }
-
-        .feature-card h4 {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .feature-card p {
+        .recent-empty-right p {
             font-size: 12px;
             color: var(--muted);
             line-height: 1.6;
+            margin-bottom: 0;
         }
 
-        .core-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+        .recent-empty-right a {
+            color: var(--green);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+            .recent-empty-right a:hover {
+                text-decoration: underline;
+            }
+
+    /* Date range footer */
+    .recent-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        border-top: 1px solid var(--border);
+        background: #fafbfc;
+    }
+
+        .recent-footer span {
             font-size: 11px;
             color: var(--muted);
-            margin-top: 10px;
         }
 
-            .core-tag svg {
-                width: 11px;
-                height: 11px;
-            }
+    .report-btn {
+        padding: 7px 14px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        transition: background .15s;
+    }
 
-        .bottom-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .panel {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 14px;
-        }
-
-            .panel-header h4 {
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text);
-            }
-
-            .panel-header select {
-                background: #f4f5f7;
-                border: 1px solid var(--border);
-                border-radius: 6px;
-                color: var(--muted);
-                font-size: 12px;
-                padding: 5px 8px;
-                font-family: 'DM Sans',sans-serif;
-            }
-
-        .post-item {
-            display: flex;
-            gap: 10px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-            .post-item:last-child {
-                border-bottom: none;
-            }
-
-        .post-platform {
-            width: 30px;
-            height: 30px;
+        .report-btn:hover {
             background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+        }
+
+    /* Real post items for recent posts */
+    .recent-post-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .recent-post-item:last-child {
+            border-bottom: none;
+        }
+
+    .recent-post-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 8px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .recent-post-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+        .recent-post-info p {
             font-size: 13px;
-        }
-
-        .post-info {
-            flex: 1;
-        }
-
-            .post-info p {
-                font-size: 12px;
-                color: var(--text);
-                line-height: 1.4;
-            }
-
-            .post-info span {
-                font-size: 11px;
-                color: var(--muted);
-            }
-
-        .post-status {
-            font-size: 10px;
-            padding: 3px 7px;
-            border-radius: 4px;
-            font-weight: 500;
-            align-self: flex-start;
+            color: var(--text);
+            line-height: 1.4;
+            margin-bottom: 6px;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .status-scheduled {
-            background: rgba(75,181,67,0.1);
-            color: var(--green);
-        }
+    .recent-post-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-        .status-draft {
-            background: #f4f5f7;
+        .recent-post-meta span {
+            font-size: 11px;
             color: var(--muted);
-            border: 1px solid var(--border);
         }
-    </style>
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" /></svg></div>
-            <span class="logo-text">SocialMediaPanel</span>
-        </div>
-        <div class="workspace-badge">
-            <div class="ws-icon">@(companyName.Length > 0 ? companyName[0].ToString().ToUpper() : "S")</div>
-            <div><div class="ws-name">@companyName</div><div class="ws-sub">Workspace</div></div>
-        </div>
-        <nav class="nav">
-            <a href="#" class="nav-item active">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /></svg>
-                Dashboard
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                Smart Inbox
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
-                Cases
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                Publishing
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
-                Listening
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
-                Reports
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                People
-            </a>
-            <a href="#" class="nav-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></svg>
-                Reviews
-            </a>
-        </nav>
-        <div class="sidebar-bottom">
-            <div class="user-info">
-                <div class="user-avatar">@(userName.Length > 0 ? userName[0].ToString().ToUpper() : "U")</div>
-                <div><div class="user-name">@userName</div><div class="user-email">@userEmail</div></div>
+
+    .recent-post-stat {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+        .recent-post-stat svg {
+            width: 11px;
+            height: 11px;
+            stroke: var(--muted);
+            fill: none;
+        }
+</style>
+
+<div class="db-grid">
+
+    <!-- ═══ LEFT COLUMN ═══ -->
+    <div class="db-left">
+
+        <!-- Today's Publishing -->
+        <div class="pub-card">
+            <div class="pub-card-header">
+                <h3>Today's Publishing</h3>
+                <a href="#">View calendar →</a>
             </div>
-            <a asp-controller="Account" asp-action="Logout" class="logout-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-                Logout
-            </a>
-        </div>
-    </aside>
-    <main class="main">
-        <div class="topbar">
-            <h1>Welcome, @userName! 👋</h1>
-            <div class="topbar-right">
-                <span class="trial-badge"><span>30 days</span> remaining in trial</span>
-                <button class="btn-trial">✨ Trial features</button>
-                <button class="btn-subscribe">Start subscription</button>
-                <button class="btn-compose">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                </button>
-            </div>
-        </div>
-        <div class="content">
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-label">Total Followers</div><div class="stat-value">24.8K</div><div class="stat-change up">▲ 12.4% this month</div></div>
-                <div class="stat-card"><div class="stat-label">Posts Published</div><div class="stat-value">142</div><div class="stat-change up">▲ 8 this week</div></div>
-                <div class="stat-card"><div class="stat-label">Avg. Engagement</div><div class="stat-value">4.7%</div><div class="stat-change up">▲ 0.3% vs last week</div></div>
-                <div class="stat-card"><div class="stat-label">Messages</div><div class="stat-value">58</div><div class="stat-change down">▼ 3 unread</div></div>
-            </div>
-            <div class="section-head">Explore Features</div>
-            <div class="features-grid">
-                <div class="feature-card"><div class="feature-card-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="#4BB543" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg></div><h4>Performance Overview</h4><p>Overall social performance metrics at a glance.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-                <div class="feature-card"><div class="feature-card-icon ic-pink"><svg viewBox="0 0 24 24" fill="none" stroke="#ff6b9d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg></div><h4>Content Labels</h4><p>Easily label and monitor all your social posts.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-                <div class="feature-card"><div class="feature-card-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="#56cfb2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg></div><h4>Optimal Send Times</h4><p>Auto-schedule posts at the best times.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-                <div class="feature-card"><div class="feature-card-icon ic-yellow"><svg viewBox="0 0 24 24" fill="none" stroke="#ffcc4d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div><h4>Brand Sentiment</h4><p>Uncover what people are saying about you.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-                <div class="feature-card"><div class="feature-card-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="#a29bfe" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg></div><h4>Publishing Tools</h4><p>Draft, schedule, or publish posts easily.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-                <div class="feature-card"><div class="feature-card-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="#1DA1A1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div><h4>Message Prioritization</h4><p>Know which messages to tackle first.</p><div class="core-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /></svg> Core</div></div>
-            </div>
-            <div class="bottom-grid">
-                <div class="panel">
-                    <div class="panel-header"><h4>📅 Today's Publishing</h4><select><option>All Profiles</option><option>Instagram</option><option>Twitter</option><option>LinkedIn</option></select></div>
-                    <div class="post-item"><div class="post-platform">📸</div><div class="post-info"><p>New product launch announcement — Q2 Campaign</p><span>Instagram · 2:30 PM</span></div><span class="post-status status-scheduled">Scheduled</span></div>
-                    <div class="post-item"><div class="post-platform">🐦</div><div class="post-info"><p>Weekly tips thread — Social Media Best Practices</p><span>Twitter · 5:00 PM</span></div><span class="post-status status-draft">Draft</span></div>
-                    <div class="post-item"><div class="post-platform">💼</div><div class="post-info"><p>Company culture spotlight — Meet the Team</p><span>LinkedIn · 6:30 PM</span></div><span class="post-status status-scheduled">Scheduled</span></div>
+
+            <!-- Empty state (show when no posts scheduled) -->
+            <div class="pub-empty">
+                <div class="pub-empty-icon">
+                    <div class="icon-bg">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a97a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                    </div>
+                    <div class="icon-badge">
+                        <svg viewBox="0 0 24 24" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    </div>
                 </div>
-                <div class="panel">
-                    <div class="panel-header"><h4>🔥 Recent Posts</h4><select><option>Highest Performing</option><option>Most Recent</option><option>Most Engaged</option></select></div>
-                    <div class="post-item"><div class="post-platform">📸</div><div class="post-info"><p>Behind-the-scenes product development reel</p><span>1.2K likes · 342 shares · 2 days ago</span></div></div>
-                    <div class="post-item"><div class="post-platform">🐦</div><div class="post-info"><p>Thread: 10 ways to boost social engagement</p><span>876 likes · 201 retweets · 4 days ago</span></div></div>
-                    <div class="post-item"><div class="post-platform">💼</div><div class="post-info"><p>Industry insights: Future of social commerce</p><span>543 reactions · 87 comments · 1 week ago</span></div></div>
+                <h4>Publish your first post.</h4>
+                <p>Publish, schedule or queue to reach<br>your audience at the perfect time.</p>
+                <button class="compose-btn">Compose Post</button>
+            </div>
+
+            <!-- Uncomment below and remove pub-empty above when posts exist:
+            <div class="pub-item">
+                <div class="pub-plat">📸</div>
+                <div class="pub-info"><p>New product launch — Q2 Campaign</p><span>Instagram · 2:30 PM</span></div>
+                <span class="pub-status ps-sched">Scheduled</span>
+            </div>
+            <div class="pub-item">
+                <div class="pub-plat">🐦</div>
+                <div class="pub-info"><p>Weekly tips thread — Best Practices</p><span>Twitter · 5:00 PM</span></div>
+                <span class="pub-status ps-draft">Draft</span>
+            </div>
+            <div class="pub-item">
+                <div class="pub-plat">💼</div>
+                <div class="pub-info"><p>Company culture spotlight</p><span>LinkedIn · 6:30 PM</span></div>
+                <span class="pub-status ps-sched">Scheduled</span>
+            </div>
+            -->
+        </div>
+
+        <!-- To Do -->
+        <div class="todo-card">
+            <div class="todo-header">To Do</div>
+
+            <div class="todo-item">
+                <div class="todo-left">
+                    <div class="todo-icon">
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                        </svg>
+                    </div>
+                    <div class="todo-count">0</div>
                 </div>
+                <a class="todo-link" href="#">Go to Cases</a>
+            </div>
+
+            <div class="todo-item">
+                <div class="todo-left">
+                    <div class="todo-icon">
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                    </div>
+                    <div class="todo-count">0</div>
+                </div>
+                <a class="todo-link" href="#">Open Approvals</a>
+            </div>
+
+            <div class="todo-item">
+                <div class="todo-left">
+                    <div class="todo-icon">
+                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                        </svg>
+                    </div>
+                    <div class="todo-count">0</div>
+                </div>
+                <a class="todo-link" href="#">Open Inbox Tasks</a>
             </div>
         </div>
-    </main>
-</body>
-</html>
+
+    </div><!-- /.db-left -->
+    <!-- ═══ RIGHT COLUMN ═══ -->
+    <div class="db-right">
+        <div class="recent-card">
+            <div class="recent-header">
+                <h3>Your Recent Posts</h3>
+                <select class="sort-select">
+                    <option>Highest Performing</option>
+                    <option>Most Recent</option>
+                    <option>Most Engaged</option>
+                </select>
+            </div>
+
+            <!-- Empty state (show when no posts yet) -->
+            <div class="recent-empty">
+                <div class="recent-empty-left">
+                    <!-- Post preview card mockup -->
+                    <div class="post-preview-card">
+                        <div class="post-preview-badge">1</div>
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <div class="post-preview-avatar"></div>
+                            <div style="flex:1">
+                                <div class="post-preview-line medium"></div>
+                                <div class="post-preview-line short" style="margin-top:4px;height:6px;"></div>
+                            </div>
+                        </div>
+                        <div class="post-preview-line tall" style="border-radius:8px;"></div>
+                        <div class="post-preview-stats">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                            100
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-empty-right">
+                    <h4>Easily compare your top performing posts once you have at least 3 posts per week.</h4>
+                    <p>
+                        Discover more ways to
+                        <a href="#">level-up your content strategy</a>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Uncomment below and remove recent-empty above when posts exist:
+            <div class="recent-post-item">
+                <div class="recent-post-thumb">📸</div>
+                <div class="recent-post-info">
+                    <p>Behind-the-scenes product development reel</p>
+                    <div class="recent-post-meta">
+                        <span>2 days ago</span>
+                        <div class="recent-post-stat">
+                            <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            1.2K
+                        </div>
+                        <div class="recent-post-stat">
+                            <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                            342
+                        </div>
+                    </div>
+                </div>
+            </div>
+            -->
+
+            <div class="recent-footer">
+                <span>Published from @DateTime.Now.AddDays(-7).ToString("MM/dd/yy") - @DateTime.Now.ToString("MM/dd/yy")</span>
+                <button class="report-btn">Post Performance Report</button>
+            </div>
+        </div>
+    </div><!-- /.db-right -->
+
+</div><!-- /.db-grid -->
