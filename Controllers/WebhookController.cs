@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -12,30 +11,23 @@ namespace SocialMediaPanel.Controllers
     [ApiController]
     public class WebhookController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _config;
         private readonly ILogger<WebhookController> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IConfiguration _config;
 
         public WebhookController(
-            AppDbContext context,
-            IConfiguration config,
             ILogger<WebhookController> logger,
-            IHttpClientFactory httpClientFactory)
+            IServiceScopeFactory scopeFactory,
+            IConfiguration config)
         {
-            _context = context;
-            _config = config;
             _logger = logger;
-            _httpClientFactory = httpClientFactory;
+            _scopeFactory = scopeFactory;
+            _config = config;
         }
 
         // ══════════════════════════════════════════════════════
         // GET /webhook
-        // Meta webhook verification
-        // Meta 3 params bhejta hai:
-        //   hub.mode         = "subscribe"
-        //   hub.verify_token = tumhara verify token (appsettings se)
-        //   hub.challenge    = random string jo wapas bhejni hai
+        // Meta verification — pehli baar subscribe karte waqt
         // ══════════════════════════════════════════════════════
         [HttpGet]
         public IActionResult Verify(
@@ -50,18 +42,18 @@ namespace SocialMediaPanel.Controllers
 
             if (mode == "subscribe" && verifyToken == expectedToken)
             {
-                _logger.LogInformation("Webhook verified OK");
+                _logger.LogInformation("Webhook verified OK ✅");
                 return Content(challenge ?? "", "text/plain");
             }
 
-            _logger.LogWarning("Webhook verification FAILED");
+            _logger.LogWarning("Webhook verification FAILED ❌ — check verify token");
             return Forbid();
         }
 
         // ══════════════════════════════════════════════════════
         // POST /webhook
-        // Meta real events yahan bhejta hai
-        // FB Page + Instagram dono yahan aate hain
+        // RULE: Meta ko TURANT 200 OK — 5 sec timeout hai
+        // Background mein sab process karo
         // ══════════════════════════════════════════════════════
         [HttpPost]
         public async Task<IActionResult> Receive()
@@ -72,62 +64,112 @@ namespace SocialMediaPanel.Controllers
                 rawBody = await reader.ReadToEndAsync();
             }
 
-            _logger.LogInformation("Webhook POST: {Body}",
-                rawBody[..Math.Min(300, rawBody.Length)]);
+            _logger.LogInformation(
+                "Webhook POST received — length={Len} preview={Preview}",
+                rawBody.Length,
+                rawBody[..Math.Min(100, rawBody.Length)]);
 
-            // Signature verify karo
-            var sig = Request.Headers["X-Hub-Signature-256"].ToString();
-            if (!VerifySignature(rawBody, sig))
+            // Background mein process karo — new scope ke saath
+            _ = Task.Run(async () =>
             {
-                _logger.LogWarning("Invalid signature — rejected");
-                return Unauthorized("Invalid signature");
-            }
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var httpFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+                var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                var logger = scope.ServiceProvider.GetRequiredService<ILogger<WebhookController>>();
 
+                try
+                {
+                    await ProcessWebhook(rawBody, context, httpFactory, config, logger);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError("Webhook processing error: {Msg}\n{Stack}", ex.Message, ex.StackTrace);
+                }
+            });
+
+            // Meta ko TURANT 200 — warna retry karta hai
+            return Ok("EVENT_RECEIVED");
+        }
+
+        // ══════════════════════════════════════════════════════
+        // MAIN PROCESSOR
+        // ══════════════════════════════════════════════════════
+        private static async Task ProcessWebhook(
+            string rawBody,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            IConfiguration config,
+            ILogger logger)
+        {
             JsonDocument doc;
-            try { doc = JsonDocument.Parse(rawBody); }
+            try
+            {
+                doc = JsonDocument.Parse(rawBody);
+            }
             catch (JsonException ex)
             {
-                _logger.LogError("JSON error: {Msg}", ex.Message);
-                return BadRequest("Invalid JSON");
+                logger.LogError("JSON parse error: {Msg}", ex.Message);
+                return;
             }
 
             var root = doc.RootElement;
             var obj = root.TryGetProperty("object", out var op) ? op.GetString() : "";
             var hasEntry = root.TryGetProperty("entry", out var entries);
 
-            // Raw event log karo
-            await LogWebhookEvent(obj ?? "unknown", rawBody);
+            logger.LogInformation("Processing webhook — object={Obj}", obj);
 
-            if (hasEntry)
+            // Saara raw event log karo debug ke liye
+            await LogWebhookEvent(obj ?? "unknown", rawBody, context);
+
+            if (!hasEntry) return;
+
+            foreach (var entry in entries.EnumerateArray())
             {
-                foreach (var entry in entries.EnumerateArray())
+                try
                 {
                     switch (obj?.ToLower())
                     {
-                        case "page": await HandlePageEvent(entry); break;
-                        case "instagram": await HandleInstagramEvent(entry); break;
-                        case "ad_account": await HandleAdAccountEvent(entry); break;
+                        case "page":
+                            await HandlePageEvent(entry, context, httpFactory, logger);
+                            break;
+
+                        case "instagram":
+                            await HandleInstagramEvent(entry, context, httpFactory, logger);
+                            break;
+
+                        case "ad_account":
+                            await HandleAdAccountEvent(entry, context, httpFactory, logger);
+                            break;
+
                         default:
-                            _logger.LogInformation("Unknown object: {Obj}", obj);
+                            logger.LogInformation("Unhandled object type: {Obj}", obj);
                             break;
                     }
                 }
+                catch (Exception ex)
+                {
+                    logger.LogError("Entry processing error: {Msg}", ex.Message);
+                    // Ek entry fail hone par baaki process hoti rahe
+                }
             }
-
-            // Meta ko hamesha 200 OK — warna retry karta hai
-            return Ok("EVENT_RECEIVED");
         }
 
         // ══════════════════════════════════════════════════════
         // FACEBOOK PAGE EVENTS
+        // Fields: leadgen, feed, messages, mention, ratings
         // ══════════════════════════════════════════════════════
-        private async Task HandlePageEvent(JsonElement entry)
+        private static async Task HandlePageEvent(
+            JsonElement entry,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            ILogger logger)
         {
             var pageId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
 
-            // Direct Messenger messages
+            // Direct Messenger messages (entry ke andar messaging array)
             if (entry.TryGetProperty("messaging", out var directMsg))
-                await HandleMessaging(directMsg, pageId, "messenger");
+                await HandleMessaging(directMsg, pageId, "messenger", context, logger);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -136,47 +178,67 @@ namespace SocialMediaPanel.Controllers
                 var field = change.TryGetProperty("field", out var f) ? f.GetString() : "";
                 var value = change.TryGetProperty("value", out var v) ? v : (JsonElement?)null;
 
-                _logger.LogInformation("Page field={Field} pageId={PageId}", field, pageId);
+                logger.LogInformation("Page field={Field} pageId={PageId}", field, pageId);
 
-                switch (field?.ToLower())
+                try
                 {
-                    case "leadgen":
-                        if (value.HasValue)
-                            await FetchAndSaveLead(value.Value, pageId, "facebook");
-                        break;
+                    switch (field?.ToLower())
+                    {
+                        // ── LEAD ADS ──
+                        case "leadgen":
+                            if (value.HasValue)
+                                await FetchAndSaveLead(value.Value, pageId, "facebook", context, httpFactory, logger);
+                            break;
 
-                    case "feed":
-                        if (value.HasValue)
-                            await HandleFeedChange(value.Value, pageId, "facebook");
-                        break;
+                        // ── POST FEED (likes, comments, shares, reactions) ──
+                        case "feed":
+                            if (value.HasValue)
+                                await HandleFeedChange(value.Value, pageId, "facebook", context, logger);
+                            break;
 
-                    case "messages":
-                        if (entry.TryGetProperty("messaging", out var msg))
-                            await HandleMessaging(msg, pageId, "messenger");
-                        break;
+                        // ── MESSENGER ──
+                        case "messages":
+                            if (entry.TryGetProperty("messaging", out var msg))
+                                await HandleMessaging(msg, pageId, "messenger", context, logger);
+                            break;
 
-                    case "mention":
-                        if (value.HasValue)
-                            await SaveComment(value.Value, pageId, "facebook", "mention");
-                        break;
+                        // ── PAGE MENTION ──
+                        case "mention":
+                            if (value.HasValue)
+                                await SaveComment(value.Value, pageId, "facebook", "mention", context, logger);
+                            break;
 
-                    case "ratings":
-                        _logger.LogInformation("Rating received — pageId={PageId}", pageId);
-                        break;
+                        case "ratings":
+                            logger.LogInformation("Page rating — pageId={PageId}", pageId);
+                            break;
+
+                        default:
+                            logger.LogInformation("Unhandled page field: {Field}", field);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError("Field={Field} error: {Msg}", field, ex.Message);
                 }
             }
         }
 
         // ══════════════════════════════════════════════════════
         // INSTAGRAM EVENTS
+        // Fields: comments, mentions, messages, leadgen, story_insights
         // ══════════════════════════════════════════════════════
-        private async Task HandleInstagramEvent(JsonElement entry)
+        private static async Task HandleInstagramEvent(
+            JsonElement entry,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            ILogger logger)
         {
             var igId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
 
-            // Instagram DMs
+            // Instagram Direct Messages
             if (entry.TryGetProperty("messaging", out var messaging))
-                await HandleMessaging(messaging, igId, "instagram_dm");
+                await HandleMessaging(messaging, igId, "instagram_dm", context, logger);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -185,33 +247,44 @@ namespace SocialMediaPanel.Controllers
                 var field = change.TryGetProperty("field", out var f) ? f.GetString() : "";
                 var value = change.TryGetProperty("value", out var v) ? v : (JsonElement?)null;
 
-                _logger.LogInformation("Instagram field={Field} igId={IgId}", field, igId);
+                logger.LogInformation("Instagram field={Field} igId={IgId}", field, igId);
 
-                switch (field?.ToLower())
+                try
                 {
-                    case "comments":
-                        if (value.HasValue)
-                            await SaveComment(value.Value, igId, "instagram", "comment");
-                        break;
+                    switch (field?.ToLower())
+                    {
+                        case "comments":
+                            if (value.HasValue)
+                                await SaveComment(value.Value, igId, "instagram", "comment", context, logger);
+                            break;
 
-                    case "mentions":
-                        if (value.HasValue)
-                            await SaveComment(value.Value, igId, "instagram", "mention");
-                        break;
+                        case "mentions":
+                            if (value.HasValue)
+                                await SaveComment(value.Value, igId, "instagram", "mention", context, logger);
+                            break;
 
-                    case "live_comments":
-                        if (value.HasValue)
-                            await SaveComment(value.Value, igId, "instagram", "live_comment");
-                        break;
+                        case "live_comments":
+                            if (value.HasValue)
+                                await SaveComment(value.Value, igId, "instagram", "live_comment", context, logger);
+                            break;
 
-                    case "leadgen":
-                        if (value.HasValue)
-                            await FetchAndSaveLead(value.Value, igId, "instagram");
-                        break;
+                        case "leadgen":
+                            if (value.HasValue)
+                                await FetchAndSaveLead(value.Value, igId, "instagram", context, httpFactory, logger);
+                            break;
 
-                    case "story_insights":
-                        _logger.LogInformation("Story insight — igId={IgId}", igId);
-                        break;
+                        case "story_insights":
+                            logger.LogInformation("Story insight — igId={IgId}", igId);
+                            break;
+
+                        default:
+                            logger.LogInformation("Unhandled Instagram field: {Field}", field);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError("IG Field={Field} error: {Msg}", field, ex.Message);
                 }
             }
         }
@@ -219,7 +292,11 @@ namespace SocialMediaPanel.Controllers
         // ══════════════════════════════════════════════════════
         // AD ACCOUNT EVENTS
         // ══════════════════════════════════════════════════════
-        private async Task HandleAdAccountEvent(JsonElement entry)
+        private static async Task HandleAdAccountEvent(
+            JsonElement entry,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            ILogger logger)
         {
             var adId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
 
@@ -230,114 +307,239 @@ namespace SocialMediaPanel.Controllers
                 var field = change.TryGetProperty("field", out var f) ? f.GetString() : "";
                 var value = change.TryGetProperty("value", out var v) ? v : (JsonElement?)null;
 
-                if (field == "lead_gen" && value.HasValue)
-                    await FetchAndSaveLead(value.Value, adId, "facebook_ad");
+                if ((field == "lead_gen" || field == "leadgen") && value.HasValue)
+                    await FetchAndSaveLead(value.Value, adId, "facebook_ad", context, httpFactory, logger);
             }
         }
 
         // ══════════════════════════════════════════════════════
-        // FEED CHANGE
+        // FEED CHANGE HANDLER
+        //
+        // Meta feed payload format:
+        // {
+        //   "item": "comment|reaction|share|status|photo|video",
+        //   "verb": "add|remove|edited",
+        //   "post_id": "PAGE_ID_POST_ID",
+        //   "comment_id": "...",    (sirf comment mein)
+        //   "reaction_type": "like|love|haha|wow|sad|angry"
+        // }
         // ══════════════════════════════════════════════════════
-        private async Task HandleFeedChange(JsonElement value, string? pageId, string platform)
+        private static async Task HandleFeedChange(
+            JsonElement value,
+            string? pageId,
+            string platform,
+            AppDbContext context,
+            ILogger logger)
         {
             var item = value.TryGetProperty("item", out var i) ? i.GetString() : "";
             var verb = value.TryGetProperty("verb", out var vb) ? vb.GetString() : "";
             var postId = value.TryGetProperty("post_id", out var pid) ? pid.GetString() : null;
+            var commentId = value.TryGetProperty("comment_id", out var cid) ? cid.GetString() : null;
 
-            _logger.LogInformation("Feed item={Item} verb={Verb}", item, verb);
+            logger.LogInformation(
+                "Feed — item={Item} verb={Verb} postId={PostId}",
+                item, verb, postId);
 
-            if (item == "comment" && verb == "add")
+            switch (item?.ToLower())
             {
-                await SaveComment(value, pageId, platform, "comment");
-                return;
-            }
+                // ── COMMENT ──
+                case "comment":
+                    if (verb == "add")
+                    {
+                        await SaveComment(value, pageId, platform, "comment", context, logger);
 
-            if (postId != null)
-            {
-                if (item == "reaction" || item == "like")
-                    await UpdatePostInsight(postId, pageId, platform, "like");
-                else if (item == "share")
-                    await UpdatePostInsight(postId, pageId, platform, "share");
+                        // Post ka comment count bhi update karo
+                        if (postId != null)
+                            await UpdatePostInsight(postId, pageId, platform, "comment", context);
+                    }
+                    else if (verb == "remove" && postId != null)
+                    {
+                        // Comment hata — count kam karo
+                        await UpdatePostInsight(postId, pageId, platform, "comment_remove", context);
+                    }
+                    break;
+
+                // ── REACTION / LIKE ──
+                case "reaction":
+                case "like":
+                    if (postId != null)
+                    {
+                        if (verb == "add")
+                            await UpdatePostInsight(postId, pageId, platform, "like", context);
+                        else if (verb == "remove")
+                            await UpdatePostInsight(postId, pageId, platform, "like_remove", context);
+                    }
+                    break;
+
+                // ── SHARE ──
+                // Meta share 2 tarike se aata hai:
+                // 1. item=share, verb=add
+                // 2. item=status, verb=add (reshared post)
+                case "share":
+                    if (verb == "add" && postId != null)
+                    {
+                        logger.LogInformation("Share detected — postId={PostId}", postId);
+                        await UpdatePostInsight(postId, pageId, platform, "share", context);
+                    }
+                    break;
+
+                // ── NEW POST / PHOTO / VIDEO ──
+                case "status":
+                case "photo":
+                case "video":
+                case "link":
+                    if (verb == "add")
+                    {
+                        logger.LogInformation(
+                            "New {Item} posted — postId={PostId}", item, postId);
+
+                        // Naya post — insight record banao
+                        if (postId != null)
+                            await EnsurePostInsightExists(postId, pageId, platform, context);
+                    }
+                    else if (verb == "edited")
+                    {
+                        logger.LogInformation("Post edited — postId={PostId}", postId);
+                    }
+                    else if (verb == "remove")
+                    {
+                        logger.LogInformation("Post removed — postId={PostId}", postId);
+                    }
+                    break;
+
+                default:
+                    logger.LogInformation("Unhandled feed item: {Item}", item);
+                    break;
             }
         }
 
         // ══════════════════════════════════════════════════════
-        // MESSAGING — Messenger + Instagram DM
+        // MESSAGING HANDLER
+        // Messenger + Instagram DM dono yahan handle hote hain
         // ══════════════════════════════════════════════════════
-        private async Task HandleMessaging(JsonElement messaging, string? pageId, string platform)
+        private static async Task HandleMessaging(
+            JsonElement messaging,
+            string? pageId,
+            string platform,
+            AppDbContext context,
+            ILogger logger)
         {
             foreach (var msgEvent in messaging.EnumerateArray())
             {
-                if (!msgEvent.TryGetProperty("message", out var message)) continue;
-
-                // Page ka apna echo message skip karo
-                if (message.TryGetProperty("is_echo", out var echo) && echo.GetBoolean())
-                    continue;
-
-                var senderId = msgEvent.TryGetProperty("sender", out var s)
-                    && s.TryGetProperty("id", out var sid) ? sid.GetString() : null;
-                var messageId = message.TryGetProperty("mid", out var mid)
-                    ? mid.GetString() : Guid.NewGuid().ToString();
-                var text = message.TryGetProperty("text", out var txt)
-                    ? txt.GetString() : null;
-                var timestamp = msgEvent.TryGetProperty("timestamp", out var ts)
-                    ? ts.GetInt64() : 0;
-
-                // Duplicate check
-                if (await _context.PageMessages.AnyAsync(m => m.MessageId == messageId))
-                    continue;
-
-                _context.PageMessages.Add(new PageMessage
+                try
                 {
-                    MessageId = messageId!,
-                    PageId = pageId,
-                    SenderId = senderId,
-                    MessageText = text,
-                    Platform = platform,
-                    MessageTime = timestamp > 0
-                        ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime
-                        : DateTime.UtcNow,
-                    IsReplied = false,
-                    CreatedAt = DateTime.UtcNow
-                });
+                    // Sirf message events handle karo
+                    if (!msgEvent.TryGetProperty("message", out var message)) continue;
 
-                _logger.LogInformation(
-                    "Message saved — platform={P} sender={S}", platform, senderId);
+                    // Page ka apna echo message skip karo
+                    if (message.TryGetProperty("is_echo", out var echo) && echo.GetBoolean())
+                        continue;
+
+                    var senderId = msgEvent.TryGetProperty("sender", out var s)
+                        && s.TryGetProperty("id", out var sid) ? sid.GetString() : null;
+                    var messageId = message.TryGetProperty("mid", out var mid)
+                        ? mid.GetString() : Guid.NewGuid().ToString();
+                    var text = message.TryGetProperty("text", out var txt)
+                        ? txt.GetString() : null;
+                    var timestamp = msgEvent.TryGetProperty("timestamp", out var ts)
+                        ? ts.GetInt64() : 0;
+
+                    // Duplicate check
+                    if (await context.PageMessages.AnyAsync(m => m.MessageId == messageId))
+                    {
+                        logger.LogInformation("Message already exists — skip: {MsgId}", messageId);
+                        continue;
+                    }
+
+                    context.PageMessages.Add(new PageMessage
+                    {
+                        MessageId = messageId!,
+                        PageId = pageId,
+                        SenderId = senderId,
+                        MessageText = text,
+                        Platform = platform,
+                        MessageTime = timestamp > 0
+                            ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime
+                            : DateTime.UtcNow,
+                        IsReplied = false,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    logger.LogInformation(
+                        "Message saved ✅ — platform={P} sender={S} text={T}",
+                        platform, senderId, text?[..Math.Min(30, text?.Length ?? 0)]);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError("Message save error: {Msg}", ex.Message);
+                }
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         // ══════════════════════════════════════════════════════
-        // LEAD — webhook sirf ID deta hai
-        // Graph API se poora data fetch karo
+        // LEAD FETCH + SAVE
+        // Webhook sirf leadgen_id deta hai
+        // Graph API se field_data (name, email, phone) fetch karo
         // ══════════════════════════════════════════════════════
-        private async Task FetchAndSaveLead(JsonElement value, string? pageId, string platform)
+        private static async Task FetchAndSaveLead(
+            JsonElement value,
+            string? pageId,
+            string platform,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            ILogger logger)
         {
+            // Lead ID lo
             var leadId = value.TryGetProperty("leadgen_id", out var lid) ? lid.GetString()
                        : value.TryGetProperty("lead_id", out var lid2) ? lid2.GetString()
                        : null;
             var formId = value.TryGetProperty("form_id", out var fid) ? fid.GetString() : null;
 
-            if (string.IsNullOrEmpty(leadId)) return;
+            if (string.IsNullOrEmpty(leadId))
+            {
+                logger.LogWarning("Lead ID nahi mila — skip");
+                return;
+            }
 
             // Duplicate check
-            if (await _context.Leads.AnyAsync(l => l.LeadId == leadId)) return;
+            if (await context.Leads.AnyAsync(l => l.LeadId == leadId))
+            {
+                logger.LogInformation("Lead already exists — skip: {LeadId}", leadId);
+                return;
+            }
 
             string? fullName = null, email = null, phone = null;
             string rawData = value.GetRawText();
 
             try
             {
-                // DB se page access token lo
-                var pageToken = await GetPageAccessToken(pageId);
+                // DB se page token lo
+                // Pehle exact match, phir koi bhi active token
+                var account = await context.ConnectedAccounts
+                    .Where(a => a.AccountId == pageId && a.IsActive)
+                    .FirstOrDefaultAsync()
+                    ?? await context.ConnectedAccounts
+                        .Where(a => a.IsActive)
+                        .FirstOrDefaultAsync();
 
-                if (!string.IsNullOrEmpty(pageToken))
+                var pageToken = account?.AccessToken;
+
+                if (string.IsNullOrEmpty(pageToken))
                 {
-                    var client = _httpClientFactory.CreateClient();
+                    logger.LogWarning("Page token nahi mila — lead ID only save hoga: {LeadId}", leadId);
+                }
+                else
+                {
+                    var client = httpFactory.CreateClient();
+                    client.Timeout = TimeSpan.FromSeconds(10); // Timeout set karo
+
                     var url = $"https://graph.facebook.com/v19.0/{leadId}" +
-                                 $"?fields=field_data,created_time,ad_id,form_id" +
-                                 $"&access_token={pageToken}";
+                              $"?fields=field_data,created_time,ad_id,form_id,page_id" +
+                              $"&access_token={pageToken}";
+
+                    logger.LogInformation("Graph API lead fetch: {LeadId}", leadId);
 
                     var response = await client.GetStringAsync(url);
                     rawData = response;
@@ -345,42 +547,53 @@ namespace SocialMediaPanel.Controllers
                     using var leadDoc = JsonDocument.Parse(response);
                     var leadRoot = leadDoc.RootElement;
 
-                    // field_data parse karo
-                    if (leadRoot.TryGetProperty("field_data", out var fieldData))
+                    // Error check
+                    if (leadRoot.TryGetProperty("error", out var error))
                     {
-                        foreach (var field in fieldData.EnumerateArray())
+                        var errMsg = error.TryGetProperty("message", out var em) ? em.GetString() : "Unknown";
+                        logger.LogWarning("Graph API error: {ErrMsg}", errMsg);
+                        // Token expire — lead bina details save karo
+                    }
+                    else
+                    {
+                        // field_data parse karo
+                        if (leadRoot.TryGetProperty("field_data", out var fieldData))
                         {
-                            var name = field.TryGetProperty("name", out var n)
-                                ? n.GetString()?.ToLower() : "";
-                            var vals = field.TryGetProperty("values", out var v2)
-                                ? v2 : (JsonElement?)null;
-                            var val = vals.HasValue && vals.Value.GetArrayLength() > 0
-                                ? vals.Value[0].GetString() : null;
-
-                            switch (name)
+                            foreach (var field in fieldData.EnumerateArray())
                             {
-                                case "full_name":
-                                case "name": fullName = val; break;
-                                case "email":
-                                case "email_address": email = val; break;
-                                case "phone_number":
-                                case "phone": phone = val; break;
+                                var name = field.TryGetProperty("name", out var n)
+                                    ? n.GetString()?.ToLower() : "";
+                                var vals = field.TryGetProperty("values", out var v2)
+                                    ? v2 : (JsonElement?)null;
+                                var val = vals.HasValue && vals.Value.GetArrayLength() > 0
+                                    ? vals.Value[0].GetString() : null;
+
+                                switch (name)
+                                {
+                                    case "full_name":
+                                    case "name": fullName = val; break;
+                                    case "email":
+                                    case "email_address": email = val; break;
+                                    case "phone_number":
+                                    case "phone": phone = val; break;
+                                }
                             }
                         }
-                    }
 
-                    if (string.IsNullOrEmpty(formId)
-                        && leadRoot.TryGetProperty("form_id", out var gfid))
-                        formId = gfid.GetString();
+                        // formId Graph se bhi le sakte hain
+                        if (string.IsNullOrEmpty(formId)
+                            && leadRoot.TryGetProperty("form_id", out var gfid))
+                            formId = gfid.GetString();
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Graph API lead fetch failed: {Msg}", ex.Message);
-                // Fail hone par bhi basic data save karte hain
+                logger.LogWarning("Graph API lead fetch failed: {Msg} — saving with ID only", ex.Message);
             }
 
-            _context.Leads.Add(new Lead
+            // Lead save karo — chahe details mile ya na mile
+            context.Leads.Add(new Lead
             {
                 LeadId = leadId,
                 PageId = pageId,
@@ -393,34 +606,52 @@ namespace SocialMediaPanel.Controllers
                 CreatedAt = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Lead saved — id={Id} name={Name} email={Email}",
-                leadId, fullName, email);
+            logger.LogInformation(
+                "Lead saved ✅ — id={Id} name={Name} email={Email} phone={Phone}",
+                leadId, fullName ?? "N/A", email ?? "N/A", phone ?? "N/A");
         }
 
         // ══════════════════════════════════════════════════════
-        // COMMENT save
+        // COMMENT SAVE
         // ══════════════════════════════════════════════════════
-        private async Task SaveComment(JsonElement value, string? pageId, string platform, string type)
+        private static async Task SaveComment(
+            JsonElement value,
+            string? pageId,
+            string platform,
+            string type,
+            AppDbContext context,
+            ILogger logger)
         {
+            // Comment ID lo — alag alag fields mein ho sakta hai
             var commentId = value.TryGetProperty("comment_id", out var cid) ? cid.GetString()
                           : value.TryGetProperty("id", out var id) ? id.GetString()
                           : Guid.NewGuid().ToString();
 
-            if (await _context.PageComments.AnyAsync(c => c.CommentId == commentId))
+            // Duplicate check
+            if (await context.PageComments.AnyAsync(c => c.CommentId == commentId))
+            {
+                logger.LogInformation("Comment already exists — skip: {CommentId}", commentId);
                 return;
+            }
 
+            // Sender info
             var senderId = value.TryGetProperty("from", out var from)
                 && from.TryGetProperty("id", out var fid) ? fid.GetString() : null;
             var senderName = value.TryGetProperty("from", out var from2)
                 && from2.TryGetProperty("name", out var fn) ? fn.GetString() : null;
+
+            // Instagram mein username hota hai name ki jagah
+            if (string.IsNullOrEmpty(senderName))
+                senderName = value.TryGetProperty("from", out var from3)
+                    && from3.TryGetProperty("username", out var un) ? un.GetString() : null;
+
             var msg = value.TryGetProperty("message", out var m) ? m.GetString() : null;
             var postId = value.TryGetProperty("post_id", out var pid) ? pid.GetString() : null;
             var ts = value.TryGetProperty("created_time", out var t) ? t.GetInt64() : 0;
 
-            _context.PageComments.Add(new PageComment
+            context.PageComments.Add(new PageComment
             {
                 CommentId = commentId!,
                 PageId = pageId,
@@ -436,19 +667,26 @@ namespace SocialMediaPanel.Controllers
                 CreatedAt = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Comment saved — platform={P} type={T} sender={S}",
-                platform, type, senderName);
+            logger.LogInformation(
+                "Comment saved ✅ — platform={P} type={T} sender={S} msg={M}",
+                platform, type, senderName ?? "Unknown",
+                msg?[..Math.Min(50, msg?.Length ?? 0)] ?? "");
         }
 
         // ══════════════════════════════════════════════════════
-        // POST INSIGHT update
+        // POST INSIGHT UPDATE
+        // Likes, comments, shares count update karo
         // ══════════════════════════════════════════════════════
-        private async Task UpdatePostInsight(string postId, string? pageId, string platform, string action)
+        private static async Task UpdatePostInsight(
+            string postId,
+            string? pageId,
+            string platform,
+            string action,
+            AppDbContext context)
         {
-            var insight = await _context.PostInsights
+            var insight = await context.PostInsights
                 .FirstOrDefaultAsync(p => p.PostId == postId && p.Platform == platform);
 
             if (insight == null)
@@ -460,71 +698,85 @@ namespace SocialMediaPanel.Controllers
                     Platform = platform,
                     UpdatedAt = DateTime.UtcNow
                 };
-                _context.PostInsights.Add(insight);
+                context.PostInsights.Add(insight);
             }
 
             switch (action)
             {
-                case "like": insight.LikesCount++; break;
-                case "comment": insight.CommentsCount++; break;
-                case "share": insight.SharesCount++; break;
+                case "like":
+                    insight.LikesCount++;
+                    break;
+
+                case "like_remove":
+                    insight.LikesCount = Math.Max(0, insight.LikesCount - 1);
+                    break;
+
+                case "comment":
+                    insight.CommentsCount++;
+                    break;
+
+                case "comment_remove":
+                    insight.CommentsCount = Math.Max(0, insight.CommentsCount - 1);
+                    break;
+
+                case "share":
+                    insight.SharesCount++;
+                    break;
             }
 
             insight.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         // ══════════════════════════════════════════════════════
-        // WEBHOOK EVENT LOG
+        // Naya post aane par empty insight record banao
         // ══════════════════════════════════════════════════════
-        private async Task LogWebhookEvent(string platform, string rawPayload)
+        private static async Task EnsurePostInsightExists(
+            string postId,
+            string? pageId,
+            string platform,
+            AppDbContext context)
         {
-            _context.WebhookEvents.Add(new WebhookEvent
+            var exists = await context.PostInsights
+                .AnyAsync(p => p.PostId == postId && p.Platform == platform);
+
+            if (!exists)
             {
-                Platform = platform,
-                EventType = "incoming",
-                RawPayload = rawPayload,
-                Processed = false,
-                ReceivedAt = DateTime.UtcNow
-            });
-            await _context.SaveChangesAsync();
-        }
-
-        // ══════════════════════════════════════════════════════
-        // DB se page access token fetch
-        // ══════════════════════════════════════════════════════
-        private async Task<string?> GetPageAccessToken(string? pageId)
-        {
-            if (string.IsNullOrEmpty(pageId)) return null;
-
-            var account = await _context.ConnectedAccounts
-                .Where(a => a.AccountId == pageId && a.IsActive)
-                .FirstOrDefaultAsync();
-
-            return account?.AccessToken;
-        }
-
-        // ══════════════════════════════════════════════════════
-        // HMAC SHA256 verify
-        // ══════════════════════════════════════════════════════
-        private bool VerifySignature(string payload, string? signatureHeader)
-        {
-            if (string.IsNullOrEmpty(signatureHeader)) return false;
-
-            var appSecret = _config["Meta:AppSecret"];
-            if (string.IsNullOrEmpty(appSecret))
-            {
-                _logger.LogWarning("AppSecret not set — skipping (dev mode)");
-                return true; // Dev mein skip karo
+                context.PostInsights.Add(new PostInsight
+                {
+                    PostId = postId,
+                    PageId = pageId,
+                    Platform = platform,
+                    UpdatedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
             }
+        }
 
-            var signature = signatureHeader.Replace("sha256=", "");
-
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(appSecret));
-            var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
-            var expected = BitConverter.ToString(hash).Replace("-", "").ToLower();
-
-            return signature.ToLower() == expected;
+        // ══════════════════════════════════════════════════════
+        // WEBHOOK EVENT LOG — Debug ke liye raw payload save
+        // ══════════════════════════════════════════════════════
+        private static async Task LogWebhookEvent(
+            string platform,
+            string rawPayload,
+            AppDbContext context)
+        {
+            try
+            {
+                context.WebhookEvents.Add(new WebhookEvent
+                {
+                    Platform = platform,
+                    EventType = "incoming",
+                    RawPayload = rawPayload,
+                    Processed = false,
+                    ReceivedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                // Log fail hone par bhi processing continue karo
+            }
         }
     }
 }
