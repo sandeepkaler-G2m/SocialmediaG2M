@@ -70,13 +70,22 @@
                 Smart Inbox
             </a>
 
-            <a asp-controller="Cases" asp-action="Index"
+            <a asp-controller="Dashboard" asp-action="Leads"
                class="nav-item @(IsActive("Cases") ? "active" : "")">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
                     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                 </svg>
                 Cases
+            </a>
+
+            <a asp-controller="Gmail" asp-action="Inbox"
+               class="nav-item @(IsActive("Cases") ? "active" : "")">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                </svg>
+                Gmail
             </a>
 
             <a asp-controller="Publishing" asp-action="Index"

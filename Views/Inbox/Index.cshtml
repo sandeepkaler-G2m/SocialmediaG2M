@@ -1,0 +1,1268 @@
+﻿@using SocialMediaPanel.Models
+@{
+    ViewData["Title"] = "Smart Inbox";
+    ViewData["PageTitle"] = "Smart Inbox";
+}
+
+<style>
+    /* ── Full-height shell ───────────────────────── */
+    .inbox-shell {
+        display: flex;
+        height: calc(100vh - 58px);
+        margin: -28px;
+        overflow: hidden;
+    }
+
+    /* ══ LEFT SUB-NAV ════════════════════════════ */
+    .inbox-nav {
+        width: 210px;
+        min-width: 210px;
+        background: #fff;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+
+    .inbox-nav-header {
+        padding: 14px 18px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .inbox-nav-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 18px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        border-left: 3px solid transparent;
+        transition: background .12s, color .12s;
+    }
+
+        .inbox-nav-item:hover {
+            background: #f4f5f7;
+            color: var(--text);
+        }
+
+        .inbox-nav-item.active {
+            background: rgba(75,181,67,.07);
+            border-left-color: var(--green);
+            color: var(--green);
+            font-weight: 600;
+        }
+
+    .inbox-nav-group {
+        padding: 14px 18px 4px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+        .inbox-nav-group svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--muted);
+            fill: none;
+        }
+
+    .inbox-nav-badge {
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--green);
+        color: #fff;
+        border-radius: 10px;
+        padding: 1px 6px;
+        min-width: 18px;
+        text-align: center;
+    }
+
+    .inbox-trial {
+        margin: auto 12px 12px;
+        background: #f8f9fb;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+        .inbox-trial strong {
+            color: var(--text);
+        }
+
+    .inbox-trial-btn {
+        display: block;
+        width: 100%;
+        margin-top: 8px;
+        padding: 8px;
+        background: var(--green);
+        border: none;
+        border-radius: 7px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    /* ══ MAIN AREA ═══════════════════════════════ */
+    .inbox-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 0;
+        background: #f4f5f7;
+    }
+
+    /* Top bar */
+    .inbox-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+        .inbox-topbar h2 {
+            font-family: 'Sora',sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+    .inbox-topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    /* Search */
+    .inbox-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 14px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        width: 230px;
+        transition: border-color .15s;
+    }
+
+        .inbox-search:focus-within {
+            border-color: var(--green);
+        }
+
+        .inbox-search svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--muted);
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .inbox-search input {
+            border: none;
+            outline: none;
+            background: none;
+            font-size: 13px;
+            font-family: 'DM Sans',sans-serif;
+            color: var(--text);
+            width: 100%;
+        }
+
+            .inbox-search input::placeholder {
+                color: var(--muted);
+            }
+
+    /* Toolbar buttons */
+    .tb-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text);
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+
+        .tb-pill svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .tb-pill:hover {
+            border-color: #aaa;
+        }
+
+    .tb-icon-btn {
+        width: 32px;
+        height: 32px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+        .tb-icon-btn:hover {
+            border-color: #aaa;
+        }
+
+        .tb-icon-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text);
+            fill: none;
+        }
+
+    .tb-btn-export {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .tb-btn-export svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .tb-btn-filter {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: border-color .15s;
+    }
+
+        .tb-btn-filter:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .tb-btn-filter svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    /* Filter row */
+    .inbox-filters {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        padding: 0 20px;
+    }
+
+    .filter-tab {
+        padding: 11px 16px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        transition: color .15s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .filter-tab:hover {
+            color: var(--text);
+        }
+
+        .filter-tab.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+            font-weight: 600;
+        }
+
+        .filter-tab .check-ico {
+            width: 14px;
+            height: 14px;
+            stroke: var(--green);
+            fill: none;
+        }
+
+    .filter-sep-v {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+        margin: 0 4px;
+    }
+
+    /* Sort row */
+    .inbox-sortbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 20px;
+        background: #fafbfc;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .sort-dd {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        cursor: pointer;
+    }
+
+        .sort-dd svg {
+            width: 11px;
+            height: 11px;
+            stroke: var(--muted);
+            fill: none;
+        }
+
+    .reload-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: border-color .15s, color .15s;
+    }
+
+        .reload-btn:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .reload-btn svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .reload-btn.spinning svg {
+            animation: spin360 .7s linear infinite;
+        }
+
+    /* ══ MESSAGE FEED ═══════════════════════════════ */
+    .inbox-feed {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        padding: 16px 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        background: #f4f5f7 !important;
+    }
+
+    /* Announcement / info banner */
+    .inbox-banner {
+        background: linear-gradient(135deg,#5b7be9,#7c5ce7);
+        border-radius: 14px;
+        padding: 16px 20px;
+        color: #fff;
+        font-size: 13px;
+        line-height: 1.6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+        .inbox-banner strong {
+            font-weight: 700;
+        }
+
+    .inbox-banner-close {
+        background: rgba(255,255,255,.2);
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-family: 'DM Sans',sans-serif;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: 16px;
+    }
+
+    /* Individual message card */
+    .msg-card {
+        background: #fff !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 14px !important;
+        overflow: visible !important; /* was hidden — was clipping content */
+        transition: box-shadow .15s;
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+
+        .msg-card:hover {
+            box-shadow: 0 3px 12px rgba(0,0,0,.08);
+        }
+
+    .msg-card-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px;
+        padding: 14px 18px 10px !important;
+        background: #fff;
+    }
+
+    .msg-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        color: #fff !important;
+        flex-shrink: 0 !important;
+        position: relative !important;
+        line-height: 1 !important;
+    }
+
+    .msg-platform-badge {
+        position: absolute !important;
+        bottom: -2px !important;
+        right: -2px !important;
+        width: 16px !important;
+        height: 16px !important;
+        border-radius: 50% !important;
+        background: #fff !important;
+        border: 1.5px solid #fff !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+        .msg-platform-badge svg {
+            width: 11px !important;
+            height: 11px !important;
+        }
+
+    .msg-avatar-info {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    .msg-sender-name {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: var(--text) !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .msg-sender-sub {
+        font-size: 11px !important;
+        color: var(--muted) !important;
+        margin-top: 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+    }
+
+    .msg-header-right {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .msg-time {
+        font-size: 11px !important;
+        color: var(--muted) !important;
+        white-space: nowrap !important;
+    }
+
+    /* Type badge */
+    .msg-type-badge {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        padding: 2px 8px !important;
+        border-radius: 4px !important;
+        display: inline-block !important;
+        line-height: 1.4 !important;
+    }
+
+    .type-comment {
+        background: rgba(75,181,67,.1) !important;
+        color: #3a9e34 !important;
+    }
+
+    .type-message {
+        background: rgba(29,161,161,.1) !important;
+        color: #1DA1A1 !important;
+    }
+
+    .type-mention {
+        background: rgba(255,107,157,.1) !important;
+        color: #e91e8c !important;
+    }
+
+    /* Message body — force visible */
+    .msg-body {
+        display: block !important;
+        padding: 6px 18px 14px 70px !important;
+        font-size: 13px !important;
+        color: var(--text) !important;
+        line-height: 1.6 !important;
+        min-height: 36px !important; /* always visible even if message is short */
+        background: #fff !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+
+    /* Action row — force display */
+    .msg-actions {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 8px 18px !important;
+        border-top: 1px solid var(--border) !important;
+        background: #fafbfc !important;
+        margin: 0 !important;
+    }
+
+    .msg-action-left {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .msg-action-right {
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+
+    .ma-btn {
+        display: flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        padding: 5px 12px !important;
+        background: #fff !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 7px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: var(--text) !important;
+        font-family: 'DM Sans', sans-serif !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        transition: border-color .15s;
+        line-height: 1 !important;
+    }
+
+        .ma-btn:hover {
+            border-color: var(--green) !important;
+            color: var(--green) !important;
+        }
+
+        .ma-btn svg {
+            width: 13px !important;
+            height: 13px !important;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .ma-icon {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 7px !important;
+        background: none !important;
+        border: 1px solid transparent !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: background .12s, border-color .12s;
+        padding: 0 !important;
+    }
+
+        .ma-icon:hover {
+            background: #f4f5f7 !important;
+            border-color: var(--border) !important;
+        }
+
+        .ma-icon svg {
+            width: 15px !important;
+            height: 15px !important;
+            stroke: var(--muted);
+            fill: none;
+        }
+
+        .ma-icon.liked svg {
+            stroke: #e91e8c !important;
+            fill: #e91e8c !important;
+        }
+
+        .ma-icon.done svg {
+            stroke: var(--green) !important;
+        }
+
+    /* Empty state */
+    .inbox-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        text-align: center;
+        padding: 48px;
+    }
+
+        .inbox-empty svg {
+            width: 64px;
+            height: 64px;
+            stroke: var(--muted);
+            fill: none;
+            margin-bottom: 16px;
+            opacity: .4;
+        }
+
+        .inbox-empty h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .inbox-empty p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+    /* Reply modal */
+    .reply-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.4);
+        z-index: 500;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 0;
+    }
+
+        .reply-modal-backdrop.open {
+            display: flex;
+        }
+
+    .reply-modal {
+        background: #fff;
+        border-radius: 16px 16px 0 0;
+        width: 640px;
+        max-width: 100%;
+        box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+        animation: slideUp .2s ease;
+    }
+
+
+    .reply-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .reply-modal-head h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+    .reply-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: var(--muted);
+    }
+
+    .reply-to {
+        padding: 10px 20px;
+        font-size: 12px;
+        color: var(--muted);
+        background: #fafbfc;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .reply-to strong {
+            color: var(--text);
+        }
+
+    .reply-original {
+        padding: 8px 20px;
+        font-size: 12px;
+        color: var(--muted);
+        font-style: italic;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .reply-textarea {
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        outline: none;
+        resize: none;
+        font-size: 13px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        min-height: 90px;
+    }
+
+    .reply-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .reply-cancel {
+        padding: 7px 14px;
+        background: #f4f5f7;
+        border: none;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+    .reply-send {
+        padding: 7px 18px;
+        background: var(--green);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .reply-send svg {
+            width: 13px;
+            height: 13px;
+            stroke: #fff;
+            fill: none;
+        }
+
+        .reply-send:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+</style>
+
+<div class="inbox-shell">
+
+    <!-- ══ LEFT SUB-NAV ══ -->
+    <nav class="inbox-nav">
+        <div class="inbox-nav-header">Smart Inbox</div>
+
+        <a class="inbox-nav-item active" href="#" onclick="setTab('all',this);return false">
+            All Messages
+            <span class="inbox-nav-badge" id="nav-badge-all" style="display:none"></span>
+        </a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('message',this);return false">
+            Private
+            <span class="inbox-nav-badge" id="nav-badge-message" style="display:none"></span>
+        </a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('completed',this);return false">
+            Completed
+        </a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('saved',this);return false">
+            Saved Messages
+        </a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('approvals',this);return false">
+            Reply Approvals
+        </a>
+
+        <div class="inbox-nav-group">
+            Custom Views
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+        </div>
+
+        <div class="inbox-trial">
+            Your free trial ends in <strong>30 days</strong>.
+            <button class="inbox-trial-btn">Start my subscription</button>
+        </div>
+    </nav>
+
+    <!-- ══ MAIN ══ -->
+    <div class="inbox-main">
+
+        <!-- Top bar -->
+        <div class="inbox-topbar">
+            <h2 id="inboxTitle">All Messages</h2>
+            <div class="inbox-topbar-right">
+                <div class="inbox-search">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                    <input type="text" id="searchInput" placeholder="Search messages..." oninput="applySearch()">
+                </div>
+                <div class="tb-pill" title="Remaining quota">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                    <span id="msgCount">0</span> messages
+                </div>
+                <div class="tb-pill">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                    Previous 90 days
+                </div>
+                <div class="tb-icon-btn">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
+                </div>
+                <button class="tb-btn-export">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                    Export
+                </button>
+                <button class="tb-btn-filter">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
+                    Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="inbox-filters">
+            <div class="filter-tab" onclick="toggleFilter('sources',this)">
+                Sources
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
+            </div>
+            <div class="filter-sep-v"></div>
+            <div class="filter-tab active" onclick="toggleFilter('type',this)">
+                Message Types
+                <svg class="check-ico" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg>
+                Showing all
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
+            </div>
+            <div class="filter-sep-v"></div>
+            <div class="filter-tab" onclick="toggleFilter('more',this)">
+                More Filters
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+                <a href="#" style="font-size:12px;color:var(--muted);text-decoration:none;" onclick="resetFilters();return false">Reset</a>
+                <button style="padding:5px 14px;background:#fff;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;">Save As…</button>
+            </div>
+        </div>
+
+        <!-- Sort + Reload bar -->
+        <div class="inbox-sortbar">
+            <select class="sort-dd" onchange="applySort(this.value)">
+                <option value="newest">Newest to Oldest</option>
+                <option value="oldest">Oldest to Newest</option>
+                <option value="name">Sender A–Z</option>
+            </select>
+            <button class="reload-btn" id="reloadBtn" onclick="reloadInbox()">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg>
+                Reload
+            </button>
+        </div>
+
+        <!-- Feed -->
+        <div class="inbox-feed" id="inboxFeed">
+            <!-- rendered by JS -->
+        </div>
+
+    </div><!-- /.inbox-main -->
+</div><!-- /.inbox-shell -->
+<!-- ══ REPLY MODAL ══ -->
+<div class="reply-modal-backdrop" id="replyBackdrop" onclick="if(event.target===this)closeReply()">
+    <div class="reply-modal">
+        <div class="reply-modal-head">
+            <h4 id="replyTitle">Reply</h4>
+            <button class="reply-close" onclick="closeReply()">✕</button>
+        </div>
+        <div class="reply-to">Replying to <strong id="replyToName"></strong></div>
+        <div class="reply-original" id="replyOriginal"></div>
+        <textarea class="reply-textarea" id="replyText" placeholder="Type your reply…" oninput="document.getElementById('replySendBtn').disabled=!this.value.trim()"></textarea>
+        <div class="reply-footer">
+            <button class="reply-cancel" onclick="closeReply()">Cancel</button>
+            <button class="reply-send" id="replySendBtn" disabled onclick="sendReply()">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                Send Reply
+            </button>
+        </div>
+    </div>
+</div>
+
+@* ── Inject server data ── *@
+<script>
+    var ALL_ITEMS  = @Html.Raw(ViewBag.InboxJson ?? "[]");
+    var COMPLETED  = new Set();   // IDs marked done client-side
+    var SAVED      = new Set();   // IDs saved client-side
+
+    var currentTab    = 'all';
+    var currentSearch = '';
+    var currentSort   = 'newest';
+    var replyItem     = null;
+
+    /* ── Init ────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', function () {
+        updateNavBadges();
+        renderFeed();
+    });
+
+    /* ── Nav badges ─────────────────────────────── */
+    function updateNavBadges() {
+        var allBadge = document.getElementById('nav-badge-all');
+        var msgBadge = document.getElementById('nav-badge-message');
+        var total    = ALL_ITEMS.length;
+        var msgs     = ALL_ITEMS.filter(function(x){ return x.itemType === 'message'; }).length;
+
+        allBadge.textContent = total;
+        allBadge.style.display = total > 0 ? '' : 'none';
+        msgBadge.textContent = msgs;
+        msgBadge.style.display = msgs > 0 ? '' : 'none';
+        document.getElementById('msgCount').textContent = total;
+    }
+
+    /* ── Tab / filter ───────────────────────────── */
+    function setTab(tab, el) {
+        currentTab = tab;
+        document.querySelectorAll('.inbox-nav-item').forEach(function(a){ a.classList.remove('active'); });
+        if (el) el.classList.add('active');
+        var titles = {
+            all:'All Messages', message:'Private Messages',
+            completed:'Completed', saved:'Saved Messages', approvals:'Reply Approvals'
+        };
+        document.getElementById('inboxTitle').textContent = titles[tab] || 'All Messages';
+        renderFeed();
+    }
+    function applySearch() { currentSearch = document.getElementById('searchInput').value.toLowerCase(); renderFeed(); }
+    function applySort(v)  { currentSort   = v; renderFeed(); }
+    function resetFilters(){ currentSearch = ''; currentSort = 'newest'; document.getElementById('searchInput').value=''; renderFeed(); }
+    function toggleFilter(f,el) { el.classList.toggle('active'); }
+
+    function getFiltered() {
+        var items = ALL_ITEMS.slice();
+
+        if (currentTab === 'message')   items = items.filter(function(x){ return x.itemType==='message'; });
+        else if (currentTab === 'completed') items = items.filter(function(x){ return COMPLETED.has(x.id); });
+        else if (currentTab === 'saved')     items = items.filter(function(x){ return SAVED.has(x.id); });
+
+        if (currentSearch) {
+            items = items.filter(function(x){
+                return (x.senderName + x.message).toLowerCase().indexOf(currentSearch) !== -1;
+            });
+        }
+
+        items.sort(function(a,b){
+            if (currentSort === 'name')   return (a.senderName||'').localeCompare(b.senderName||'');
+            if (currentSort === 'oldest') return new Date(a.time) - new Date(b.time);
+            return new Date(b.time) - new Date(a.time);
+        });
+        return items;
+    }
+
+    /* ── Render ─────────────────────────────────── */
+    function renderFeed() {
+        var items = getFiltered();
+        var feed  = document.getElementById('inboxFeed');
+
+        if (items.length === 0) {
+            feed.innerHTML =
+                '<div class="inbox-empty">' +
+                '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                '<h4>No messages here</h4>' +
+                '<p>New comments and messages from your connected<br>social platforms will appear here.</p>' +
+                '</div>';
+            return;
+        }
+
+        feed.innerHTML = items.map(function(item) {
+            return buildCard(item);
+        }).join('');
+    }
+
+    function buildCard(item) {
+        /* Sender display — show name or fall back to sender ID shortened */
+        var displayName = (item.senderName && item.senderName !== 'Unknown' && item.senderName.trim())
+            ? item.senderName
+            : (item.senderId ? 'User ' + item.senderId.slice(-6) : 'Unknown User');
+
+        var initials = displayName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) || '?';
+        var timeAgo  = formatTime(item.time);
+        var isDone   = COMPLETED.has(item.id);
+        var isSaved  = SAVED.has(item.id);
+
+        /* Platform badge SVG */
+        var platSvg = '';
+        if (item.platform === 'facebook' || item.platform === 'messenger') {
+            platSvg = '<svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+        } else if (item.platform === 'instagram' || item.platform === 'instagram_dm') {
+            platSvg = '<svg viewBox="0 0 24 24" fill="none" width="11" height="11"><defs><linearGradient id="ig'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        }
+
+        /* Type label */
+        var typeLabel = 'Comment';
+        var typeCls   = 'type-comment';
+        if (item.itemType === 'message')              { typeLabel = 'Message';      typeCls = 'type-message'; }
+        else if (item.commentType === 'mention')       { typeLabel = 'Mention';      typeCls = 'type-mention'; }
+        else if (item.commentType === 'live_comment')  { typeLabel = 'Live Comment'; typeCls = 'type-comment'; }
+
+        /* Sub-line describing context */
+        var subLine = '';
+        if (item.itemType === 'message') {
+            subLine = 'Direct message via <strong>' + escHtml(item.platform) + '</strong>';
+        } else if (item.postId && item.postId.length > 0) {
+            var shortPost = item.postId.length > 20 ? '…' + item.postId.slice(-12) : item.postId;
+            subLine = 'Commented on post <strong>' + escHtml(shortPost) + '</strong>';
+        } else {
+            subLine = 'Page comment · <strong>' + escHtml(item.platform) + '</strong>';
+        }
+
+        /* Message body — show placeholder if empty */
+        var msgBody = (item.message || '').trim();
+        var bodyHtml = msgBody
+            ? escHtml(msgBody)
+            : '<em style="color:var(--muted);font-size:12px;">(no message text)</em>';
+
+        /* Replied indicator */
+        var repliedTag = item.isReplied
+            ? '<span style="font-size:10px;background:rgba(29,161,161,.1);color:#1DA1A1;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">↩ Replied</span>'
+            : '';
+
+        /* Done indicator */
+        var doneTag = isDone
+            ? '<span style="font-size:10px;background:rgba(75,181,67,.1);color:var(--green);padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">✓ Done</span>'
+            : '';
+
+        return '<div class="msg-card" id="card-' + item.id + '">' +
+            /* Header */
+            '<div class="msg-card-header">' +
+                '<div class="msg-avatar" style="background:' + avatarColor(displayName) + '">' +
+                    initials +
+                    (platSvg ? '<div class="msg-platform-badge">' + platSvg + '</div>' : '') +
+                '</div>' +
+                '<div class="msg-avatar-info">' +
+                    '<div class="msg-sender-name">' +
+                        escHtml(displayName) +
+                        '&nbsp;<span class="msg-type-badge ' + typeCls + '">' + typeLabel + '</span>' +
+                        repliedTag + doneTag +
+                    '</div>' +
+                    '<div class="msg-sender-sub">' + subLine + '</div>' +
+                '</div>' +
+                '<div class="msg-header-right">' +
+                    '<span class="msg-time">' + timeAgo + '</span>' +
+                '</div>' +
+            '</div>' +
+            /* Body */
+            '<div class="msg-body">' + bodyHtml + '</div>' +
+            /* Actions */
+            '<div class="msg-actions">' +
+                '<div class="msg-action-left">' +
+                    (item.itemType === 'comment'
+                        ? '<button class="ma-btn" style="font-size:12px;padding:5px 10px;" onclick="openReply(' + item.id + ')">' +
+                            '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="13" height="13"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> Reply' +
+                          '</button>'
+                        : '<button class="ma-btn" style="font-size:12px;padding:5px 10px;" onclick="openReply(' + item.id + ')">' +
+                            '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="13" height="13"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Reply' +
+                          '</button>'
+                    ) +
+                    '<a class="ma-btn" style="font-size:12px;padding:5px 10px;text-decoration:none;" href="#" onclick="return false">' +
+                        'View Thread' +
+                    '</a>' +
+                '</div>' +
+                '<div class="msg-action-right">' +
+                    '<div class="ma-icon" title="Like" onclick="toggleLike(this)">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+                    '</div>' +
+                    '<div class="ma-icon" title="Add label">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
+                    '</div>' +
+                    '<div class="ma-icon ' + (isDone?'done':'') + '" title="Mark complete" onclick="markDone(' + item.id + ',this)">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12" style="display:none"/><polyline points="8 12 11 15 16 9"/></svg>' +
+                    '</div>' +
+                    '<div class="ma-icon ' + (isSaved?'done':'') + '" title="Save message" onclick="toggleSave(' + item.id + ',this)">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' +
+                    '</div>' +
+                    '<div class="ma-icon" title="Assign">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }
+
+    /* ── Actions ────────────────────────────────── */
+    function markDone(id, el) {
+        if (COMPLETED.has(id)) { COMPLETED.delete(id); el.classList.remove('done'); }
+        else                   { COMPLETED.add(id);    el.classList.add('done'); }
+        renderFeed();
+    }
+    function toggleSave(id, el) {
+        if (SAVED.has(id)) { SAVED.delete(id); el.classList.remove('done'); }
+        else               { SAVED.add(id);   el.classList.add('done'); }
+    }
+    function toggleLike(el) { el.classList.toggle('liked'); }
+
+    /* ── Reply modal ────────────────────────────── */
+    function openReply(id) {
+        replyItem = ALL_ITEMS.find(function(x){ return x.id === id; });
+        if (!replyItem) return;
+        document.getElementById('replyTitle').textContent    = 'Reply to ' + (replyItem.senderName||'');
+        document.getElementById('replyToName').textContent   = replyItem.senderName || '';
+        document.getElementById('replyOriginal').textContent = '"' + (replyItem.message||'').slice(0,120) + (replyItem.message?.length>120?'…':'') + '"';
+        document.getElementById('replyText').value           = '';
+        document.getElementById('replySendBtn').disabled     = true;
+        document.getElementById('replyBackdrop').classList.add('open');
+        setTimeout(function(){ document.getElementById('replyText').focus(); }, 100);
+    }
+    function closeReply() {
+        document.getElementById('replyBackdrop').classList.remove('open');
+        replyItem = null;
+    }
+    function sendReply() {
+        if (!replyItem) return;
+        var text = document.getElementById('replyText').value.trim();
+        if (!text) return;
+        var btn = document.getElementById('replySendBtn');
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+
+        fetch('/Inbox/Reply', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ itemId: replyItem.id, itemType: replyItem.itemType, message: text, platform: replyItem.platform })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success) {
+                closeReply();
+                /* Mark as replied in local state */
+                var item = ALL_ITEMS.find(function(x){ return x.id === replyItem?.id; });
+                if (item) item.isReplied = true;
+                COMPLETED.add(replyItem?.id);
+                renderFeed();
+            } else {
+                alert(d.message || 'Reply failed.');
+                btn.disabled = false;
+                btn.textContent = 'Send Reply';
+            }
+        })
+        .catch(function(){
+            alert('Network error. Please try again.');
+            btn.disabled = false;
+            btn.textContent = 'Send Reply';
+        });
+    }
+
+    /* ── Reload ─────────────────────────────────── */
+    function reloadInbox() {
+        var btn = document.getElementById('reloadBtn');
+        btn.classList.add('spinning'); btn.disabled = true;
+        fetch('/Inbox/GetAll', { headers: { 'X-Requested-With':'XMLHttpRequest' } })
+        .then(function(r){ return r.json(); })
+        .then(function(data){ ALL_ITEMS = data; updateNavBadges(); renderFeed(); })
+        .catch(function(){ alert('Reload failed.'); })
+        .finally(function(){ btn.classList.remove('spinning'); btn.disabled = false; });
+    }
+
+    /* ── Helpers ────────────────────────────────── */
+    var AVATAR_COLORS = ['#6c5ce7','#e17055','#00b894','#0984e3','#e84393','#fdcb6e','#d63031'];
+    function avatarColor(name) {
+        var h = 0;
+        for (var i = 0; i < (name||'').length; i++) h = (h*31 + (name||'').charCodeAt(i)) & 0xffffffff;
+        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    }
+    function formatTime(t) {
+        if (!t) return '';
+        var d   = new Date(t);
+        var now = new Date();
+        var diff= Math.floor((now - d) / 1000);
+        if (diff < 60)   return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
+        return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    }
+    function escHtml(s) {
+        return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+</script>

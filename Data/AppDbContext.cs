@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Models;
+using SocialMediaPanel.ViewModels;
 
 namespace SocialMediaPanel.Data
 {
@@ -14,6 +15,7 @@ namespace SocialMediaPanel.Data
         public DbSet<PageComment> PageComments { get; set; }
         public DbSet<PageMessage> PageMessages { get; set; }
         public DbSet<PostInsight> PostInsights { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -139,5 +141,8 @@ namespace SocialMediaPanel.Data
                 entity.Property(e => e.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
         }
+        public DbSet<SocialMediaPanel.ViewModels.LeadViewModel> LeadViewModel { get; set; } = default!;
+
+        public DbSet<GmailIntegration> GmailIntegrations { get; set; }
     }
 }

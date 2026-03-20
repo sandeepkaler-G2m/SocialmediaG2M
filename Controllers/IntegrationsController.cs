@@ -1,5 +1,11 @@
-﻿using Microsoft.AspNetCore.DataProtection;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Util.Store;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SocialMediaPanel.Data;
+using SocialMediaPanel.Models;
 using SocialMediaPanel.Services;
 
 namespace SocialMediaPanel.Controllers
@@ -7,12 +13,19 @@ namespace SocialMediaPanel.Controllers
     public class IntegrationsController : Controller
     {
         private readonly FacebookService _facebook;
+        private readonly GmailService _gmail;
         private readonly IDataProtector _protector;
+        private readonly AppDbContext _context;
+
 
         public IntegrationsController(
              FacebookService facebook,
+             GmailService gmail,
+             AppDbContext context,
              IDataProtectionProvider dataProtection)
         {
+            _context = context;
+            _gmail = gmail;
             _facebook = facebook;
             _protector = dataProtection.CreateProtector("Integrations.Facebook.OAuthState");
         }
@@ -25,9 +38,68 @@ namespace SocialMediaPanel.Controllers
             switch (platform.ToLower())
             {
                 case "facebook": return _FacebookModal();
+                case "gmail": return _GmailModal();
                 default: return NotFound($"No modal for: {platform}");
             }
         }
+
+        private IActionResult _GmailModal()
+        {
+            var state = Guid.NewGuid().ToString();  // important for security
+            HttpContext.Session.SetString("gmail_oauth_state", state);
+
+            var url = _gmail.BuildOAuthUrl(state);
+
+            ViewData["OAuthUrl"] = url;
+            ViewData["OAuthError"] = null;
+            ViewData["IsReconnecting"] = false;
+            ViewData["ConnectedPageName"] = null;
+
+            return PartialView("~/Views/Shared/Integrations/_Gmail.cshtml");
+        }
+
+        public async Task<IActionResult> GmailCallback(string code, string state)
+        {
+            // 1. Validate state (VERY IMPORTANT)
+            var savedState = HttpContext.Session.GetString("gmail_oauth_state");
+
+            if (state != savedState)
+            {
+                return BadRequest("Invalid state");
+            }
+
+            // 2. Exchange code → token
+            var token = await _gmail.ExchangeCodeAsync(code);
+
+            // 3. Get user profile (email, name)
+            var profile = await _gmail.GetProfileAsync(token.AccessToken);
+
+            var userid = HttpContext.Session.GetInt32("UserId");
+
+            // 4. Save in DB (your gmail_integrations table)
+            var data = new GmailIntegration
+            {
+                UserId = userid.ToString(), // from login system
+                GoogleAccountId = profile.GoogleId,
+                EmailAddress = profile.Email,
+                DisplayName = profile.DisplayName,
+                ProfilePicture = profile.PictureUrl,
+
+                AccessToken = token.AccessToken,
+                RefreshToken = token.RefreshToken,
+                TokenExpiresAt = DateTime.UtcNow.AddSeconds(token.ExpiresIn),
+
+                GrantedScopes = token.Scope,
+                IsActive = true,
+                ConnectedAt = DateTime.UtcNow
+            };
+
+            _context.GmailIntegrations.Add(data);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
 
         private IActionResult _FacebookModal()
         {

@@ -1,0 +1,763 @@
+﻿@model IEnumerable<SocialMediaPanel.ViewModels.LeadViewModel>
+@{
+    ViewData["Title"]     = "Cases";
+    ViewData["PageTitle"] = "Cases";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+/* ── Cases page overrides ── remove default page-content padding */
+/* Stretch full height inside main-wrapper */
+.cases-shell {
+    display: flex;
+    height: calc(100vh - 58px); /* subtract topbar */
+    overflow: hidden;
+    margin: -28px;             /* undo page-content padding */
+}
+
+/* ── Left sub-nav ─────────────────────────────── */
+.cases-nav {
+    width: 220px;
+    min-width: 220px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+.cases-nav-header {
+    padding: 16px 18px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+.cases-nav-group-label {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px 6px;
+    font-size: 12px; font-weight: 700; color: var(--text);
+    cursor: pointer; user-select: none;
+}
+.cases-nav-group-label svg { width:14px;height:14px;stroke:var(--muted);fill:none;transition:transform .2s; }
+.cases-nav-group-label.open svg { transform:rotate(180deg); }
+
+.cases-nav-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 18px 9px 22px;
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    cursor: pointer; text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: background .12s, color .12s;
+}
+.cases-nav-item:hover { background: #f4f5f7; color: var(--text); }
+.cases-nav-item.active {
+    background: rgba(75,181,67,.07);
+    border-left-color: var(--green);
+    color: var(--green); font-weight: 600;
+}
+.cases-nav-badge {
+    font-size: 11px; font-weight: 700;
+    background: #f0f0f0; color: var(--muted);
+    border-radius: 10px; padding: 1px 7px;
+    min-width: 22px; text-align: center;
+}
+.cases-nav-item.active .cases-nav-badge {
+    background: rgba(75,181,67,.15);
+    color: var(--green);
+}
+
+.cases-nav-trial {
+    margin: auto 14px 14px;
+    padding: 14px;
+    background: #f8f9fb;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 12px; color: var(--muted); line-height: 1.5;
+}
+.cases-nav-trial strong { color: var(--text); }
+.cases-trial-btn {
+    display: block; width: 100%; margin-top: 10px;
+    padding: 9px; background: var(--green); border: none; border-radius: 8px;
+    color: #fff; font-size: 12px; font-weight: 700;
+    font-family: 'DM Sans',sans-serif; cursor: pointer; text-align: center;
+    text-decoration: none;
+}
+.cases-trial-btn:hover { background: var(--green-d); color: #fff; }
+
+/* ── Main area ─────────────────────────────────── */
+.cases-main {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+}
+
+/* Top bar */
+.cases-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #fff; flex-shrink: 0; gap: 12px;
+}
+.cases-topbar h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 18px; font-weight: 700; color: var(--text); white-space: nowrap;
+}
+.cases-topbar-right { display: flex; align-items: center; gap: 10px; }
+
+/* Search */
+.cases-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    background: #fff; border: 1px solid var(--border); border-radius: 9px;
+    width: 220px; transition: border-color .15s;
+}
+.cases-search:focus-within { border-color: var(--green); }
+.cases-search svg { width:15px;height:15px;stroke:var(--muted);fill:none;flex-shrink:0; }
+.cases-search input {
+    border: none; outline: none; background: none;
+    font-size: 13px; font-family: 'DM Sans',sans-serif; color: var(--text);
+    width: 100%;
+}
+.cases-search input::placeholder { color: var(--muted); }
+
+/* Status pill */
+.status-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: #fff; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap;
+    cursor: pointer; transition: border-color .15s;
+}
+.status-pill:hover { border-color: #aaa; }
+.status-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.dot-open   { background: #f59e0b; }
+.dot-onhold { background: #3b82f6; }
+.dot-closed { background: #6b7280; }
+
+/* Icon buttons */
+.icon-btn {
+    width: 34px; height: 34px; border: 1.5px solid var(--border); border-radius: 8px;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: border-color .15s;
+}
+.icon-btn:hover { border-color: #aaa; }
+.icon-btn svg { width:15px;height:15px;stroke:var(--text);fill:none; }
+
+/* Filter bar */
+.filter-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    background: #fff; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    font-family: 'DM Sans',sans-serif; cursor: pointer; transition: border-color .15s;
+}
+.filter-btn:hover { border-color: var(--green); color: var(--green); }
+.filter-btn svg { width:14px;height:14px;stroke:currentColor;fill:none; }
+
+/* Filter dropdowns row */
+.cases-filters {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #fff; flex-shrink: 0; flex-wrap: wrap;
+}
+.filter-dd {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; color: var(--text);
+    font-family: 'DM Sans',sans-serif; cursor: pointer;
+    transition: border-color .15s;
+}
+.filter-dd:hover { border-color: var(--green); }
+.filter-dd svg { width:12px;height:12px;stroke:var(--muted);fill:none; }
+.filter-dd-label { color: var(--muted); font-size: 11px; margin-right: 2px; }
+.filter-sep { width:1px;height:24px;background:var(--border); }
+
+/* Sort + checkbox row */
+.cases-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 24px;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc; flex-shrink: 0;
+}
+.sort-select-inline {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: #fff; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 12px; font-family: 'DM Sans',sans-serif; color: var(--text);
+    cursor: pointer;
+}
+.sort-select-inline svg { width:12px;height:12px;stroke:var(--muted);fill:none; }
+.reload-btn {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px;
+    background: #fff; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    font-family: 'DM Sans',sans-serif; cursor: pointer;
+    margin-left: auto;
+    transition: border-color .15s, color .15s;
+}
+.reload-btn:hover { border-color: var(--green); color: var(--green); }
+.reload-btn svg { width:13px;height:13px;stroke:currentColor;fill:none; }
+.reload-btn.spinning svg { animation: spin360 .7s linear infinite; }
+
+/* ── Split panel ───────────────────────────────── */
+.cases-split { display:flex;flex:1;overflow:hidden; }
+
+/* Lead list pane */
+.lead-list-pane {
+    width: 380px; min-width: 320px;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden; flex-shrink: 0;
+    background: #fff;
+}
+.lead-list-scroll { flex:1;overflow-y:auto; }
+
+/* Lead row */
+.lead-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .12s;
+    position: relative;
+}
+.lead-row:hover  { background: #f8f9fb; }
+.lead-row.active { background: #f0f7ff; }
+.lead-row.active::before {
+    content:''; position:absolute; left:0;top:0;bottom:0;
+    width:3px; background:var(--green);
+}
+.lead-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg,var(--green),var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.lead-row-info { flex:1;min-width:0; }
+.lead-row-top  { display:flex;align-items:center;justify-content:space-between;margin-bottom:3px; }
+.lead-row-name { font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.lead-row-time { font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-left:8px; }
+.lead-row-email { font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px; }
+.lead-row-tags  { display:flex;gap:5px;flex-wrap:wrap; }
+.lead-tag {
+    font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;
+}
+.tag-open   { background:rgba(245,158,11,.12);color:#b45309; }
+.tag-onhold { background:rgba(59,130,246,.12);color:#1d4ed8; }
+.tag-closed { background:rgba(107,114,128,.12);color:#4b5563; }
+.tag-platform { background:#f0f0f0;color:var(--muted); }
+
+/* Empty state */
+.lead-empty {
+    display:flex;flex-direction:column;align-items:center;
+    padding:48px 32px;text-align:center;
+}
+.lead-empty svg.empty-illo { width:90px;height:90px;margin-bottom:18px;opacity:.4; }
+.lead-empty h4 { font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px; }
+.lead-empty p  { font-size:12px;color:var(--muted);line-height:1.6; }
+
+/* Detail pane */
+.lead-detail-pane {
+    flex:1;overflow-y:auto;min-width:0;
+    background: #f4f5f7;
+    display:flex;align-items:center;justify-content:center;
+}
+.detail-placeholder { text-align:center; }
+.detail-placeholder svg { width:40px;height:40px;stroke:var(--muted);fill:none;margin-bottom:12px; }
+.detail-placeholder p { font-size:14px;color:var(--muted); }
+
+/* Lead detail card */
+.lead-detail-card {
+    background:#fff;border-radius:14px;
+    border:1px solid var(--border);
+    margin:20px;overflow:hidden;
+    display:none;
+}
+.lead-detail-card.visible { display:block; }
+.lead-detail-header {
+    padding:20px 24px;border-bottom:1px solid var(--border);
+    display:flex;align-items:flex-start;gap:14px;
+}
+.lead-detail-avatar {
+    width:48px;height:48px;border-radius:50%;
+    background:linear-gradient(135deg,var(--green),var(--teal));
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.lead-detail-name { font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px; }
+.lead-detail-sub  { font-size:12px;color:var(--muted); }
+.lead-detail-badges { display:flex;gap:6px;margin-top:8px;flex-wrap:wrap; }
+.lead-badge {
+    font-size:11px;font-weight:600;padding:3px 10px;border-radius:5px;
+}
+.lead-badge-open   { background:rgba(245,158,11,.12);color:#b45309; }
+.lead-badge-onhold { background:rgba(59,130,246,.12);color:#1d4ed8; }
+.lead-badge-closed { background:rgba(107,114,128,.12);color:#4b5563; }
+
+.lead-detail-body { padding:20px 24px; }
+.detail-row { display:flex;gap:8px;margin-bottom:14px;align-items:flex-start; }
+.detail-label { font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;width:90px;flex-shrink:0;padding-top:1px; }
+.detail-value { font-size:13px;color:var(--text);flex:1;word-break:break-word; }
+.detail-divider { height:1px;background:var(--border);margin:16px 0; }
+
+/* Actions in detail */
+.lead-actions { display:flex;gap:8px;padding:16px 24px;border-top:1px solid var(--border);flex-wrap:wrap; }
+.act-btn {
+    padding:7px 14px;border-radius:8px;
+    font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;
+    display:flex;align-items:center;gap:5px;transition:opacity .15s;border:none;
+}
+.act-btn svg { width:13px;height:13px;stroke:currentColor;fill:none; }
+.act-btn-open   { background:rgba(245,158,11,.12);color:#b45309; }
+.act-btn-hold   { background:rgba(59,130,246,.12);color:#1d4ed8; }
+.act-btn-close  { background:rgba(107,114,128,.12);color:#4b5563; }
+.act-btn-delete { background:rgba(220,53,69,.08);color:#dc3545; }
+.act-btn:hover  { opacity:.8; }
+</style>
+
+<div class="cases-shell">
+
+    <!-- ═══ LEFT SUB-NAV ═══ -->
+    <nav class="cases-nav">
+        <div class="cases-nav-header">Cases</div>
+
+        <div class="cases-nav-group-label open" onclick="toggleGroup(this)">
+            My Queue
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        <a class="cases-nav-item active" href="#" onclick="filterLeads('open',this);return false">
+            My Open Cases
+            <span class="cases-nav-badge" id="badge-open">0</span>
+        </a>
+        <a class="cases-nav-item" href="#" onclick="filterLeads('onhold',this);return false">
+            My On Hold Cases
+            <span class="cases-nav-badge" id="badge-onhold">0</span>
+        </a>
+        <a class="cases-nav-item" href="#" onclick="filterLeads('closed',this);return false">
+            My Closed Cases
+            <span class="cases-nav-badge" id="badge-closed">0</span>
+        </a>
+        <a class="cases-nav-item" href="#" onclick="filterLeads('all',this);return false">
+            All Cases
+            <span class="cases-nav-badge" id="badge-all">0</span>
+        </a>
+
+        <div class="cases-nav-trial">
+            Your free trial ends in <strong>30 days</strong>.
+            <a href="#" class="cases-trial-btn">Start my subscription</a>
+        </div>
+    </nav>
+
+    <!-- ═══ MAIN ═══ -->
+    <div class="cases-main">
+
+        <!-- Top bar -->
+        <div class="cases-topbar">
+            <h2 id="casesTitle">My Open Cases</h2>
+            <div class="cases-topbar-right">
+                <div class="cases-search">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="searchInput" placeholder="Search cases..." oninput="applySearch()">
+                </div>
+                <div class="status-pill" id="statusPill">
+                    <span class="status-dot dot-open"></span>
+                    <span id="statusPillText">0 Open</span>
+                </div>
+                <div class="icon-btn" title="More options">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </div>
+                <button class="filter-btn">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+                    Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter dropdowns -->
+        <div class="cases-filters">
+            <div class="filter-dd">
+                <span class="filter-dd-label">Types</span>
+                <span>Viewing all</span>
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-dd">
+                <span class="filter-dd-label">Priority</span>
+                <span>Viewing all</span>
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-dd">
+                <span class="filter-dd-label">Platform</span>
+                <select onchange="applyPlatformFilter(this.value)" style="border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;cursor:pointer;">
+                    <option value="">All platforms</option>
+                    <option value="facebook">Facebook</option>
+                    <option value="linkedin">LinkedIn</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="twitter">Twitter</option>
+                    <option value="whatsapp">WhatsApp</option>
+                </select>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-dd">
+                <span class="filter-dd-label">Tags</span>
+                <span>None selected</span>
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="cases-toolbar">
+            <select class="sort-select-inline" onchange="applySort(this.value)">
+                <option value="newest">Last received response</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name">Name A–Z</option>
+            </select>
+            <button class="reload-btn" id="reloadBtn" onclick="reloadLeads()">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Reload
+            </button>
+        </div>
+
+        <!-- Split panel -->
+        <div class="cases-split">
+
+            <!-- Lead list -->
+            <div class="lead-list-pane">
+                <div class="lead-list-scroll" id="leadList">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Detail pane -->
+            <div class="lead-detail-pane" id="detailPane">
+                <div class="detail-placeholder" id="detailPlaceholder">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <p>No Conversation Selected</p>
+                </div>
+                <div class="lead-detail-card" id="detailCard">
+                    <div class="lead-detail-header">
+                        <div class="lead-detail-avatar" id="detailAvatar"></div>
+                        <div>
+                            <div class="lead-detail-name" id="detailName"></div>
+                            <div class="lead-detail-sub"  id="detailSub"></div>
+                            <div class="lead-detail-badges" id="detailBadges"></div>
+                        </div>
+                    </div>
+                    <div class="lead-detail-body">
+                        <div class="detail-row">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value" id="detailEmail">—</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Phone</div>
+                            <div class="detail-value" id="detailPhone">—</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Platform</div>
+                            <div class="detail-value" id="detailPlatform">—</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Form ID</div>
+                            <div class="detail-value" id="detailForm">—</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Page ID</div>
+                            <div class="detail-value" id="detailPage">—</div>
+                        </div>
+                        <div class="detail-divider"></div>
+                        <div class="detail-row">
+                            <div class="detail-label">Created</div>
+                            <div class="detail-value" id="detailCreated">—</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Raw Data</div>
+                            <div class="detail-value" id="detailRaw" style="font-size:11px;font-family:monospace;background:#f4f5f7;padding:8px;border-radius:6px;white-space:pre-wrap;word-break:break-all;"></div>
+                        </div>
+                    </div>
+                    <div class="lead-actions" id="detailActions"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@* Serialise leads from server into JS *@
+<script>
+var ALL_LEADS = @Html.Raw(
+    System.Text.Json.JsonSerializer.Serialize(
+        Model.Select(l => new {
+            id       = l.Id,
+            leadId   = l.LeadId,
+            name     = l.FullName ?? "(No name)",
+            email    = l.Email    ?? "",
+            phone    = l.Phone    ?? "",
+            platform = l.Platform ?? "",
+            formId   = l.FormId   ?? "",
+            pageId   = l.PageId   ?? "",
+            rawData  = l.RawData  ?? "",
+            // Normalise status — map any DB casing to consistent lowercase keys
+            // "Open"/"open"            → "open"
+            // "OnHold"/"on_hold"/"onhold"/"on hold" → "onhold"
+            // "Closed"/"closed"        → "closed"
+            status   = (l.Status ?? "open").ToLower().Replace(" ","").Replace("_","") switch {
+                "onhold"  => "onhold",
+                "closed"  => "closed",
+                _         => "open"
+            },
+            createdAt= l.CreatedAt.ToString("MMM dd, yyyy h:mm tt")
+        })
+    )
+);
+
+var currentFilter   = 'open';
+var currentSearch   = '';
+var currentPlatform = '';
+var currentSort     = 'newest';
+var selectedId      = null;
+
+/* ── Initialise ─────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function () {
+    updateBadges();
+    renderList();    // renders "open" tab by default
+});
+
+/* ── Badges ─────────────────────────────────── */
+function updateBadges() {
+    var counts = { open:0, onhold:0, closed:0, all:0 };
+    ALL_LEADS.forEach(function(l) {
+        counts[l.status] = (counts[l.status] || 0) + 1;
+        counts.all++;
+    });
+    document.getElementById('badge-open').textContent   = counts.open;
+    document.getElementById('badge-onhold').textContent = counts.onhold;
+    document.getElementById('badge-closed').textContent = counts.closed;
+    document.getElementById('badge-all').textContent    = counts.all;
+}
+
+/* ── Filter / Sort ───────────────────────────── */
+function filterLeads(status, el) {
+    currentFilter = status;
+    selectedId    = null;
+
+    document.querySelectorAll('.cases-nav-item').forEach(function(a){ a.classList.remove('active'); });
+    if (el) el.classList.add('active');
+
+    var titles = { open:'My Open Cases', onhold:'My On Hold Cases', closed:'My Closed Cases', all:'All Cases' };
+    document.getElementById('casesTitle').textContent = titles[status] || 'Cases';
+
+    /* Update status pill */
+    var pill    = document.getElementById('statusPill');
+    var pillTxt = document.getElementById('statusPillText');
+    var dotCls  = { open:'dot-open', onhold:'dot-onhold', closed:'dot-closed', all:'dot-open' };
+    var dot     = pill.querySelector('.status-dot');
+    dot.className = 'status-dot ' + (dotCls[status] || 'dot-open');
+
+    var filtered = getFiltered();
+    pillTxt.textContent = filtered.length + ' ' + (status === 'all' ? 'Total' : status.charAt(0).toUpperCase() + status.slice(1));
+
+    renderList();
+    showPlaceholder();
+}
+
+function applySearch()         { currentSearch   = document.getElementById('searchInput').value.toLowerCase(); renderList(); }
+function applyPlatformFilter(v){ currentPlatform = v; renderList(); }
+function applySort(v)          { currentSort     = v; renderList(); }
+
+function getFiltered() {
+    return ALL_LEADS.filter(function(l) {
+        if (currentFilter !== 'all' && l.status !== currentFilter) return false;
+        if (currentPlatform && l.platform.toLowerCase() !== currentPlatform) return false;
+        if (currentSearch) {
+            var hay = (l.name + l.email + l.phone + l.platform).toLowerCase();
+            if (hay.indexOf(currentSearch) === -1) return false;
+        }
+        return true;
+    }).sort(function(a, b) {
+        if (currentSort === 'name')   return a.name.localeCompare(b.name);
+        if (currentSort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+}
+
+/* ── Render list ─────────────────────────────── */
+function renderList() {
+    var leads  = getFiltered();
+    var list   = document.getElementById('leadList');
+    var pill   = document.getElementById('statusPillText');
+    var dot    = document.getElementById('statusPill').querySelector('.status-dot');
+
+    var dotCls = { open:'dot-open', onhold:'dot-onhold', closed:'dot-closed', all:'dot-open' };
+    dot.className = 'status-dot ' + (dotCls[currentFilter] || 'dot-open');
+    pill.textContent = leads.length + ' ' + (currentFilter === 'all' ? 'Total' : currentFilter.charAt(0).toUpperCase() + currentFilter.slice(1));
+
+    if (leads.length === 0) {
+        list.innerHTML =
+            '<div class="lead-empty">' +
+            '<svg class="empty-illo" viewBox="0 0 80 80" fill="none" stroke="currentColor" stroke-width="1.5">' +
+            '<rect x="10" y="20" width="60" height="45" rx="4" stroke-dasharray="4 3"/>' +
+            '<circle cx="30" cy="42" r="9"/><line x1="44" y1="38" x2="64" y2="38"/>' +
+            '<line x1="44" y1="46" x2="58" y2="46"/>' +
+            '</svg>' +
+            '<h4>Once there are cases, they will display here.</h4>' +
+            '<p>No leads match your current filters.</p>' +
+            '</div>';
+        return;
+    }
+
+    list.innerHTML = leads.map(function(l) {
+        var initials = l.name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
+        var tagClass = { open:'tag-open', onhold:'tag-onhold', closed:'tag-closed' }[l.status] || 'tag-open';
+        var tagLabel = { open:'Open', onhold:'On Hold', closed:'Closed' }[l.status] || l.status;
+        var active   = l.id === selectedId ? ' active' : '';
+        return '<div class="lead-row' + active + '" onclick="selectLead(' + l.id + ')">' +
+            '<div class="lead-avatar">' + initials + '</div>' +
+            '<div class="lead-row-info">' +
+                '<div class="lead-row-top">' +
+                    '<span class="lead-row-name">' + escHtml(l.name) + '</span>' +
+                    '<span class="lead-row-time">' + escHtml(l.createdAt.split(',')[0]) + '</span>' +
+                '</div>' +
+                '<div class="lead-row-email">' + escHtml(l.email || l.phone || 'No contact info') + '</div>' +
+                '<div class="lead-row-tags">' +
+                    '<span class="lead-tag ' + tagClass + '">' + tagLabel + '</span>' +
+                    (l.platform ? '<span class="lead-tag tag-platform">' + escHtml(l.platform) + '</span>' : '') +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+/* ── Select lead → show detail ───────────────── */
+function selectLead(id) {
+    selectedId = id;
+    var l = ALL_LEADS.find(function(x){ return x.id === id; });
+    if (!l) return;
+
+    document.querySelectorAll('.lead-row').forEach(function(r){ r.classList.remove('active'); });
+    var rows = document.querySelectorAll('.lead-row');
+    rows.forEach(function(r){
+        if (r.getAttribute('onclick') === 'selectLead(' + id + ')') r.classList.add('active');
+    });
+
+    var initials = l.name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
+    document.getElementById('detailAvatar').textContent  = initials;
+    document.getElementById('detailName').textContent    = l.name;
+    document.getElementById('detailSub').textContent     = l.email || l.phone || 'No contact info';
+    document.getElementById('detailEmail').textContent   = l.email    || '—';
+    document.getElementById('detailPhone').textContent   = l.phone    || '—';
+    document.getElementById('detailPlatform').textContent= l.platform || '—';
+    document.getElementById('detailForm').textContent    = l.formId   || '—';
+    document.getElementById('detailPage').textContent    = l.pageId   || '—';
+    document.getElementById('detailCreated').textContent = l.createdAt|| '—';
+    document.getElementById('detailRaw').textContent     = l.rawData  || '—';
+
+    /* Status badge */
+    var badgeCls = { open:'lead-badge-open', onhold:'lead-badge-onhold', closed:'lead-badge-closed' }[l.status] || 'lead-badge-open';
+    var badgeLbl = { open:'Open', onhold:'On Hold', closed:'Closed' }[l.status] || l.status;
+    document.getElementById('detailBadges').innerHTML =
+        '<span class="lead-badge ' + badgeCls + '">' + badgeLbl + '</span>' +
+        (l.platform ? '<span class="lead-badge" style="background:#f0f0f0;color:var(--muted)">' + escHtml(l.platform) + '</span>' : '');
+
+    /* Action buttons */
+    var actions = '';
+    if (l.status !== 'open')    actions += '<button class="act-btn act-btn-open"   onclick="changeStatus(' + id + ',\'open\')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Re-open</button>';
+    if (l.status !== 'onhold')  actions += '<button class="act-btn act-btn-hold"   onclick="changeStatus(' + id + ',\'onhold\')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>On Hold</button>';
+    if (l.status !== 'closed')  actions += '<button class="act-btn act-btn-close"  onclick="changeStatus(' + id + ',\'closed\')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Close</button>';
+   // actions += '<button class="act-btn act-btn-delete" onclick="deleteLead(' + id + ')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>Delete</button>';
+    document.getElementById('detailActions').innerHTML = actions;
+
+    document.getElementById('detailPlaceholder').style.display = 'none';
+    document.getElementById('detailCard').classList.add('visible');
+    document.getElementById('detailPane').style.alignItems = 'flex-start';
+    document.getElementById('detailPane').style.justifyContent = 'stretch';
+}
+
+function showPlaceholder() {
+    document.getElementById('detailPlaceholder').style.display = '';
+    document.getElementById('detailCard').classList.remove('visible');
+    document.getElementById('detailPane').style.alignItems = 'center';
+    document.getElementById('detailPane').style.justifyContent = 'center';
+}
+
+/* ── Change status (AJAX) ─────────────────────── */
+function changeStatus(id, newStatus) {
+    fetch('/Leads/UpdateStatus', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ id: id, status: newStatus })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            var l = ALL_LEADS.find(function(x){ return x.id === id; });
+            if (l) l.status = newStatus;
+            updateBadges();
+            renderList();
+            selectLead(id);
+        }
+    })
+    .catch(function(){ alert('Failed to update status.'); });
+}
+
+/* ── Delete (AJAX) ────────────────────────────── */
+function deleteLead(id) {
+    if (!confirm('Delete this lead?')) return;
+    fetch('/Leads/Delete/' + id, {
+        method: 'POST',
+        headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            ALL_LEADS = ALL_LEADS.filter(function(x){ return x.id !== id; });
+            updateBadges(); renderList(); showPlaceholder();
+        }
+    })
+    .catch(function(){ alert('Failed to delete lead.'); });
+}
+
+/* ── Reload from DB ──────────────────────────── */
+function reloadLeads() {
+    var btn = document.getElementById('reloadBtn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+
+    // Always reload ALL leads so badges stay accurate across all tabs
+    fetch('/Leads/GetAll', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+        // Normalise status from server — same logic as Razor serialisation
+        ALL_LEADS = data.map(function(l) {
+            var s = (l.status || 'open').toLowerCase().replace(/[\s_]/g,'');
+            l.status = s === 'onhold' ? 'onhold' : s === 'closed' ? 'closed' : 'open';
+            return l;
+        });
+        updateBadges();
+        renderList();
+        showPlaceholder();
+    })
+    .catch(function(){ alert('Reload failed.'); })
+    .finally(function(){
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+    });
+}
+
+/* ── Helpers ──────────────────────────────────── */
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function toggleGroup(el) {
+    el.classList.toggle('open');
+}
+</script>

@@ -1,0 +1,441 @@
+﻿@{
+    Layout = null;
+    var oauthUrl = ViewData["OAuthUrl"] as string ?? "#";
+    var oauthErr = ViewData["OAuthError"] as string;
+    var isReconn = (bool)(ViewData["IsReconnecting"] ?? false);
+    var reconEmail = ViewData["ConnectedEmail"] as string;
+
+    var perms = new[]
+    {
+        new { Icon = "📧", Label = "Read Emails",     Scope = "gmail.readonly", Desc = "Read inbox emails and campaign replies"         },
+        new { Icon = "📤", Label = "Send Emails",     Scope = "gmail.send",     Desc = "Send emails and campaign messages"              },
+        new { Icon = "🏷️", Label = "Manage Labels",  Scope = "gmail.modify",   Desc = "Label and organise campaign threads"            },
+        new { Icon = "👤", Label = "Profile Access",  Scope = "userinfo.email", Desc = "Read your email address and display name"       },
+    };
+}
+<style>
+    /* ── Google sign-in button (matches Google brand guidelines) ── */
+    .gm-signin-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+        padding: 11px 18px;
+        background: #fff;
+        border: 1.5px solid #dadce0;
+        border-radius: 10px;
+        color: #3c4043;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: box-shadow .15s, border-color .15s;
+    }
+
+        .gm-signin-btn:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,.14);
+            border-color: #aaa;
+            color: #3c4043;
+            text-decoration: none;
+        }
+
+    /* ── Shared helpers ── */
+    .gm-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 16px 0;
+        font-size: 12px;
+        color: #aaa;
+    }
+
+        .gm-divider::before, .gm-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e3e6ea;
+        }
+
+    .gm-lock {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        color: #8a97a8;
+        background: #f8f9fb;
+        border: 1px solid #e3e6ea;
+        border-radius: 8px;
+        padding: 9px 12px;
+        margin-top: 12px;
+    }
+
+        .gm-lock svg {
+            width: 13px;
+            height: 13px;
+            stroke: #8a97a8;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+    .gm-warn {
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #7a6000;
+        margin-bottom: 16px;
+    }
+
+    .gm-err {
+        background: #fff0f0;
+        border: 1px solid #ffcdd2;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #c62828;
+        margin-bottom: 16px;
+    }
+
+    /* ── Step 1 capability grid ── */
+    .gm-caps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .gm-cap {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px 12px;
+        background: #f8f9fb;
+        border: 1px solid #e3e6ea;
+        border-radius: 9px;
+    }
+
+    .gm-cap-ico {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .gm-cap strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1a2332;
+        margin-bottom: 2px;
+    }
+
+    .gm-cap span {
+        font-size: 11px;
+        color: #8a97a8;
+        line-height: 1.4;
+    }
+
+    /* ── Step 2 permissions list ── */
+    .gm-perms {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .gm-perm {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #f8f9fb;
+        border: 1px solid #e3e6ea;
+        border-radius: 10px;
+    }
+
+    .gm-perm-ico {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(234,67,53,.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .gm-perm strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1a2332;
+    }
+
+    .gm-perm span {
+        font-size: 11px;
+        color: #8a97a8;
+    }
+
+    .gm-scope {
+        margin-left: auto;
+        font-size: 10px;
+        font-family: monospace;
+        color: #8a97a8;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Step 3 success ── */
+    .gm-ok {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px 0 12px;
+    }
+
+    .gm-ok-ico {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(234,67,53,.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        margin-bottom: 16px;
+    }
+
+    .gm-ok h3 {
+        font-family: 'Sora',sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a2332;
+        margin-bottom: 8px;
+    }
+
+    .gm-ok-email {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #fef2f2;
+        border: 1px solid #ffcdd2;
+        color: #c62828;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 14px;
+    }
+
+    .gm-ok p {
+        font-size: 13px;
+        color: #8a97a8;
+        line-height: 1.6;
+        margin-bottom: 22px;
+    }
+
+    .gm-ok-btn {
+        padding: 11px 32px;
+        background: #EA4335;
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-ok-btn:hover {
+            background: #c5221f;
+        }
+</style>
+
+@* ══ STEP 1 : Introduction ════════════════════════════════════════ *@
+<div id="gm1">
+    @if (isReconn && reconEmail != null)
+    {
+        <div class="gm-warn">⚠️ Reconnecting <strong>@reconEmail</strong> — replaces existing token.</div>
+    }
+    @if (oauthErr != null)
+    {
+        <div class="gm-err">❌ @oauthErr</div>
+    }
+
+    <p style="font-size:13px;color:#8a97a8;line-height:1.6;margin-bottom:16px;">
+        Connect your Gmail account to SocialMediaPanel to manage email campaigns,
+        sync subscriber replies, and send notifications — all in one place.
+    </p>
+
+    <div class="gm-caps">
+        <div class="gm-cap"><div class="gm-cap-ico">📧</div><div><strong>Read Inbox</strong><span>Import campaign replies and subscriber messages</span></div></div>
+        <div class="gm-cap"><div class="gm-cap-ico">📤</div><div><strong>Send Emails</strong><span>Send newsletters and automated emails</span></div></div>
+        <div class="gm-cap"><div class="gm-cap-ico">↩️</div><div><strong>Reply to Threads</strong><span>Reply within email conversations</span></div></div>
+        <div class="gm-cap"><div class="gm-cap-ico">🏷️</div><div><strong>Label & Organise</strong><span>Auto-label campaign threads</span></div></div>
+        <div class="gm-cap"><div class="gm-cap-ico">🔍</div><div><strong>Search Emails</strong><span>Find replies from specific senders</span></div></div>
+        <div class="gm-cap"><div class="gm-cap-ico">🔔</div><div><strong>Unread Badge</strong><span>Unread count in Smart Inbox</span></div></div>
+    </div>
+</div>
+
+@* ══ STEP 2 : Permissions ══════════════════════════════════════════ *@
+<div id="gm2" style="display:none">
+    <p style="font-size:13px;color:#8a97a8;line-height:1.6;margin-bottom:14px;">
+        SocialMediaPanel will request the following Google permissions.
+        You can revoke access any time from
+        <a href="https://myaccount.google.com/permissions" target="_blank"
+           style="color:#EA4335;font-weight:600;">Google Account Settings</a>.
+    </p>
+
+    <div class="gm-perms">
+        @foreach (var p in perms)
+        {
+            <div class="gm-perm">
+                <div class="gm-perm-ico">@p.Icon</div>
+                <div>
+                    <strong>@p.Label</strong>
+                    <span>@p.Desc</span>
+                </div>
+                <span class="gm-scope">@p.Scope</span>
+            </div>
+        }
+    </div>
+
+    @* THE real OAuth button lives here on step 2 *@
+    <a class="gm-signin-btn" href="@oauthUrl" id="gmOauthBtn">
+        @* Google G logo (official colours) *@
+        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+        </svg>
+        Sign in with Google
+    </a>
+
+    <div class="gm-divider">secure OAuth 2.0 · Google never shares your password</div>
+
+    <div class="gm-lock">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        SocialMediaPanel never stores your Gmail password. Access is revocable from Google Account Settings at any time.
+    </div>
+</div>
+
+@* ══ STEP 3 : Success ══════════════════════════════════════════════ *@
+<div id="gm3" style="display:none">
+    <div class="gm-ok">
+        <div class="gm-ok-ico">🎉</div>
+        <h3>Gmail Connected!</h3>
+        <div class="gm-ok-email">
+            <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
+                <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" />
+            </svg>
+            <span id="gmEmailBadge">your account</span>
+        </div>
+        <p>
+            Your Gmail account is now linked to SocialMediaPanel.<br>
+            Campaign replies will sync to your Smart Inbox automatically.
+        </p>
+        <button class="gm-ok-btn" onclick="PlatformAuth.close()">Back to Dashboard</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+
+        /* ── Called by PlatformAuth.openSuccess("gmail", "sandeep@gmail.com") ──
+           This fires AFTER the partial HTML is injected and scripts re-executed.
+           It must jump straight to step 3 without resetting anything.           */
+        window._gmShowSuccess = function (emailOrName) {
+            var badge = document.getElementById('gmEmailBadge');
+            if (badge) badge.textContent = emailOrName || 'your account';
+            _show(3);
+        };
+
+        function _show(n) {
+            var el1 = document.getElementById('gm1');
+            var el2 = document.getElementById('gm2');
+            var el3 = document.getElementById('gm3');
+
+            /* Guard — if elements don't exist yet, do nothing */
+            if (!el1 || !el2 || !el3) return;
+
+            el1.style.display = n === 1 ? '' : 'none';
+            el2.style.display = n === 2 ? '' : 'none';
+            el3.style.display = n === 3 ? '' : 'none';
+
+            if (window.PlatformAuth) PlatformAuth._setStep(n);
+
+            var footer  = document.getElementById('pamFooter');
+            var nextBtn = document.getElementById('pamNextBtn');
+            var label   = document.getElementById('pamNextLabel');
+            if (!footer) return;
+
+            if (n === 1) {
+                footer.style.display = '';
+                if (label)   label.textContent = 'Review Permissions';
+                if (nextBtn) nextBtn.onclick   = function () { _show(2); };
+            } else if (n === 2) {
+                footer.style.display = 'none';
+                _wireOAuthBtn();
+            } else {
+                /* Step 3 success — hide footer, success card has its own button */
+                footer.style.display = 'none';
+            }
+        }
+
+        function _wireOAuthBtn() {
+            var btn  = document.getElementById('gmOauthBtn');
+            if (!btn) return;
+            var href = btn.getAttribute('href') || '';
+
+            if (href.indexOf('accounts.google.com') === -1) {
+                /* Dev mode — credentials.json not configured, simulate locally */
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var sideBtn = document.querySelector('.connect-btn[data-platform="gmail"]');
+                    if (sideBtn) {
+                        sideBtn.classList.add('connected');
+                        sideBtn.textContent = '\u2713 Connected';
+                    }
+                    window._gmShowSuccess('dev@gmail.com');
+                });
+            } else {
+                /* Production — full page redirect to Google */
+                btn.addEventListener('click', function () {
+                    btn.style.opacity       = '0.7';
+                    btn.style.pointerEvents = 'none';
+                    btn.innerHTML           = '<span>Redirecting to Google\u2026</span>';
+                });
+            }
+        }
+
+        /* ── KEY FIX ──────────────────────────────────────────────────────
+           When openSuccess() loads this partial, the modal is already at
+           step 3. We must NOT call _show(1) which would reset it.
+           Check the current step dots — if step 3 is already active
+           (dot3 has class "active"), stay at 3. Otherwise start at 1.   */
+        var dot3 = document.getElementById('pamDot3');
+        var alreadyAtStep3 = dot3 && dot3.classList.contains('active');
+
+        if (alreadyAtStep3) {
+            /* openSuccess() called us — stay at step 3, just hide footer */
+            var footer = document.getElementById('pamFooter');
+            if (footer) footer.style.display = 'none';
+            /* _gmShowSuccess will be called by openSuccess callback after us */
+        } else {
+            /* Normal open() called us — start at step 1 */
+            _show(1);
+        }
+
+    })();
+</script>

@@ -47,6 +47,8 @@ namespace SocialMediaPanel.Models
         [Column("raw_data")]
         public string? RawData { get; set; }
 
+        public string? Status { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

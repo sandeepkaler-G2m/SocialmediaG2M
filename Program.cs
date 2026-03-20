@@ -9,6 +9,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
 
+builder.Services.AddHttpClient<SocialMediaPanel.Services.GmailService>(c =>
+    c.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddScoped<SocialMediaPanel.Services.GmailIntegrationService>();
+
 // MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySQL(
