@@ -144,5 +144,7 @@ namespace SocialMediaPanel.Data
         public DbSet<SocialMediaPanel.ViewModels.LeadViewModel> LeadViewModel { get; set; } = default!;
 
         public DbSet<GmailIntegration> GmailIntegrations { get; set; }
+        public DbSet<TwitterAccount> TwitterAccounts { get; set; }
+        public DbSet<TweetPosted> TweetsPosted { get; set; }
     }
 }

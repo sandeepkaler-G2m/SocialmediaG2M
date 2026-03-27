@@ -38,48 +38,6 @@ namespace SocialMediaPanel.Controllers
             return Json(items);
         }
 
-        // ── Reply — send a reply to a comment or message ─────────────
-        [HttpPost]
-        [Route("Inbox/Reply")]
-        public async Task<IActionResult> Reply([FromBody] ReplyRequest request)
-        {
-
-            return Json(new { success = true });
-
-            if (string.IsNullOrWhiteSpace(request.Message))
-                return Json(new { success = false, message = "Message cannot be empty." });
-
-            try
-            {
-                if (request.ItemType == "message")
-                {
-                    var msg = await _db.PageMessages.FindAsync(request.ItemId);
-                    if (msg == null)
-                        return Json(new { success = false, message = "Message not found." });
-
-                    // TODO: call Facebook/Instagram API to send reply
-                    // await _messengerService.SendReplyAsync(msg.SenderId, msg.PageId, request.Message);
-
-                    msg.IsReplied = true;
-                    await _db.SaveChangesAsync();
-                }
-                else // comment
-                {
-                    var comment = await _db.PageComments.FindAsync(request.ItemId);
-                    if (comment == null)
-                        return Json(new { success = false, message = "Comment not found." });
-
-                    // TODO: call Facebook/Instagram Graph API to reply to comment
-                    // await _graphService.ReplyToCommentAsync(comment.CommentId, request.Message, comment.Platform);
-                }
-
-                return Json(new { success = true });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
 
         // ── Private: merge comments + messages into unified list ──────
         private async Task<List<InboxItem>> GetMergedItems()

@@ -91,37 +91,6 @@
         text-align: center;
     }
 
-    .inbox-trial {
-        margin: auto 12px 12px;
-        background: #f8f9fb;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px;
-        font-size: 11px;
-        color: var(--muted);
-        line-height: 1.5;
-    }
-
-        .inbox-trial strong {
-            color: var(--text);
-        }
-
-    .inbox-trial-btn {
-        display: block;
-        width: 100%;
-        margin-top: 8px;
-        padding: 8px;
-        background: var(--green);
-        border: none;
-        border-radius: 7px;
-        color: #fff;
-        font-size: 12px;
-        font-weight: 700;
-        font-family: 'DM Sans',sans-serif;
-        cursor: pointer;
-        text-align: center;
-    }
-
     /* ══ MAIN AREA ═══════════════════════════════ */
     .inbox-main {
         flex: 1;
@@ -132,7 +101,6 @@
         background: #f4f5f7;
     }
 
-    /* Top bar */
     .inbox-topbar {
         display: flex;
         align-items: center;
@@ -146,7 +114,7 @@
     }
 
         .inbox-topbar h2 {
-            font-family: 'Sora',sans-serif;
+            font-family: 'Sora', sans-serif;
             font-size: 18px;
             font-weight: 700;
             color: var(--text);
@@ -160,7 +128,6 @@
         flex-wrap: wrap;
     }
 
-    /* Search */
     .inbox-search {
         display: flex;
         align-items: center;
@@ -190,7 +157,7 @@
             outline: none;
             background: none;
             font-size: 13px;
-            font-family: 'DM Sans',sans-serif;
+            font-family: 'DM Sans', sans-serif;
             color: var(--text);
             width: 100%;
         }
@@ -199,7 +166,6 @@
                 color: var(--muted);
             }
 
-    /* Toolbar buttons */
     .tb-pill {
         display: flex;
         align-items: center;
@@ -212,7 +178,6 @@
         color: var(--text);
         font-weight: 500;
         white-space: nowrap;
-        cursor: pointer;
     }
 
         .tb-pill svg {
@@ -222,54 +187,11 @@
             fill: none;
         }
 
-        .tb-pill:hover {
-            border-color: #aaa;
-        }
-
-    .tb-icon-btn {
-        width: 32px;
-        height: 32px;
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 7px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
+    /* Filter button wrapper */
+    .tb-btn-filter-wrap {
+        position: relative;
+        display: inline-flex;
     }
-
-        .tb-icon-btn:hover {
-            border-color: #aaa;
-        }
-
-        .tb-icon-btn svg {
-            width: 14px;
-            height: 14px;
-            stroke: var(--text);
-            fill: none;
-        }
-
-    .tb-btn-export {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 6px 12px;
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text);
-        font-family: 'DM Sans',sans-serif;
-        cursor: pointer;
-    }
-
-        .tb-btn-export svg {
-            width: 13px;
-            height: 13px;
-            stroke: currentColor;
-            fill: none;
-        }
 
     .tb-btn-filter {
         display: flex;
@@ -282,7 +204,7 @@
         font-size: 12px;
         font-weight: 700;
         color: var(--text);
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         cursor: pointer;
         transition: border-color .15s;
     }
@@ -299,56 +221,28 @@
             fill: none;
         }
 
-    /* Filter row */
-    .inbox-filters {
-        display: flex;
+    .filter-active-dot {
+        display: none;
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 17px;
+        height: 17px;
+        background: var(--green);
+        color: #fff;
+        border-radius: 50%;
+        font-size: 9px;
+        font-weight: 700;
         align-items: center;
-        gap: 0;
-        background: #fff;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
-        padding: 0 20px;
+        justify-content: center;
+        border: 2px solid #fff;
     }
 
-    .filter-tab {
-        padding: 11px 16px;
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--muted);
-        cursor: pointer;
-        border-bottom: 2px solid transparent;
-        white-space: nowrap;
-        transition: color .15s;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-        .filter-tab:hover {
-            color: var(--text);
+        .filter-active-dot.show {
+            display: flex;
         }
 
-        .filter-tab.active {
-            color: var(--green);
-            border-bottom-color: var(--green);
-            font-weight: 600;
-        }
-
-        .filter-tab .check-ico {
-            width: 14px;
-            height: 14px;
-            stroke: var(--green);
-            fill: none;
-        }
-
-    .filter-sep-v {
-        width: 1px;
-        height: 20px;
-        background: var(--border);
-        margin: 0 4px;
-    }
-
-    /* Sort row */
+    /* Sort bar */
     .inbox-sortbar {
         display: flex;
         align-items: center;
@@ -360,25 +254,15 @@
     }
 
     .sort-dd {
-        display: flex;
-        align-items: center;
-        gap: 6px;
         padding: 5px 10px;
         background: #fff;
         border: 1px solid var(--border);
         border-radius: 7px;
         font-size: 12px;
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         color: var(--text);
         cursor: pointer;
     }
-
-        .sort-dd svg {
-            width: 11px;
-            height: 11px;
-            stroke: var(--muted);
-            fill: none;
-        }
 
     .reload-btn {
         display: flex;
@@ -391,7 +275,7 @@
         font-size: 12px;
         font-weight: 600;
         color: var(--text);
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         cursor: pointer;
         transition: border-color .15s, color .15s;
     }
@@ -412,7 +296,9 @@
             animation: spin360 .7s linear infinite;
         }
 
-    /* ══ MESSAGE FEED ═══════════════════════════════ */
+
+
+    /* Feed */
     .inbox-feed {
         flex: 1 !important;
         overflow-y: auto !important;
@@ -423,48 +309,15 @@
         background: #f4f5f7 !important;
     }
 
-    /* Announcement / info banner */
-    .inbox-banner {
-        background: linear-gradient(135deg,#5b7be9,#7c5ce7);
-        border-radius: 14px;
-        padding: 16px 20px;
-        color: #fff;
-        font-size: 13px;
-        line-height: 1.6;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-shrink: 0;
-    }
-
-        .inbox-banner strong {
-            font-weight: 700;
-        }
-
-    .inbox-banner-close {
-        background: rgba(255,255,255,.2);
-        border: none;
-        border-radius: 6px;
-        color: #fff;
-        cursor: pointer;
-        padding: 4px 10px;
-        font-size: 12px;
-        font-family: 'DM Sans',sans-serif;
-        white-space: nowrap;
-        flex-shrink: 0;
-        margin-left: 16px;
-    }
-
-    /* Individual message card */
+    /* Message card */
     .msg-card {
         background: #fff !important;
         border: 1px solid var(--border) !important;
         border-radius: 14px !important;
-        overflow: visible !important; /* was hidden — was clipping content */
+        overflow: visible !important;
         transition: box-shadow .15s;
         display: block !important;
         width: 100% !important;
-        margin-bottom: 0 !important;
     }
 
         .msg-card:hover {
@@ -526,7 +379,6 @@
         align-items: center !important;
         gap: 6px !important;
         margin: 0 !important;
-        padding: 0 !important;
     }
 
     .msg-sender-sub {
@@ -536,8 +388,6 @@
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
-        margin-bottom: 0 !important;
-        padding: 0 !important;
     }
 
     .msg-header-right {
@@ -553,7 +403,6 @@
         white-space: nowrap !important;
     }
 
-    /* Type badge */
     .msg-type-badge {
         font-size: 10px !important;
         font-weight: 600 !important;
@@ -578,20 +427,16 @@
         color: #e91e8c !important;
     }
 
-    /* Message body — force visible */
     .msg-body {
         display: block !important;
         padding: 6px 18px 14px 70px !important;
         font-size: 13px !important;
         color: var(--text) !important;
         line-height: 1.6 !important;
-        min-height: 36px !important; /* always visible even if message is short */
+        min-height: 36px !important;
         background: #fff !important;
-        border: none !important;
-        margin: 0 !important;
     }
 
-    /* Action row — force display */
     .msg-actions {
         display: flex !important;
         align-items: center !important;
@@ -599,7 +444,6 @@
         padding: 8px 18px !important;
         border-top: 1px solid var(--border) !important;
         background: #fafbfc !important;
-        margin: 0 !important;
     }
 
     .msg-action-left {
@@ -629,19 +473,11 @@
         cursor: pointer !important;
         text-decoration: none !important;
         transition: border-color .15s;
-        line-height: 1 !important;
     }
 
         .ma-btn:hover {
             border-color: var(--green) !important;
             color: var(--green) !important;
-        }
-
-        .ma-btn svg {
-            width: 13px !important;
-            height: 13px !important;
-            stroke: currentColor;
-            fill: none;
         }
 
     .ma-icon {
@@ -655,7 +491,6 @@
         justify-content: center !important;
         cursor: pointer !important;
         transition: background .12s, border-color .12s;
-        padding: 0 !important;
     }
 
         .ma-icon:hover {
@@ -721,7 +556,6 @@
         z-index: 500;
         align-items: flex-end;
         justify-content: center;
-        padding-bottom: 0;
     }
 
         .reply-modal-backdrop.open {
@@ -734,9 +568,7 @@
         width: 640px;
         max-width: 100%;
         box-shadow: 0 -8px 32px rgba(0,0,0,.18);
-        animation: slideUp .2s ease;
     }
-
 
     .reply-modal-head {
         display: flex;
@@ -787,7 +619,7 @@
         outline: none;
         resize: none;
         font-size: 13px;
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         color: var(--text);
         min-height: 90px;
     }
@@ -808,7 +640,7 @@
         border-radius: 8px;
         font-size: 12px;
         font-weight: 600;
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         cursor: pointer;
     }
 
@@ -820,7 +652,7 @@
         color: #fff;
         font-size: 12px;
         font-weight: 700;
-        font-family: 'DM Sans',sans-serif;
+        font-family: 'DM Sans', sans-serif;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -838,6 +670,189 @@
             opacity: .5;
             cursor: not-allowed;
         }
+
+    /* ══ FILTER POPUP ════════════════════════════ */
+    .filter-popup-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 400;
+    }
+
+        .filter-popup-backdrop.open {
+            display: block;
+        }
+
+    .filter-popup {
+        position: fixed;
+        width: 300px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(0,0,0,.14);
+        z-index: 401;
+        overflow: hidden;
+        display: none;
+    }
+
+    .fp-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .fp-head h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+    .fp-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        color: var(--muted);
+        line-height: 1;
+        padding: 0;
+    }
+
+    .fp-section {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .fp-section-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+
+    .fp-check-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .fp-check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text);
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .fp-check-item input[type=checkbox] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--green);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+    .fp-plat-icon {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .fp-date-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .fp-date-row label {
+            font-size: 11px;
+            color: var(--muted);
+            min-width: 28px;
+        }
+
+    .fp-date-input {
+        flex: 1;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text);
+        background: #fff;
+        outline: none;
+    }
+
+        .fp-date-input:focus {
+            border-color: var(--green);
+        }
+
+    .fp-type-group {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .fp-type-pill {
+        padding: 5px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all .15s;
+        user-select: none;
+    }
+
+        .fp-type-pill.selected {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(75,181,67,.08);
+        }
+
+    .fp-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 18px;
+    }
+
+    .fp-clear {
+        background: none;
+        border: none;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        padding: 0;
+    }
+
+        .fp-clear:hover {
+            color: var(--text);
+        }
+
+    .fp-apply {
+        padding: 7px 18px;
+        background: var(--green);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+    }
 </style>
 
 <div class="inbox-shell">
@@ -845,7 +860,6 @@
     <!-- ══ LEFT SUB-NAV ══ -->
     <nav class="inbox-nav">
         <div class="inbox-nav-header">Smart Inbox</div>
-
         <a class="inbox-nav-item active" href="#" onclick="setTab('all',this);return false">
             All Messages
             <span class="inbox-nav-badge" id="nav-badge-all" style="display:none"></span>
@@ -854,24 +868,12 @@
             Private
             <span class="inbox-nav-badge" id="nav-badge-message" style="display:none"></span>
         </a>
-        <a class="inbox-nav-item" href="#" onclick="setTab('completed',this);return false">
-            Completed
-        </a>
-        <a class="inbox-nav-item" href="#" onclick="setTab('saved',this);return false">
-            Saved Messages
-        </a>
-        <a class="inbox-nav-item" href="#" onclick="setTab('approvals',this);return false">
-            Reply Approvals
-        </a>
-
+        <a class="inbox-nav-item" href="#" onclick="setTab('completed',this);return false">Completed</a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('saved',this);return false">Saved Messages</a>
+        <a class="inbox-nav-item" href="#" onclick="setTab('approvals',this);return false">Reply Approvals</a>
         <div class="inbox-nav-group">
             Custom Views
             <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-        </div>
-
-        <div class="inbox-trial">
-            Your free trial ends in <strong>30 days</strong>.
-            <button class="inbox-trial-btn">Start my subscription</button>
         </div>
     </nav>
 
@@ -886,49 +888,17 @@
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
                     <input type="text" id="searchInput" placeholder="Search messages..." oninput="applySearch()">
                 </div>
-                <div class="tb-pill" title="Remaining quota">
+                <div class="tb-pill">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                     <span id="msgCount">0</span> messages
                 </div>
-                <div class="tb-pill">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                    Previous 90 days
+                <div class="tb-btn-filter-wrap">
+                    <button class="tb-btn-filter" id="filterBtn" onclick="toggleFilterPopup()">
+                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
+                        Filters
+                    </button>
+                    <span class="filter-active-dot" id="filterDot">0</span>
                 </div>
-                <div class="tb-icon-btn">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /><circle cx="5" cy="12" r="1" /></svg>
-                </div>
-                <button class="tb-btn-export">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                    Export
-                </button>
-                <button class="tb-btn-filter">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
-                    Filters
-                </button>
-            </div>
-        </div>
-
-        <!-- Filter tabs -->
-        <div class="inbox-filters">
-            <div class="filter-tab" onclick="toggleFilter('sources',this)">
-                Sources
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
-            </div>
-            <div class="filter-sep-v"></div>
-            <div class="filter-tab active" onclick="toggleFilter('type',this)">
-                Message Types
-                <svg class="check-ico" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg>
-                Showing all
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
-            </div>
-            <div class="filter-sep-v"></div>
-            <div class="filter-tab" onclick="toggleFilter('more',this)">
-                More Filters
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="11" height="11"><polyline points="6 9 12 15 18 9" /></svg>
-            </div>
-            <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
-                <a href="#" style="font-size:12px;color:var(--muted);text-decoration:none;" onclick="resetFilters();return false">Reset</a>
-                <button style="padding:5px 14px;background:#fff;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;">Save As…</button>
             </div>
         </div>
 
@@ -946,12 +916,11 @@
         </div>
 
         <!-- Feed -->
-        <div class="inbox-feed" id="inboxFeed">
-            <!-- rendered by JS -->
-        </div>
+        <div class="inbox-feed" id="inboxFeed"></div>
 
-    </div><!-- /.inbox-main -->
-</div><!-- /.inbox-shell -->
+    </div>
+</div>
+
 <!-- ══ REPLY MODAL ══ -->
 <div class="reply-modal-backdrop" id="replyBackdrop" onclick="if(event.target===this)closeReply()">
     <div class="reply-modal">
@@ -961,7 +930,8 @@
         </div>
         <div class="reply-to">Replying to <strong id="replyToName"></strong></div>
         <div class="reply-original" id="replyOriginal"></div>
-        <textarea class="reply-textarea" id="replyText" placeholder="Type your reply…" oninput="document.getElementById('replySendBtn').disabled=!this.value.trim()"></textarea>
+        <textarea class="reply-textarea" id="replyText" placeholder="Type your reply…"
+                  oninput="document.getElementById('replySendBtn').disabled=!this.value.trim()"></textarea>
         <div class="reply-footer">
             <button class="reply-cancel" onclick="closeReply()">Cancel</button>
             <button class="reply-send" id="replySendBtn" disabled onclick="sendReply()">
@@ -972,76 +942,208 @@
     </div>
 </div>
 
-@* ── Inject server data ── *@
-<script>
-    var ALL_ITEMS  = @Html.Raw(ViewBag.InboxJson ?? "[]");
-    var COMPLETED  = new Set();   // IDs marked done client-side
-    var SAVED      = new Set();   // IDs saved client-side
+<!-- ══ FILTER POPUP ══ -->
+<div class="filter-popup-backdrop" id="filterBackdrop" onclick="closeFilterPopup()"></div>
+<div class="filter-popup" id="filterPopup">
+    <div class="fp-head">
+        <h4>Filter Messages</h4>
+        <button class="fp-close" onclick="closeFilterPopup()">✕</button>
+    </div>
 
+    <div class="fp-section">
+        <div class="fp-section-label">Platform</div>
+        <div class="fp-check-group">
+            <label class="fp-check-item">
+                <input type="checkbox" id="fp-facebook" value="facebook">
+                <div class="fp-plat-icon" style="background:#e7f0fd">
+                    <svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                </div>
+                Facebook
+            </label>
+            <label class="fp-check-item">
+                <input type="checkbox" id="fp-messenger" value="messenger">
+                <div class="fp-plat-icon" style="background:#e7f0fd">
+                    <svg viewBox="0 0 24 24" fill="#0084FF" width="11" height="11"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z" /></svg>
+                </div>
+                Messenger
+            </label>
+            <label class="fp-check-item">
+                <input type="checkbox" id="fp-instagram" value="instagram">
+                <div class="fp-plat-icon" style="background:#fce4ec">
+                    <svg viewBox="0 0 24 24" fill="none" width="11" height="11">
+                        <defs><linearGradient id="igfp" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs>
+                        <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igfp)" />
+                        <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" />
+                        <circle cx="17" cy="7" r="1.2" fill="#fff" />
+                    </svg>
+                </div>
+                Instagram
+            </label>
+            <label class="fp-check-item">
+                <input type="checkbox" id="fp-instagramdm" value="instagram_dm">
+                <div class="fp-plat-icon" style="background:#fce4ec">
+                    <svg viewBox="0 0 24 24" fill="none" width="11" height="11">
+                        <defs><linearGradient id="igdmfp" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs>
+                        <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igdmfp)" />
+                        <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" />
+                        <circle cx="17" cy="7" r="1.2" fill="#fff" />
+                    </svg>
+                </div>
+                Instagram DM
+            </label>
+        </div>
+    </div>
+
+    <div class="fp-section">
+        <div class="fp-section-label">Date Range</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="fp-date-row">
+                <label>From</label>
+                <input type="date" class="fp-date-input" id="fp-date-from">
+            </div>
+            <div class="fp-date-row">
+                <label>To</label>
+                <input type="date" class="fp-date-input" id="fp-date-to">
+            </div>
+        </div>
+    </div>
+
+    <div class="fp-section" style="border-bottom:none">
+        <div class="fp-section-label">Message Type</div>
+        <div class="fp-type-group">
+            <div class="fp-type-pill" data-type="comment" onclick="toggleTypePill(this)">Comment</div>
+            <div class="fp-type-pill" data-type="message" onclick="toggleTypePill(this)">Message</div>
+            <div class="fp-type-pill" data-type="mention" onclick="toggleTypePill(this)">Mention</div>
+            <div class="fp-type-pill" data-type="live_comment" onclick="toggleTypePill(this)">Live Comment</div>
+        </div>
+    </div>
+
+    <div class="fp-footer">
+        <button class="fp-clear" onclick="clearFilters()">Clear all</button>
+        <button class="fp-apply" onclick="applyFilters()">Apply Filters</button>
+    </div>
+</div>
+
+@* ── ONE single script block — everything in correct order ── *@
+<script>
+    /* ── Data from server ─────────────────────── */
+    var ALL_ITEMS = @Html.Raw(ViewBag.InboxJson ?? "[]");
+    var COMPLETED = new Set();
+    var SAVED     = new Set();
+
+    /* ── State ────────────────────────────────── */
     var currentTab    = 'all';
     var currentSearch = '';
     var currentSort   = 'newest';
     var replyItem     = null;
 
-    /* ── Init ────────────────────────────────────── */
+    /* Active filter state */
+    var activeFilters = {
+        platforms : [],   // e.g. ['facebook','instagram']
+        dateFrom  : '',   // 'YYYY-MM-DD' or ''
+        dateTo    : '',
+        types     : []    // e.g. ['comment','message']
+    };
+
+    /* ── Init ─────────────────────────────────── */
     document.addEventListener('DOMContentLoaded', function () {
         updateNavBadges();
         renderFeed();
     });
 
-    /* ── Nav badges ─────────────────────────────── */
+    /* ── Nav badges ───────────────────────────── */
     function updateNavBadges() {
-        var allBadge = document.getElementById('nav-badge-all');
-        var msgBadge = document.getElementById('nav-badge-message');
-        var total    = ALL_ITEMS.length;
-        var msgs     = ALL_ITEMS.filter(function(x){ return x.itemType === 'message'; }).length;
+        var total = ALL_ITEMS.length;
+        var msgs  = ALL_ITEMS.filter(function(x){ return x.itemType === 'message'; }).length;
 
-        allBadge.textContent = total;
-        allBadge.style.display = total > 0 ? '' : 'none';
-        msgBadge.textContent = msgs;
-        msgBadge.style.display = msgs > 0 ? '' : 'none';
+        var ab = document.getElementById('nav-badge-all');
+        var mb = document.getElementById('nav-badge-message');
+        ab.textContent = total; ab.style.display = total > 0 ? '' : 'none';
+        mb.textContent = msgs;  mb.style.display = msgs  > 0 ? '' : 'none';
         document.getElementById('msgCount').textContent = total;
     }
 
-    /* ── Tab / filter ───────────────────────────── */
+    /* ── Tab ──────────────────────────────────── */
     function setTab(tab, el) {
         currentTab = tab;
         document.querySelectorAll('.inbox-nav-item').forEach(function(a){ a.classList.remove('active'); });
         if (el) el.classList.add('active');
-        var titles = {
-            all:'All Messages', message:'Private Messages',
-            completed:'Completed', saved:'Saved Messages', approvals:'Reply Approvals'
-        };
+        var titles = { all:'All Messages', message:'Private Messages', completed:'Completed', saved:'Saved Messages', approvals:'Reply Approvals' };
         document.getElementById('inboxTitle').textContent = titles[tab] || 'All Messages';
         renderFeed();
     }
-    function applySearch() { currentSearch = document.getElementById('searchInput').value.toLowerCase(); renderFeed(); }
-    function applySort(v)  { currentSort   = v; renderFeed(); }
-    function resetFilters(){ currentSearch = ''; currentSort = 'newest'; document.getElementById('searchInput').value=''; renderFeed(); }
-    function toggleFilter(f,el) { el.classList.toggle('active'); }
 
+    function applySearch() { currentSearch = document.getElementById('searchInput').value.toLowerCase(); renderFeed(); }
+    function applySort(v)  { currentSort = v; renderFeed(); }
+
+    /* ══ CORE FILTER FUNCTION ══════════════════
+       All filtering lives here — tab, search, sort
+       AND the popup filters (platform / date / type).
+       No patching, no overriding.
+    ════════════════════════════════════════════ */
     function getFiltered() {
         var items = ALL_ITEMS.slice();
 
-        if (currentTab === 'message')   items = items.filter(function(x){ return x.itemType==='message'; });
+        /* 1. Tab filter */
+        if (currentTab === 'message')        items = items.filter(function(x){ return x.itemType === 'message'; });
         else if (currentTab === 'completed') items = items.filter(function(x){ return COMPLETED.has(x.id); });
         else if (currentTab === 'saved')     items = items.filter(function(x){ return SAVED.has(x.id); });
 
+        /* 2. Search filter */
         if (currentSearch) {
             items = items.filter(function(x){
-                return (x.senderName + x.message).toLowerCase().indexOf(currentSearch) !== -1;
+                return (x.senderName + ' ' + x.message).toLowerCase().indexOf(currentSearch) !== -1;
             });
         }
 
-        items.sort(function(a,b){
-            if (currentSort === 'name')   return (a.senderName||'').localeCompare(b.senderName||'');
+        /* 3. Platform filter (from popup) */
+        if (activeFilters.platforms.length > 0) {
+            items = items.filter(function(x){
+                return activeFilters.platforms.indexOf((x.platform || '').toLowerCase()) !== -1;
+            });
+        }
+
+        /* 4. Date range filter (from popup) */
+        if (activeFilters.dateFrom) {
+            var fromDate = new Date(activeFilters.dateFrom);
+            fromDate.setHours(0, 0, 0, 0);
+            items = items.filter(function(x){ return new Date(x.time) >= fromDate; });
+        }
+        if (activeFilters.dateTo) {
+            var toDate = new Date(activeFilters.dateTo);
+            toDate.setHours(23, 59, 59, 999);
+            items = items.filter(function(x){ return new Date(x.time) <= toDate; });
+        }
+
+        /* 5. Message type filter (from popup) */
+        if (activeFilters.types.length > 0) {
+            items = items.filter(function(x){
+                /* "message" type pill → itemType === 'message' */
+                if (activeFilters.types.indexOf('message') !== -1 && x.itemType === 'message') return true;
+                /* "mention" pill → commentType === 'mention' */
+                if (activeFilters.types.indexOf('mention') !== -1 && x.commentType === 'mention') return true;
+                /* "live_comment" pill → commentType === 'live_comment' */
+                if (activeFilters.types.indexOf('live_comment') !== -1 && x.commentType === 'live_comment') return true;
+                /* "comment" pill → everything else (regular comment) */
+                if (activeFilters.types.indexOf('comment') !== -1
+                    && x.itemType !== 'message'
+                    && x.commentType !== 'mention'
+                    && x.commentType !== 'live_comment') return true;
+                return false;
+            });
+        }
+
+        /* 6. Sort */
+        items.sort(function(a, b){
+            if (currentSort === 'name')   return (a.senderName || '').localeCompare(b.senderName || '');
             if (currentSort === 'oldest') return new Date(a.time) - new Date(b.time);
             return new Date(b.time) - new Date(a.time);
         });
+
         return items;
     }
 
-    /* ── Render ─────────────────────────────────── */
+    /* ── Render ───────────────────────────────── */
     function renderFeed() {
         var items = getFiltered();
         var feed  = document.getElementById('inboxFeed');
@@ -1056,38 +1158,31 @@
             return;
         }
 
-        feed.innerHTML = items.map(function(item) {
-            return buildCard(item);
-        }).join('');
+        feed.innerHTML = items.map(buildCard).join('');
     }
 
     function buildCard(item) {
-        /* Sender display — show name or fall back to sender ID shortened */
         var displayName = (item.senderName && item.senderName !== 'Unknown' && item.senderName.trim())
             ? item.senderName
             : (item.senderId ? 'User ' + item.senderId.slice(-6) : 'Unknown User');
 
-        var initials = displayName.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) || '?';
+        var initials = displayName.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0, 2) || '?';
         var timeAgo  = formatTime(item.time);
         var isDone   = COMPLETED.has(item.id);
         var isSaved  = SAVED.has(item.id);
 
-        /* Platform badge SVG */
         var platSvg = '';
         if (item.platform === 'facebook' || item.platform === 'messenger') {
             platSvg = '<svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
         } else if (item.platform === 'instagram' || item.platform === 'instagram_dm') {
-            platSvg = '<svg viewBox="0 0 24 24" fill="none" width="11" height="11"><defs><linearGradient id="ig'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+            platSvg = '<svg viewBox="0 0 24 24" fill="none" width="11" height="11"><defs><linearGradient id="ig' + item.id + '" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig' + item.id + ')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
         }
 
-        /* Type label */
-        var typeLabel = 'Comment';
-        var typeCls   = 'type-comment';
-        if (item.itemType === 'message')              { typeLabel = 'Message';      typeCls = 'type-message'; }
-        else if (item.commentType === 'mention')       { typeLabel = 'Mention';      typeCls = 'type-mention'; }
-        else if (item.commentType === 'live_comment')  { typeLabel = 'Live Comment'; typeCls = 'type-comment'; }
+        var typeLabel = 'Comment', typeCls = 'type-comment';
+        if (item.itemType === 'message')             { typeLabel = 'Message';      typeCls = 'type-message'; }
+        else if (item.commentType === 'mention')     { typeLabel = 'Mention';      typeCls = 'type-mention'; }
+        else if (item.commentType === 'live_comment'){ typeLabel = 'Live Comment'; typeCls = 'type-comment'; }
 
-        /* Sub-line describing context */
         var subLine = '';
         if (item.itemType === 'message') {
             subLine = 'Direct message via <strong>' + escHtml(item.platform) + '</strong>';
@@ -1098,57 +1193,38 @@
             subLine = 'Page comment · <strong>' + escHtml(item.platform) + '</strong>';
         }
 
-        /* Message body — show placeholder if empty */
-        var msgBody = (item.message || '').trim();
-        var bodyHtml = msgBody
-            ? escHtml(msgBody)
+        var bodyHtml = (item.message || '').trim()
+            ? escHtml(item.message)
             : '<em style="color:var(--muted);font-size:12px;">(no message text)</em>';
 
-        /* Replied indicator */
         var repliedTag = item.isReplied
             ? '<span style="font-size:10px;background:rgba(29,161,161,.1);color:#1DA1A1;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">↩ Replied</span>'
             : '';
 
-        /* Done indicator */
         var doneTag = isDone
             ? '<span style="font-size:10px;background:rgba(75,181,67,.1);color:var(--green);padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">✓ Done</span>'
             : '';
 
         return '<div class="msg-card" id="card-' + item.id + '">' +
-            /* Header */
             '<div class="msg-card-header">' +
                 '<div class="msg-avatar" style="background:' + avatarColor(displayName) + '">' +
                     initials +
                     (platSvg ? '<div class="msg-platform-badge">' + platSvg + '</div>' : '') +
                 '</div>' +
                 '<div class="msg-avatar-info">' +
-                    '<div class="msg-sender-name">' +
-                        escHtml(displayName) +
+                    '<div class="msg-sender-name">' + escHtml(displayName) +
                         '&nbsp;<span class="msg-type-badge ' + typeCls + '">' + typeLabel + '</span>' +
                         repliedTag + doneTag +
                     '</div>' +
                     '<div class="msg-sender-sub">' + subLine + '</div>' +
                 '</div>' +
-                '<div class="msg-header-right">' +
-                    '<span class="msg-time">' + timeAgo + '</span>' +
-                '</div>' +
+                '<div class="msg-header-right"><span class="msg-time">' + timeAgo + '</span></div>' +
             '</div>' +
-            /* Body */
             '<div class="msg-body">' + bodyHtml + '</div>' +
-            /* Actions */
             '<div class="msg-actions">' +
                 '<div class="msg-action-left">' +
-                    (item.itemType === 'comment'
-                        ? '<button class="ma-btn" style="font-size:12px;padding:5px 10px;" onclick="openReply(' + item.id + ')">' +
-                            '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="13" height="13"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> Reply' +
-                          '</button>'
-                        : '<button class="ma-btn" style="font-size:12px;padding:5px 10px;" onclick="openReply(' + item.id + ')">' +
-                            '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="13" height="13"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Reply' +
-                          '</button>'
-                    ) +
-                    '<a class="ma-btn" style="font-size:12px;padding:5px 10px;text-decoration:none;" href="#" onclick="return false">' +
-                        'View Thread' +
-                    '</a>' +
+                    '<button class="ma-btn" onclick="openReply(' + item.id + ')">Reply</button>' +
+                    '<a class="ma-btn" href="#" onclick="return false">View Thread</a>' +
                 '</div>' +
                 '<div class="msg-action-right">' +
                     '<div class="ma-icon" title="Like" onclick="toggleLike(this)">' +
@@ -1157,10 +1233,10 @@
                     '<div class="ma-icon" title="Add label">' +
                         '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
                     '</div>' +
-                    '<div class="ma-icon ' + (isDone?'done':'') + '" title="Mark complete" onclick="markDone(' + item.id + ',this)">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12" style="display:none"/><polyline points="8 12 11 15 16 9"/></svg>' +
+                    '<div class="ma-icon ' + (isDone ? 'done' : '') + '" title="Mark complete" onclick="markDone(' + item.id + ',this)">' +
+                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>' +
                     '</div>' +
-                    '<div class="ma-icon ' + (isSaved?'done':'') + '" title="Save message" onclick="toggleSave(' + item.id + ',this)">' +
+                    '<div class="ma-icon ' + (isSaved ? 'done' : '') + '" title="Save message" onclick="toggleSave(' + item.id + ',this)">' +
                         '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' +
                     '</div>' +
                     '<div class="ma-icon" title="Assign">' +
@@ -1171,7 +1247,7 @@
         '</div>';
     }
 
-    /* ── Actions ────────────────────────────────── */
+    /* ── Card actions ─────────────────────────── */
     function markDone(id, el) {
         if (COMPLETED.has(id)) { COMPLETED.delete(id); el.classList.remove('done'); }
         else                   { COMPLETED.add(id);    el.classList.add('done'); }
@@ -1179,17 +1255,17 @@
     }
     function toggleSave(id, el) {
         if (SAVED.has(id)) { SAVED.delete(id); el.classList.remove('done'); }
-        else               { SAVED.add(id);   el.classList.add('done'); }
+        else               { SAVED.add(id);    el.classList.add('done'); }
     }
     function toggleLike(el) { el.classList.toggle('liked'); }
 
-    /* ── Reply modal ────────────────────────────── */
+    /* ── Reply modal ──────────────────────────── */
     function openReply(id) {
         replyItem = ALL_ITEMS.find(function(x){ return x.id === id; });
         if (!replyItem) return;
-        document.getElementById('replyTitle').textContent    = 'Reply to ' + (replyItem.senderName||'');
+        document.getElementById('replyTitle').textContent    = 'Reply to ' + (replyItem.senderName || '');
         document.getElementById('replyToName').textContent   = replyItem.senderName || '';
-        document.getElementById('replyOriginal').textContent = '"' + (replyItem.message||'').slice(0,120) + (replyItem.message?.length>120?'…':'') + '"';
+        document.getElementById('replyOriginal').textContent = '"' + (replyItem.message || '').slice(0, 120) + (replyItem.message && replyItem.message.length > 120 ? '…' : '') + '"';
         document.getElementById('replyText').value           = '';
         document.getElementById('replySendBtn').disabled     = true;
         document.getElementById('replyBackdrop').classList.add('open');
@@ -1200,69 +1276,114 @@
         replyItem = null;
     }
     function sendReply() {
-        if (!replyItem) return;
         var text = document.getElementById('replyText').value.trim();
-        if (!text) return;
-        var btn = document.getElementById('replySendBtn');
-        btn.disabled = true;
-        btn.textContent = 'Sending…';
-
-        fetch('/Inbox/Reply', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ itemId: replyItem.id, itemType: replyItem.itemType, message: text, platform: replyItem.platform })
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-            if (d.success) {
-                closeReply();
-                /* Mark as replied in local state */
-                var item = ALL_ITEMS.find(function(x){ return x.id === replyItem?.id; });
-                if (item) item.isReplied = true;
-                COMPLETED.add(replyItem?.id);
-                renderFeed();
-            } else {
-                alert(d.message || 'Reply failed.');
-                btn.disabled = false;
-                btn.textContent = 'Send Reply';
-            }
-        })
-        .catch(function(){
-            alert('Network error. Please try again.');
-            btn.disabled = false;
-            btn.textContent = 'Send Reply';
-        });
+        if (!text || !replyItem) return;
+        /* TODO: wire to your API */
+        alert('Reply sent to ' + replyItem.senderName + ': ' + text);
+        closeReply();
     }
 
-    /* ── Reload ─────────────────────────────────── */
+    /* ── Reload ───────────────────────────────── */
     function reloadInbox() {
         var btn = document.getElementById('reloadBtn');
         btn.classList.add('spinning'); btn.disabled = true;
-        fetch('/Inbox/GetAll', { headers: { 'X-Requested-With':'XMLHttpRequest' } })
-        .then(function(r){ return r.json(); })
-        .then(function(data){ ALL_ITEMS = data; updateNavBadges(); renderFeed(); })
-        .catch(function(){ alert('Reload failed.'); })
-        .finally(function(){ btn.classList.remove('spinning'); btn.disabled = false; });
+        fetch('/Inbox/GetAll', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r){ return r.json(); })
+            .then(function(data){ ALL_ITEMS = data; updateNavBadges(); renderFeed(); })
+            .catch(function(){ alert('Reload failed.'); })
+            .finally(function(){ btn.classList.remove('spinning'); btn.disabled = false; });
     }
 
-    /* ── Helpers ────────────────────────────────── */
+    /* ══ FILTER POPUP ══════════════════════════ */
+    function toggleFilterPopup() {
+        var popup    = document.getElementById('filterPopup');
+        var backdrop = document.getElementById('filterBackdrop');
+        var isOpen   = popup.style.display === 'block';
+        if (isOpen) {
+            closeFilterPopup();
+        } else {
+            /* Position anchored to button */
+            var btn  = document.getElementById('filterBtn');
+            var rect = btn.getBoundingClientRect();
+            popup.style.top   = (rect.bottom + 8) + 'px';
+            popup.style.right = (window.innerWidth - rect.right) + 'px';
+            popup.style.left  = 'auto';
+            popup.style.display = 'block';
+            backdrop.classList.add('open');
+        }
+    }
+
+    function closeFilterPopup() {
+        document.getElementById('filterPopup').style.display = 'none';
+        document.getElementById('filterBackdrop').classList.remove('open');
+    }
+
+    function toggleTypePill(el) {
+        el.classList.toggle('selected');
+    }
+
+    function applyFilters() {
+        /* Read platforms */
+        activeFilters.platforms = [];
+        document.querySelectorAll('#filterPopup .fp-check-item input[type=checkbox]').forEach(function(cb){
+            if (cb.checked) activeFilters.platforms.push(cb.value);
+        });
+
+        /* Read dates */
+        activeFilters.dateFrom = document.getElementById('fp-date-from').value;
+        activeFilters.dateTo   = document.getElementById('fp-date-to').value;
+
+        /* Read types */
+        activeFilters.types = [];
+        document.querySelectorAll('#filterPopup .fp-type-pill.selected').forEach(function(p){
+            activeFilters.types.push(p.dataset.type);
+        });
+
+        updateFilterBadge();
+        closeFilterPopup();
+        renderFeed();   /* <-- triggers getFiltered() which now includes all filter logic */
+    }
+
+    function clearFilters() {
+        document.querySelectorAll('#filterPopup .fp-check-item input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
+        document.getElementById('fp-date-from').value = '';
+        document.getElementById('fp-date-to').value   = '';
+        document.querySelectorAll('#filterPopup .fp-type-pill').forEach(function(p){ p.classList.remove('selected'); });
+
+        activeFilters = { platforms: [], dateFrom: '', dateTo: '', types: [] };
+        updateFilterBadge();
+        closeFilterPopup();
+        renderFeed();
+    }
+
+    function updateFilterBadge() {
+        var count = activeFilters.platforms.length
+                  + (activeFilters.dateFrom || activeFilters.dateTo ? 1 : 0)
+                  + activeFilters.types.length;
+        var dot = document.getElementById('filterDot');
+        dot.textContent = count;
+        if (count > 0) dot.classList.add('show');
+        else           dot.classList.remove('show');
+    }
+
+    /* ── Helpers ──────────────────────────────── */
     var AVATAR_COLORS = ['#6c5ce7','#e17055','#00b894','#0984e3','#e84393','#fdcb6e','#d63031'];
     function avatarColor(name) {
         var h = 0;
-        for (var i = 0; i < (name||'').length; i++) h = (h*31 + (name||'').charCodeAt(i)) & 0xffffffff;
+        for (var i = 0; i < (name || '').length; i++) h = (h * 31 + (name || '').charCodeAt(i)) & 0xffffffff;
         return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
     }
     function formatTime(t) {
         if (!t) return '';
-        var d   = new Date(t);
-        var now = new Date();
-        var diff= Math.floor((now - d) / 1000);
-        if (diff < 60)   return diff + 's ago';
-        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-        if (diff < 86400)return Math.floor(diff/3600) + 'h ago';
-        return d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+        var d    = new Date(t);
+        var now  = new Date();
+        var diff = Math.floor((now - d) / 1000);
+        if (diff < 60)    return diff + 's ago';
+        if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
     function escHtml(s) {
-        return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 </script>

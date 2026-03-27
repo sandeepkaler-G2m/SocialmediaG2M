@@ -1,146 +1,837 @@
 ﻿@using SocialMediaPanel.Services
 @{
-    ViewData["Title"]     = "Gmail";
-    ViewData["PageTitle"] = "Gmail Inbox";
     var integration = ViewBag.Integration as SocialMediaPanel.Models.GmailIntegration;
-    var emails      = ViewBag.Emails as List<GmailMessage> ?? new();
-    var labels      = ViewBag.Labels as List<GmailLabel>   ?? new();
-    var unread      = (int)(ViewBag.Unread ?? 0);
-    var query       = ViewBag.Query  as string ?? "in:inbox";
-    var error       = ViewBag.Error  as string;
+    var emails = ViewBag.Emails as List<GmailMessage> ?? new();
+    var labels = ViewBag.Labels as List<GmailLabel> ?? new();
+    var unread = (int)(ViewBag.Unread ?? 0);
+    var query = ViewBag.Query as string ?? "in:inbox";
+    var error = ViewBag.Error as string;
+
+    ViewData["Title"] = "Gmail";
+    ViewData["PageTitle"] = query switch
+    {
+        "in:sent" => "Gmail — Sent",
+        "in:drafts" => "Gmail — Drafts",
+        "is:starred" => "Gmail — Starred",
+        "is:unread" => "Gmail — Unread",
+        _ => "Gmail — Inbox"
+    };
 }
 
 <style>
-body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
-.gm-shell { display:flex;height:calc(100vh - 58px);overflow:hidden;width:100%; }
-.gm-sidebar { width:210px;min-width:210px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto; }
-.gm-sidebar-head { padding:16px 18px 10px;border-bottom:1px solid var(--border); }
-.gm-sidebar-head h3 { font-size:15px;font-weight:700;color:var(--text);margin:0; }
-.gm-sidebar-head small { font-size:11px;color:var(--muted); }
-.gm-compose-btn { display:flex;align-items:center;justify-content:center;gap:7px;margin:12px;padding:9px 14px;background:#EA4335;border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-compose-btn:hover { background:#c5221f; }
-.gm-compose-btn svg { width:14px;height:14px;stroke:#fff;fill:none; }
-.gm-nav-btn { display:flex;align-items:center;justify-content:space-between;padding:9px 18px;font-size:13px;color:var(--muted);font-weight:500;cursor:pointer;border-left:3px solid transparent;border-top:none;border-right:none;border-bottom:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif;transition:background .12s,color .12s; }
-.gm-nav-btn:hover { background:#f4f5f7;color:var(--text); }
-.gm-nav-btn.active { background:rgba(234,67,53,.07);border-left-color:#EA4335;color:#EA4335;font-weight:600; }
-.gm-nav-badge { font-size:10px;font-weight:700;background:#EA4335;color:#fff;border-radius:10px;padding:1px 6px; }
-.gm-account { margin-top:auto;padding:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px; }
-.gm-account-pic { width:28px;height:28px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#EA4335,#4285F4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;overflow:hidden; }
-.gm-account-pic img { width:100%;height:100%;object-fit:cover; }
-.gm-account-email { font-size:11px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-.gm-disc-btn { background:none;border:none;cursor:pointer;color:#dc3545;font-size:10px;font-weight:600;font-family:'DM Sans',sans-serif;padding:3px 6px;border-radius:4px;white-space:nowrap; }
-.gm-disc-btn:hover { background:rgba(220,53,69,.08); }
-.gm-main { flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0; }
-.gm-toolbar { display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0; }
-.gm-searchbox { display:flex;align-items:center;gap:7px;flex:1;max-width:380px;padding:7px 12px;background:#f4f5f7;border:1px solid var(--border);border-radius:8px; }
-.gm-searchbox:focus-within { background:#fff;border-color:#EA4335; }
-.gm-searchbox svg { width:13px;height:13px;stroke:var(--muted);fill:none;flex-shrink:0; }
-.gm-searchbox input { border:none;outline:none;background:none;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);width:100%; }
-.gm-searchbox input::placeholder { color:var(--muted); }
-.gm-tb-btn { display:flex;align-items:center;gap:5px;padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap; }
-.gm-tb-btn:hover,.gm-tb-btn.active { border-color:#EA4335;color:#EA4335; }
-.gm-tb-btn.active { background:rgba(234,67,53,.06); }
-.gm-tb-btn svg { width:12px;height:12px;stroke:currentColor;fill:none; }
-.gm-reload-btn { margin-left:auto;display:flex;align-items:center;gap:5px;padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text);font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-reload-btn:hover { border-color:#EA4335;color:#EA4335; }
-.gm-reload-btn svg { width:13px;height:13px;stroke:currentColor;fill:none; }
-.gm-reload-btn.spinning svg { animation:gmSpin .7s linear infinite; }
-@@keyframes gmSpin { to{transform:rotate(360deg);} }
-.gm-body { display:flex;flex:1;overflow:hidden; }
-.gm-list { width:360px;min-width:280px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:#fff; }
-.gm-row { display:flex;align-items:flex-start;gap:12px;padding:13px 16px;width:100%;text-align:left;background:#fff;border:none;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative;font-family:'DM Sans',sans-serif; }
-.gm-row:hover { background:#fef8f8; }
-.gm-row.active { background:#fff5f5; }
-.gm-row.unread::before { content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#EA4335; }
-.gm-row-avatar { width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff; }
-.gm-row-info { flex:1;min-width:0; }
-.gm-row-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:3px; }
-.gm-row-from { font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px; }
-.gm-row-time { font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-left:6px; }
-.gm-row-subject { font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px; }
-.gm-row.unread .gm-row-subject,.gm-row.unread .gm-row-from { font-weight:700; }
-.gm-row-snippet { font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.gm-read { flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f8f9fb; }
-.gm-read-empty { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-size:14px;gap:10px; }
-.gm-read-empty svg { width:48px;height:48px;stroke:var(--muted);fill:none;opacity:.3; }
-.gm-read-card { display:none;flex-direction:column;flex:1;overflow:hidden;background:#fff;margin:16px;border-radius:12px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.06); }
-.gm-read-card.open { display:flex; }
-.gm-read-header { padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0; }
-.gm-read-title { display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px; }
-.gm-read-subject { font-size:15px;font-weight:700;color:var(--text);flex:1;line-height:1.4; }
-.gm-read-close { background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;flex-shrink:0;padding:0; }
-.gm-read-meta { font-size:12px;color:var(--muted); }
-.gm-read-actions { display:flex;gap:8px;margin-top:12px; }
-.gm-action-btn { display:flex;align-items:center;gap:5px;padding:6px 12px;background:#fff;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;color:var(--text);font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-action-btn:hover { border-color:#EA4335;color:#EA4335; }
-.gm-action-btn svg { width:12px;height:12px;stroke:currentColor;fill:none; }
-.gm-read-body { flex:1;overflow-y:auto;padding:16px 20px; }
-.gm-read-loading { display:flex;align-items:center;justify-content:center;padding:48px;color:var(--muted);font-size:13px;gap:8px; }
-.gm-read-loading::before { content:'';width:16px;height:16px;border-radius:50%;border:2px solid #e3e6ea;border-top-color:#EA4335;animation:gmSpin .7s linear infinite;flex-shrink:0; }
-.gm-reply-area { border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;background:#fafbfc;display:none; }
-.gm-reply-area textarea { width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);resize:none;outline:none;min-height:80px;background:#fff;box-sizing:border-box; }
-.gm-reply-area textarea:focus { border-color:#EA4335; }
-.gm-reply-footer { display:flex;justify-content:flex-end;gap:8px;margin-top:8px; }
-.gm-reply-cancel { padding:7px 12px;background:#f4f5f7;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-reply-send { display:flex;align-items:center;gap:5px;padding:7px 16px;background:#EA4335;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-reply-send:hover { background:#c5221f; }
-.gm-reply-send:disabled { opacity:.5;cursor:not-allowed; }
-.gm-empty { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;color:var(--muted); }
-.gm-empty svg { width:48px;height:48px;stroke:var(--muted);fill:none;opacity:.3;margin-bottom:14px; }
-.gm-empty h4 { font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px; }
-.gm-empty p { font-size:12px;line-height:1.6; }
-.gm-compose-modal { display:none;position:fixed;inset:0;z-index:600;align-items:flex-end;justify-content:flex-end;padding:0 24px 24px 0; }
-.gm-compose-modal.open { display:flex; }
-.gm-compose-box { background:#fff;border-radius:12px;width:440px;box-shadow:0 12px 40px rgba(0,0,0,.2);overflow:hidden; }
-.gm-compose-head { display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#EA4335; }
-.gm-compose-head span { font-size:13px;font-weight:700;color:#fff; }
-.gm-compose-head button { background:none;border:none;cursor:pointer;color:#fff;font-size:18px; }
-.gm-compose-field { width:100%;padding:10px 16px;border:none;outline:none;border-bottom:1px solid var(--border);font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);box-sizing:border-box; }
-.gm-compose-field::placeholder { color:var(--muted); }
-.gm-compose-body { width:100%;padding:12px 16px;border:none;outline:none;resize:none;min-height:160px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);box-sizing:border-box; }
-.gm-compose-footer { display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:10px 16px;border-top:1px solid var(--border);background:#fafbfc; }
-.gm-compose-cancel { padding:7px 12px;background:#f4f5f7;border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-compose-send { padding:7px 16px;background:#EA4335;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer; }
-.gm-compose-send:hover { background:#c5221f; }
+    body.gmail-page .page-content {
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    .gm-shell {
+        display: flex;
+        height: calc(100vh - 58px);
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .gm-sidebar {
+        width: 210px;
+        min-width: 210px;
+        flex-shrink: 0;
+        background: #fff;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .gm-sidebar-head {
+        padding: 16px 18px 10px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .gm-sidebar-head h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .gm-sidebar-head small {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+    .gm-compose-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        margin: 12px;
+        padding: 9px 14px;
+        background: #EA4335;
+        border: none;
+        border-radius: 9px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-compose-btn:hover {
+            background: #c5221f;
+        }
+
+        .gm-compose-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: #fff;
+            fill: none;
+        }
+
+    .gm-nav-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 18px;
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+        cursor: pointer;
+        border-left: 3px solid transparent;
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-family: 'DM Sans',sans-serif;
+        transition: background .12s,color .12s;
+    }
+
+        .gm-nav-btn:hover {
+            background: #f4f5f7;
+            color: var(--text);
+        }
+
+        .gm-nav-btn.active {
+            background: rgba(234,67,53,.07);
+            border-left-color: #EA4335;
+            color: #EA4335;
+            font-weight: 600;
+        }
+
+    .gm-nav-badge {
+        font-size: 10px;
+        font-weight: 700;
+        background: #EA4335;
+        color: #fff;
+        border-radius: 10px;
+        padding: 1px 6px;
+    }
+
+    .gm-account {
+        margin-top: auto;
+        padding: 12px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .gm-account-pic {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(135deg,#EA4335,#4285F4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        overflow: hidden;
+    }
+
+        .gm-account-pic img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .gm-account-email {
+        font-size: 11px;
+        color: var(--muted);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .gm-disc-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #dc3545;
+        font-size: 10px;
+        font-weight: 600;
+        font-family: 'DM Sans',sans-serif;
+        padding: 3px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+
+        .gm-disc-btn:hover {
+            background: rgba(220,53,69,.08);
+        }
+
+    .gm-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .gm-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .gm-searchbox {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        flex: 1;
+        max-width: 380px;
+        padding: 7px 12px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+        .gm-searchbox:focus-within {
+            background: #fff;
+            border-color: #EA4335;
+        }
+
+        .gm-searchbox svg {
+            width: 13px;
+            height: 13px;
+            stroke: var(--muted);
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .gm-searchbox input {
+            border: none;
+            outline: none;
+            background: none;
+            font-size: 13px;
+            font-family: 'DM Sans',sans-serif;
+            color: var(--text);
+            width: 100%;
+        }
+
+            .gm-searchbox input::placeholder {
+                color: var(--muted);
+            }
+
+    .gm-tb-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+        .gm-tb-btn:hover, .gm-tb-btn.active {
+            border-color: #EA4335;
+            color: #EA4335;
+        }
+
+        .gm-tb-btn.active {
+            background: rgba(234,67,53,.06);
+        }
+
+        .gm-tb-btn svg {
+            width: 12px;
+            height: 12px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .gm-reload-btn {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-reload-btn:hover {
+            border-color: #EA4335;
+            color: #EA4335;
+        }
+
+        .gm-reload-btn svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .gm-reload-btn.spinning svg {
+            animation: gmSpin .7s linear infinite;
+        }
+
+    @@keyframes gmSpin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .gm-body {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .gm-list {
+        width: 360px;
+        min-width: 280px;
+        flex-shrink: 0;
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        background: #fff;
+    }
+
+    .gm-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 13px 16px;
+        width: 100%;
+        text-align: left;
+        background: #fff;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background .12s;
+        position: relative;
+        font-family: 'DM Sans',sans-serif;
+    }
+
+        .gm-row:hover {
+            background: #fef8f8;
+        }
+
+        .gm-row.active {
+            background: #fff5f5;
+        }
+
+        .gm-row.unread::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #EA4335;
+        }
+
+    .gm-row-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .gm-row-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .gm-row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 3px;
+    }
+
+    .gm-row-from {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    .gm-row-time {
+        font-size: 10px;
+        color: var(--muted);
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: 6px;
+    }
+
+    .gm-row-subject {
+        font-size: 12px;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    .gm-row.unread .gm-row-subject, .gm-row.unread .gm-row-from {
+        font-weight: 700;
+    }
+
+    .gm-row-snippet {
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .gm-read {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #f8f9fb;
+    }
+
+    .gm-read-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 14px;
+        gap: 10px;
+    }
+
+        .gm-read-empty svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--muted);
+            fill: none;
+            opacity: .3;
+        }
+
+    .gm-read-card {
+        display: none;
+        flex-direction: column;
+        flex: 1;
+        overflow: hidden;
+        background: #fff;
+        margin: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    }
+
+        .gm-read-card.open {
+            display: flex;
+        }
+
+    .gm-read-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .gm-read-title {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .gm-read-subject {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text);
+        flex: 1;
+        line-height: 1.4;
+    }
+
+    .gm-read-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 18px;
+        flex-shrink: 0;
+        padding: 0;
+    }
+
+    .gm-read-meta {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .gm-read-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .gm-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-action-btn:hover {
+            border-color: #EA4335;
+            color: #EA4335;
+        }
+
+        .gm-action-btn svg {
+            width: 12px;
+            height: 12px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .gm-read-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 20px;
+    }
+
+    .gm-read-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px;
+        color: var(--muted);
+        font-size: 13px;
+        gap: 8px;
+    }
+
+        .gm-read-loading::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #e3e6ea;
+            border-top-color: #EA4335;
+            animation: gmSpin .7s linear infinite;
+            flex-shrink: 0;
+        }
+
+    .gm-reply-area {
+        border-top: 1px solid var(--border);
+        padding: 12px 16px;
+        flex-shrink: 0;
+        background: #fafbfc;
+        display: none;
+    }
+
+        .gm-reply-area textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'DM Sans',sans-serif;
+            color: var(--text);
+            resize: none;
+            outline: none;
+            min-height: 80px;
+            background: #fff;
+            box-sizing: border-box;
+        }
+
+            .gm-reply-area textarea:focus {
+                border-color: #EA4335;
+            }
+
+    .gm-reply-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .gm-reply-cancel {
+        padding: 7px 12px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+    .gm-reply-send {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 16px;
+        background: #EA4335;
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-reply-send:hover {
+            background: #c5221f;
+        }
+
+        .gm-reply-send:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+    .gm-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 24px;
+        text-align: center;
+        color: var(--muted);
+    }
+
+        .gm-empty svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--muted);
+            fill: none;
+            opacity: .3;
+            margin-bottom: 14px;
+        }
+
+        .gm-empty h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .gm-empty p {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+    .gm-compose-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 600;
+        align-items: flex-end;
+        justify-content: flex-end;
+        padding: 0 24px 24px 0;
+    }
+
+        .gm-compose-modal.open {
+            display: flex;
+        }
+
+    .gm-compose-box {
+        background: #fff;
+        border-radius: 12px;
+        width: 440px;
+        box-shadow: 0 12px 40px rgba(0,0,0,.2);
+        overflow: hidden;
+    }
+
+    .gm-compose-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: #EA4335;
+    }
+
+        .gm-compose-head span {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .gm-compose-head button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+            font-size: 18px;
+        }
+
+    .gm-compose-field {
+        width: 100%;
+        padding: 10px 16px;
+        border: none;
+        outline: none;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        box-sizing: border-box;
+    }
+
+        .gm-compose-field::placeholder {
+            color: var(--muted);
+        }
+
+    .gm-compose-body {
+        width: 100%;
+        padding: 12px 16px;
+        border: none;
+        outline: none;
+        resize: none;
+        min-height: 160px;
+        font-size: 13px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        box-sizing: border-box;
+    }
+
+    .gm-compose-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--border);
+        background: #fafbfc;
+    }
+
+    .gm-compose-cancel {
+        padding: 7px 12px;
+        background: #f4f5f7;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+    .gm-compose-send {
+        padding: 7px 16px;
+        background: #EA4335;
+        border: none;
+        border-radius: 7px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .gm-compose-send:hover {
+            background: #c5221f;
+        }
 </style>
 
 <div class="gm-shell">
     <aside class="gm-sidebar">
         <div class="gm-sidebar-head">
             <h3>Gmail</h3>
-            @if (integration != null) { <small>@integration.EmailAddress</small> }
+            @if (integration != null)
+            {
+                <small>@integration.EmailAddress</small>
+            }
         </div>
         <button class="gm-compose-btn" onclick="openCompose()">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
             Compose
         </button>
-        <button class="gm-nav-btn active" onclick="filterEmails('in:inbox',this)">
+        <button class="gm-nav-btn @(query == "in:inbox" || query == "" ? "active" : "")" onclick="filterEmails('in:inbox',this)">
             <span>Inbox</span>
-            @if (unread > 0) { <span class="gm-nav-badge">@unread</span> }
+            @if (unread > 0)
+            {
+                <span class="gm-nav-badge">@unread</span>
+            }
         </button>
-        <button class="gm-nav-btn" onclick="filterEmails('is:starred',this)">Starred</button>
-        <button class="gm-nav-btn" onclick="filterEmails('in:sent',this)">Sent</button>
-        <button class="gm-nav-btn" onclick="filterEmails('in:drafts',this)">Drafts</button>
-        <button class="gm-nav-btn" onclick="filterEmails('is:unread',this)">
+        <button class="gm-nav-btn @(query == "is:starred" ? "active" : "")" onclick="filterEmails('is:starred',this)">Starred</button>
+        <button class="gm-nav-btn @(query == "in:sent" ? "active" : "")" onclick="filterEmails('in:sent',this)">Sent</button>
+        <button class="gm-nav-btn @(query == "in:drafts" ? "active" : "")" onclick="filterEmails('in:drafts',this)">Drafts</button>
+        <button class="gm-nav-btn @(query == "is:unread" ? "active" : "")" onclick="filterEmails('is:unread',this)">
             <span>Unread</span>
-            @if (unread > 0) { <span class="gm-nav-badge">@unread</span> }
+            @if (unread > 0)
+            {
+                <span class="gm-nav-badge">@unread</span>
+            }
         </button>
         @if (labels.Any())
         {
             <div style="padding:10px 18px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Labels</div>
             @foreach (var lbl in labels.Take(6))
             {
-                <button class="gm-nav-btn" onclick="filterEmails('label:@lbl.Name',this)">@lbl.Name</button>
+                <button class="gm-nav-btn @(query == $"label:{lbl.Name}" ? "active" : "")"
+                        onclick="filterEmails('label:@lbl.Name',this)">
+                    @lbl.Name
+                </button>
             }
         }
         <div class="gm-account">
             <div class="gm-account-pic">
                 @if (!string.IsNullOrEmpty(integration?.ProfilePicture))
-                { <img src="@integration.ProfilePicture" alt=""/> }
+                {
+                    <img src="@integration.ProfilePicture" alt="" />
+                }
                 else
-                { @((integration?.DisplayName ?? "G").Substring(0,1).ToUpper()) }
+                {
+
+                    @((integration?.DisplayName ?? "G").Substring(0, 1).ToUpper())
+                }
             </div>
             <div class="gm-account-email">@(integration?.EmailAddress ?? "Not connected")</div>
             <button class="gm-disc-btn" onclick="disconnectGmail()">✕</button>
@@ -151,22 +842,26 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
         <div class="gm-toolbar">
             <div class="gm-searchbox">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
                 <input type="text" id="searchInput" placeholder="Search emails…"
                        value="@(query == "in:inbox" ? "" : query)"
                        onkeydown="if(event.key==='Enter')filterEmails(this.value.trim()||'in:inbox',null)">
             </div>
-            <button class="gm-tb-btn @(query=="is:unread"?"active":"")" onclick="filterEmails('is:unread',null)">
+            <button class="gm-tb-btn @(query == "is:unread" ? "active" : "")" onclick="filterEmails('is:unread',null)">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 Unread
             </button>
             <button class="gm-reload-btn" onclick="window.location.reload()">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                 </svg>
                 Reload
             </button>
@@ -182,8 +877,8 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
                 {
                     <div class="gm-empty">
                         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                            <polyline points="22,6 12,13 2,6"/>
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
                         </svg>
                         <h4>No emails found</h4>
                         <p>@(query == "in:inbox" ? "Your inbox is empty." : $"No results for \"{query}\"")</p>
@@ -193,21 +888,27 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
                 {
                     @foreach (var email in emails)
                     {
-                        var fromFull    = email.From ?? "";
-                        var fromName    = fromFull.Contains("<") ? fromFull[..fromFull.IndexOf("<")].Trim().Trim('"') : fromFull;
+                        var fromFull = email.From ?? "";
+                        var fromName = fromFull.Contains("<") ? fromFull[..fromFull.IndexOf("<")].Trim().Trim('"') : fromFull;
                         if (string.IsNullOrWhiteSpace(fromName)) fromName = fromFull;
-                        var initial     = fromName.Length > 0 ? fromName[0].ToString().ToUpper() : "?";
-                        var safeFrom    = fromName.Replace("\\","\\\\").Replace("'","\\'");
-                        var toFull      = email.To ?? "";
-                        var toName      = toFull.Contains("<") ? toFull[..toFull.IndexOf("<")].Trim().Trim('"') : toFull;
+                        var initial = fromName.Length > 0 ? fromName[0].ToString().ToUpper() : "?";
+                        var safeFrom = fromName.Replace("\\", "\\\\").Replace("'", "\\'");
+                        var toFull = email.To ?? "";
+                        var toName = toFull.Contains("<") ? toFull[..toFull.IndexOf("<")].Trim().Trim('"') : toFull;
                         if (string.IsNullOrWhiteSpace(toName)) toName = toFull;
-                        var safeTo      = toName.Replace("\\","\\\\").Replace("'","\\'");
-                        var safeSubject = (email.Subject ?? "").Replace("\\","\\\\").Replace("'","\\'");
-                        var safeDate    = (email.Date ?? "").Replace("'","\\'");
+                        var safeTo = toName.Replace("\\", "\\\\").Replace("'", "\\'");
+                        var safeSubject = (email.Subject ?? "").Replace("\\", "\\\\").Replace("'", "\\'");
+                        var safeDate = (email.Date ?? "").Replace("'", "\\'");
 
                         <button class="gm-row @(email.IsUnread ? "unread" : "")"
                                 id="row-@email.MessageId"
-                                onclick="openEmail('@email.MessageId','@email.ThreadId','@safeFrom','@safeTo','@safeSubject','@safeDate')">
+                                data-msgid="@email.MessageId"
+                                data-threadid="@email.ThreadId"
+                                data-from="@System.Net.WebUtility.HtmlEncode(fromName)"
+                                data-to="@System.Net.WebUtility.HtmlEncode(toName)"
+                                data-subject="@System.Net.WebUtility.HtmlEncode(email.Subject ?? "")"
+                                data-date="@System.Net.WebUtility.HtmlEncode(email.Date ?? "")"
+                                onclick="openEmailFromRow(this)">
                             <div class="gm-row-avatar" style="background:@AvatarBg(fromName)">@initial</div>
                             <div class="gm-row-info">
                                 <div class="gm-row-top">
@@ -231,8 +932,8 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
             <div class="gm-read" id="gmRead">
                 <div class="gm-read-empty" id="gmReadEmpty">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
                     </svg>
                     <span>Select an email to read</span>
                 </div>
@@ -259,7 +960,8 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
                         <div class="gm-read-actions">
                             <button class="gm-action-btn" onclick="toggleReply()">
                                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                    <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                                    <polyline points="9 14 4 9 9 4" />
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
                                 </svg>
                                 Reply
                             </button>
@@ -288,30 +990,33 @@ body.gmail-page .page-content { overflow:hidden!important;padding:0!important; }
             <span>New Message</span>
             <button onclick="closeCompose()">✕</button>
         </div>
-        <input type="text" id="cTo"      class="gm-compose-field" placeholder="To">
+        <input type="text" id="cTo" class="gm-compose-field" placeholder="To">
         <input type="text" id="cSubject" class="gm-compose-field" placeholder="Subject">
-        <textarea          id="cBody"    class="gm-compose-body"  placeholder="Write your message…"></textarea>
+        <textarea id="cBody" class="gm-compose-body" placeholder="Write your message…"></textarea>
         <div class="gm-compose-footer">
             <button class="gm-compose-cancel" onclick="closeCompose()">Discard</button>
-            <button class="gm-compose-send"   onclick="sendCompose()">Send</button>
+            <button class="gm-compose-send" onclick="sendCompose()">Send</button>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/gmail-inbox.js"></script>
+    <script src="~/js/gmail-inbox.js?v=@DateTime.Now.Ticks"></script>
     <script>document.body.classList.add('gmail-page');</script>
 }
 
 @functions {
-    string AvatarBg(string name) {
-        var c = new[]{"#e17055","#6c5ce7","#00b894","#0984e3","#e84393","#EA4335","#d63031","#2d3436"};
-        int h = 0; foreach (var ch in name ?? "") h = (h*31+ch)&0x7fffffff;
+    string AvatarBg(string name)
+    {
+        var c = new[] { "#e17055", "#6c5ce7", "#00b894", "#0984e3", "#e84393", "#EA4335", "#d63031", "#2d3436" };
+        int h = 0; foreach (var ch in name ?? "") h = (h * 31 + ch) & 0x7fffffff;
         return c[h % c.Length];
     }
-    string FormatDate(string? raw) {
+    string FormatDate(string? raw)
+    {
         if (string.IsNullOrEmpty(raw)) return "";
-        if (DateTime.TryParse(raw, out var d)) {
+        if (DateTime.TryParse(raw, out var d))
+        {
             var now = DateTime.Now;
             if (d.Date == now.Date) return d.ToString("h:mm tt");
             if (d.Year == now.Year) return d.ToString("MMM d");

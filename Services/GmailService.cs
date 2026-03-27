@@ -303,7 +303,7 @@ namespace SocialMediaPanel.Services
         }
 
         // ══════════════════════════════════════════════════════════════
-        // 7. SEND EMAIL
+        // 7. SEND EMAIL — using Google.Apis
         // ══════════════════════════════════════════════════════════════
         public async Task<string> SendEmailAsync(
             string accessToken,
@@ -312,27 +312,27 @@ namespace SocialMediaPanel.Services
             string bodyHtml,
             string? replyToMessageId = null)
         {
-            var mimeMessage = _BuildMime(to, subject, bodyHtml, replyToMessageId);
-            var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(mimeMessage))
+            try
+            {
+                var gmailSvc = _BuildGmailSvc(accessToken);
+
+                var mime = _BuildMime(to, subject, bodyHtml, replyToMessageId);
+                var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(mime))
                                      .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
-            var req = new HttpRequestMessage(HttpMethod.Post,
-                "https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            req.Content = new StringContent(
-                JsonSerializer.Serialize(new { raw = encoded }),
-                Encoding.UTF8, "application/json");
-
-            var r = await _http.SendAsync(req);
-            r.EnsureSuccessStatusCode();
-
-            var resp = JsonSerializer.Deserialize<GmailSendResponse>(
-                           await r.Content.ReadAsStringAsync());
-            return resp?.Id ?? "";
+                var msg = new Google.Apis.Gmail.v1.Data.Message { Raw = encoded };
+                var req = gmailSvc.Users.Messages.Send(msg, "me");
+                var res = await req.ExecuteAsync();
+                return res?.Id ?? "";
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("SendEmailAsync failed: " + ex.Message, ex);
+            }
         }
 
         // ══════════════════════════════════════════════════════════════
-        // 8. REPLY TO EMAIL THREAD
+        // 8. REPLY TO EMAIL THREAD — using Google.Apis
         // ══════════════════════════════════════════════════════════════
         public async Task<string> ReplyToEmailAsync(
             string accessToken,
@@ -342,23 +342,39 @@ namespace SocialMediaPanel.Services
             string subject,
             string bodyHtml)
         {
-            var mimeMessage = _BuildMime(to, "Re: " + subject, bodyHtml, messageId);
-            var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(mimeMessage))
+            try
+            {
+                var gmailSvc = _BuildGmailSvc(accessToken);
+
+                var mime = _BuildMime(to, "Re: " + subject, bodyHtml, messageId);
+                var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(mime))
                                      .Replace('+', '-').Replace('/', '_').TrimEnd('=');
 
-            var req = new HttpRequestMessage(HttpMethod.Post,
-                "https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            req.Content = new StringContent(
-                JsonSerializer.Serialize(new { raw = encoded, threadId }),
-                Encoding.UTF8, "application/json");
+                var msg = new Google.Apis.Gmail.v1.Data.Message
+                {
+                    Raw = encoded,
+                    ThreadId = threadId
+                };
+                var req = gmailSvc.Users.Messages.Send(msg, "me");
+                var res = await req.ExecuteAsync();
+                return res?.Id ?? "";
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("ReplyToEmailAsync failed: " + ex.Message, ex);
+            }
+        }
 
-            var r = await _http.SendAsync(req);
-            r.EnsureSuccessStatusCode();
-
-            var resp = JsonSerializer.Deserialize<GmailSendResponse>(
-                           await r.Content.ReadAsStringAsync());
-            return resp?.Id ?? "";
+        // ── Shared helper: build Google.Apis GmailService ─────────────
+        private static Google.Apis.Gmail.v1.GmailService _BuildGmailSvc(string accessToken)
+        {
+            var credential = GoogleCredential.FromAccessToken(accessToken);
+            return new Google.Apis.Gmail.v1.GmailService(
+                new Google.Apis.Services.BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "SocialMediaPanel"
+                });
         }
 
         // ══════════════════════════════════════════════════════════════

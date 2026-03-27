@@ -21,12 +21,13 @@
             --green: #4BB543;
             --green-d: #3a9e34;
             --teal: #1DA1A1;
-            --dark: #0f1923;
-            --card: #1b2c3e;
-            --border: rgba(255,255,255,0.08);
-            --text: #e2eaf3;
-            --muted: #7a95b0;
-            --accent: #56cfb2;
+            --dark: #f5f7fb; /* page bg */
+            --card: #ffffff; /* right panel */
+
+            --border: rgba(0,0,0,0.08);
+            --text: #1f2d3d; /* main text */
+            --muted: #6b7c93; /* secondary */
+            --accent: #2bbf9b;
         }
 
         body {
@@ -39,7 +40,7 @@
 
         .panel-left {
             flex: 1;
-            background: linear-gradient(145deg, #0d2137 0%, #0f2a3f 50%, #0d1e2e 100%);
+            background: linear-gradient(145deg, #eef4fb 0%, #f7fafc 50%, #eef3f9 100%);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -86,7 +87,7 @@
             font-family: 'Sora', sans-serif;
             font-size: 20px;
             font-weight: 700;
-            color: #fff;
+            color: #1f2d3d;
             letter-spacing: -0.3px;
         }
 
@@ -99,7 +100,7 @@
                 font-size: 38px;
                 font-weight: 700;
                 line-height: 1.15;
-                color: #fff;
+                color: #1f2d3d;
                 margin-bottom: 20px;
             }
 
@@ -111,7 +112,7 @@
 
             .hero-content p {
                 font-size: 15px;
-                color: var(--muted);
+                color: #5f6f81;
                 line-height: 1.7;
                 max-width: 380px;
             }
@@ -128,7 +129,7 @@
             align-items: center;
             gap: 14px;
             padding: 12px 18px;
-            background: rgba(255,255,255,0.04);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 10px;
         }
@@ -149,12 +150,12 @@
 
         .step span {
             font-size: 13px;
-            color: #a8c0d6;
+            color: #334155;
         }
 
         /* RIGHT */
         .panel-right {
-            width: 540px;
+            width: 500px;
             background: var(--card);
             display: flex;
             flex-direction: column;
@@ -172,7 +173,7 @@
                 font-family: 'Sora', sans-serif;
                 font-size: 24px;
                 font-weight: 700;
-                color: #fff;
+                color: #1f2d3d;
                 margin-bottom: 6px;
             }
 
@@ -195,7 +196,7 @@
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: var(--muted);
+            color: #64748b;
             margin: 20px 0 14px;
             display: flex;
             align-items: center;
@@ -237,7 +238,7 @@
                 display: block;
                 font-size: 12px;
                 font-weight: 500;
-                color: #a8c0d6;
+                color: #475569;
                 margin-bottom: 6px;
                 letter-spacing: 0.3px;
             }
@@ -260,10 +261,10 @@
         .form-control {
             width: 100%;
             padding: 11px 12px 11px 38px;
-            background: rgba(255,255,255,0.05);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 9px;
-            color: var(--text);
+            color: #1f2d3d;
             font-size: 13px;
             font-family: 'DM Sans', sans-serif;
             transition: border-color 0.2s, background 0.2s;
@@ -272,11 +273,11 @@
 
             .form-control:focus {
                 border-color: var(--green);
-                background: rgba(75,181,67,0.05);
+                background: #f0fff4;
             }
 
             .form-control::placeholder {
-                color: var(--muted);
+                color: #94a3b8;
             }
 
         select.form-control {
@@ -284,7 +285,8 @@
         }
 
             select.form-control option {
-                background: var(--dark2, #172230);
+                background: #ffffff;
+                color: #1f2d3d;
             }
 
         textarea.form-control {
@@ -296,7 +298,7 @@
         .btn-submit {
             width: 100%;
             padding: 13px;
-            background: linear-gradient(135deg, var(--green), var(--green-d));
+            background: linear-gradient(135deg, #22c55e, #16a34a);
             border: none;
             border-radius: 10px;
             color: #fff;

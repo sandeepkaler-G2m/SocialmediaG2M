@@ -42,6 +42,8 @@ namespace SocialMediaPanel.Controllers
         }
 
         // ── Helper: get current user ID ──────────────────────────────
+
+        // ── Helper: get current user ID ──────────────────────────────
         private string UserId
         {
             get
@@ -54,7 +56,6 @@ namespace SocialMediaPanel.Controllers
                 return userId.Value.ToString();
             }
         }
-
         // ══════════════════════════════════════════════════════════════
         // INBOX — list emails
         // GET /Gmail/Inbox?q=is:unread&max=20
@@ -168,11 +169,11 @@ namespace SocialMediaPanel.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Compose(ComposeEmailRequest req)
+        [Route("Gmail/Compose")]
+        public async Task<IActionResult> Compose([FromForm] ComposeEmailRequest req)
         {
-            if (!ModelState.IsValid)
-                return Json(new { success = false, message = "Please fill all required fields." });
+            if (string.IsNullOrWhiteSpace(req.To) || string.IsNullOrWhiteSpace(req.Subject))
+                return Json(new { success = false, message = "To and Subject are required." });
 
             var integration = await _gmailIntegration.GetAsync(UserId);
             if (integration == null)
@@ -187,13 +188,7 @@ namespace SocialMediaPanel.Controllers
                     req.Subject,
                     req.BodyHtml ?? req.BodyText ?? ""
                 );
-
-                return Json(new
-                {
-                    success = true,
-                    messageId = msgId,
-                    message = $"Email sent to {req.To}"
-                });
+                return Json(new { success = true, messageId = msgId, message = $"Email sent to {req.To}" });
             }
             catch (Exception ex)
             {
@@ -206,7 +201,7 @@ namespace SocialMediaPanel.Controllers
         // POST /Gmail/Reply
         // ══════════════════════════════════════════════════════════════
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [Route("Gmail/Reply")]
         public async Task<IActionResult> Reply([FromBody] ReplyEmailRequest req)
         {
             if (string.IsNullOrWhiteSpace(req.MessageId) || string.IsNullOrWhiteSpace(req.ReplyBody))

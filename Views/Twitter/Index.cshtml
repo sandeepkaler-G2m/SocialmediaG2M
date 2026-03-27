@@ -1,0 +1,954 @@
+﻿@{
+    ViewData["Title"] = "Twitter – SocialMediaPanel";
+    var userName = ViewBag.UserName as string ?? "User";
+    var userEmail = ViewBag.UserEmail as string ?? "";
+    var companyName = ViewBag.CompanyName as string ?? "My Workspace";
+    var companyInitial = companyName.Length > 0 ? companyName[0].ToString().ToUpper() : "G";
+    var userInitial = userName.Length > 0 ? userName[0].ToString().ToUpper() : "U";
+    var twitterConnected = ViewBag.TwitterConnected as bool? ?? false;
+    var twitterAccount = ViewBag.TwitterAccount as SocialMediaPanel.Models.TwitterAccount;
+    var tweets = ViewBag.Tweets as List<SocialMediaPanel.Models.TweetPosted> ?? new();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --green: #4BB543;
+            --teal: #1DA1A1;
+            --twitter: #1D9BF0;
+            --twitter-d: #1a8cd8;
+            --bg: #f4f5f7;
+            --sidebar: #fff;
+            --card: #fff;
+            --border: #e3e6ea;
+            --text: #1a2332;
+            --muted: #8a97a8;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+       
+        .workspace-badge {
+            margin: 12px 12px 8px;
+            padding: 10px 12px;
+            background: #f4f5f7;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ws-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .ws-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .ws-sub {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .nav {
+            flex: 1;
+            padding: 8px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: color 0.15s, background 0.15s;
+        }
+
+            .nav-item svg {
+                width: 16px;
+                height: 16px;
+                stroke: currentColor;
+                flex-shrink: 0;
+            }
+
+            .nav-item:hover {
+                color: var(--text);
+                background: #f4f5f7;
+            }
+
+            .nav-item.active {
+                color: var(--twitter);
+                background: rgba(29,155,240,0.07);
+                border-left-color: var(--twitter);
+            }
+
+        .sidebar-bottom {
+            padding: 14px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f4f5f7;
+            border-radius: 9px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--green), var(--teal));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .user-email {
+            font-size: 10px;
+            color: var(--muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 118px;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            margin-top: 8px;
+            background: rgba(220,53,69,0.07);
+            border: 1px solid rgba(220,53,69,0.18);
+            border-radius: 7px;
+            color: #dc3545;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            width: 100%;
+            justify-content: center;
+        }
+
+            .logout-btn svg {
+                width: 14px;
+                height: 14px;
+                stroke: currentColor;
+            }
+
+        /* ── MAIN ── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            height: 52px;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+            .topbar h1 {
+                font-family: 'Sora', sans-serif;
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--text);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+                .topbar h1 svg {
+                    width: 20px;
+                    height: 20px;
+                    fill: var(--twitter);
+                }
+
+        /* ── CONTENT ── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* ── CONNECT CARD ── */
+        .connect-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .connect-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #1D9BF0, #1a8cd8);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+            .connect-icon svg {
+                width: 36px;
+                height: 36px;
+                fill: white;
+            }
+
+        .connect-card h2 {
+            font-family: 'Sora', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .connect-card p {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .btn-connect-twitter {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            background: var(--twitter);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.15s;
+        }
+
+            .btn-connect-twitter:hover {
+                opacity: 0.88;
+            }
+
+            .btn-connect-twitter svg {
+                width: 18px;
+                height: 18px;
+                fill: white;
+            }
+
+        /* ── CONNECTED STATE ── */
+        .twitter-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, #1D9BF0, #0d6efd);
+            padding: 24px;
+            text-align: center;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.8);
+            margin: 0 auto 12px;
+            display: block;
+            background: #fff;
+            object-fit: cover;
+        }
+
+        .profile-avatar-placeholder {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.8);
+            margin: 0 auto 12px;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .profile-name {
+            font-family: 'Sora', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .profile-handle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .profile-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.9);
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .profile-body {
+            padding: 16px 20px;
+        }
+
+        .profile-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+            .profile-stat:last-child {
+                border-bottom: none;
+            }
+
+        .profile-stat-label {
+            color: var(--muted);
+        }
+
+        .profile-stat-value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .btn-disconnect {
+            width: 100%;
+            padding: 10px;
+            background: rgba(220,53,69,0.07);
+            border: 1px solid rgba(220,53,69,0.2);
+            border-radius: 8px;
+            color: #dc3545;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background 0.15s;
+        }
+
+            .btn-disconnect:hover {
+                background: rgba(220,53,69,0.13);
+            }
+
+        /* Compose + History */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Compose Card */
+        .compose-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+            .compose-card h3 {
+                font-family: 'Sora', sans-serif;
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--text);
+                margin-bottom: 14px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+                .compose-card h3 svg {
+                    width: 16px;
+                    height: 16px;
+                    fill: var(--twitter);
+                }
+
+        .tweet-textarea {
+            width: 100%;
+            min-height: 100px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+            line-height: 1.6;
+        }
+
+            .tweet-textarea:focus {
+                border-color: var(--twitter);
+            }
+
+            .tweet-textarea::placeholder {
+                color: #c4cdd6;
+            }
+
+        .compose-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .char-count {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+            .char-count.warning {
+                color: #f59e0b;
+            }
+
+            .char-count.danger {
+                color: #ef4444;
+            }
+
+        .btn-tweet {
+            padding: 9px 22px;
+            background: var(--twitter);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: opacity 0.15s;
+        }
+
+            .btn-tweet:hover {
+                opacity: 0.88;
+            }
+
+            .btn-tweet svg {
+                width: 14px;
+                height: 14px;
+                fill: white;
+            }
+
+            .btn-tweet:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            animation: toastIn 0.3s ease;
+        }
+
+            .toast.success {
+                background: #1a2332;
+                color: #fff;
+            }
+
+            .toast.error {
+                background: #fee2e2;
+                color: #991b1b;
+                border: 1px solid #fecaca;
+            }
+
+        /* History Card */
+        .history-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .history-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+            .history-header h3 {
+                font-family: 'Sora', sans-serif;
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--text);
+            }
+
+        .history-empty {
+            padding: 32px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .tweet-item {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+            .tweet-item:last-child {
+                border-bottom: none;
+            }
+
+        .tweet-status-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+            .tweet-status-icon.posted {
+                background: rgba(29,155,240,0.1);
+            }
+
+            .tweet-status-icon.failed {
+                background: rgba(239,68,68,0.1);
+            }
+
+        .tweet-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tweet-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+            margin-bottom: 4px;
+        }
+
+        .tweet-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .tweet-badge {
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+            .tweet-badge.posted {
+                background: rgba(29,155,240,0.1);
+                color: var(--twitter);
+            }
+
+            .tweet-badge.failed {
+                background: rgba(239,68,68,0.1);
+                color: #ef4444;
+            }
+
+        /* Alert banners */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 9px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-success {
+            background: rgba(29,155,240,0.08);
+            border: 1px solid rgba(29,155,240,0.2);
+            color: var(--twitter);
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d0d7de;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <main class="main">
+
+        <div class="content">
+
+            @if (TempData["TwitterSuccess"] != null)
+            {
+                <div class="alert alert-success">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    @TempData["TwitterSuccess"]
+                </div>
+            }
+
+            @if (TempData["TwitterError"] != null)
+            {
+                <div class="alert alert-error">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    @TempData["TwitterError"]
+                </div>
+            }
+
+            @if (!twitterConnected)
+            {
+                <!-- CONNECT STATE -->
+                <div class="connect-card">
+                    <div class="connect-icon">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    </div>
+                    <h2>Connect Twitter / X</h2>
+                    <p>Apna Twitter account connect karo aur seedha is panel se tweets post karo.</p>
+                    <a href="/Twitter/Connect" class="btn-connect-twitter">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        Connect with Twitter
+                    </a>
+                </div>
+            }
+            else
+            {
+                <!-- CONNECTED STATE -->
+                <div class="twitter-grid">
+
+                    <!-- LEFT — Profile -->
+                    <div>
+                        <div class="profile-card">
+                            <div class="profile-header">
+                                @if (!string.IsNullOrEmpty(twitterAccount?.ProfileImageUrl))
+                                {
+                                    <img src="@twitterAccount.ProfileImageUrl" class="profile-avatar" alt="Profile" />
+                                }
+                                else
+                                {
+                                    <div class="profile-avatar-placeholder">@(twitterAccount?.TwitterName?.FirstOrDefault().ToString().ToUpper() ?? "T")</div>
+                                }
+                                <div class="profile-name">@(twitterAccount?.TwitterName ?? "Twitter User")</div>
+                                <div class="profile-handle">@@@(twitterAccount?.TwitterUsername ?? "")</div>
+                                <div class="profile-status">
+                                    <span class="status-dot"></span>
+                                    Connected
+                                </div>
+                            </div>
+                            <div class="profile-body">
+                                <div class="profile-stat">
+                                    <span class="profile-stat-label">Twitter ID</span>
+                                    <span class="profile-stat-value">@(twitterAccount?.TwitterUserId ?? "—")</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="profile-stat-label">Total Tweets</span>
+                                    <span class="profile-stat-value">@tweets.Count(t => t.Status == "posted")</span>
+                                </div>
+                                <div class="profile-stat">
+                                    <span class="profile-stat-label">Token Expires</span>
+                                    <span class="profile-stat-value">
+                                        @if (twitterAccount?.TokenExpiresAt.HasValue == true)
+                                        {
+                                            @twitterAccount.TokenExpiresAt.Value.ToString("dd MMM yyyy")
+                                        }
+                                        else
+                                        {
+                                            <text>—</text>
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="padding: 0 16px 16px">
+                                <form asp-action="Disconnect" asp-controller="Twitter" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-disconnect">Disconnect Twitter</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT — Compose + History -->
+                    <div class="right-col">
+
+                        <!-- COMPOSE -->
+                        <div class="compose-card">
+                            <h3>
+                                <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                                Compose Tweet
+                            </h3>
+                            <textarea class="tweet-textarea"
+                                  id="tweet-text"
+                                  placeholder="Kya chal raha hai? Tweet likho..."
+                                  maxlength="280"
+                                  oninput="updateCharCount(this)"></textarea>
+                            <div class="compose-footer">
+                                <span class="char-count" id="char-count">0 / 280</span>
+                                <button class="btn-tweet" id="tweet-btn" onclick="postTweet()">
+                                    <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                                    Post Tweet
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- HISTORY -->
+                        <div class="history-card">
+                            <div class="history-header">
+                                <h3>Recent Tweets</h3>
+                                <span style="font-size:12px;color:var(--muted)">Last 20</span>
+                            </div>
+
+                            @if (!tweets.Any())
+                            {
+                                <div class="history-empty">
+                                    Abhi koi tweet nahi — upar se pehla tweet karo! 🐦
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var tweet in tweets)
+                                {
+                                    <div class="tweet-item">
+                                        <div class="tweet-status-icon @tweet.Status">
+                                            @if (tweet.Status == "posted")
+                                            {
+                                                <span>🐦</span>
+                                            }
+                                            else
+                                            {
+                                                <span>❌</span>
+                                            }
+                                        </div>
+                                        <div class="tweet-body">
+                                            <div class="tweet-text">@tweet.TweetText</div>
+                                            <div class="tweet-meta">
+                                                <span class="tweet-badge @tweet.Status">@tweet.Status.ToUpper()</span>
+                                                <span>@tweet.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</span>
+                                                @if (!string.IsNullOrEmpty(tweet.TweetId))
+                                                {
+                                                    <a href="https://twitter.com/i/web/status/@tweet.TweetId"
+                                                       target="_blank"
+                                                       style="color:var(--twitter);text-decoration:none;font-weight:500">
+                                                        View →
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            }
+
+        </div>
+    </main>
+
+    <script>
+        function updateCharCount(textarea) {
+            var len     = textarea.value.length;
+            var counter = document.getElementById('char-count');
+            counter.textContent = len + ' / 280';
+            counter.className   = 'char-count';
+            if (len > 260) counter.className = 'char-count danger';
+            else if (len > 240) counter.className = 'char-count warning';
+        }
+
+        async function postTweet() {
+            var text = document.getElementById('tweet-text').value.trim();
+            var btn  = document.getElementById('tweet-btn');
+
+            if (!text) {
+                showToast('Tweet text empty hai!', 'error');
+                return;
+            }
+
+            if (text.length > 280) {
+                showToast('Tweet 280 characters se zyada nahi ho sakta!', 'error');
+                return;
+            }
+
+            btn.disabled     = true;
+            btn.textContent  = 'Posting...';
+
+            try {
+                var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                var response = await fetch('/Twitter/PostTweet', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token ?? ''
+                    },
+                    body: 'tweetText=' + encodeURIComponent(text)
+                        + '&__RequestVerificationToken=' + encodeURIComponent(token ?? '')
+                });
+
+                var data = await response.json();
+
+                if (data.success) {
+                    showToast('Tweet post ho gaya! ✅', 'success');
+                    document.getElementById('tweet-text').value = '';
+                    document.getElementById('char-count').textContent = '0 / 280';
+
+                    // Page reload karo history update ke liye
+                    setTimeout(function() { location.reload(); }, 1500);
+                } else {
+                    showToast(data.message || 'Tweet failed', 'error');
+                }
+            } catch (err) {
+                showToast('Network error — dobara try karo', 'error');
+            }
+
+            btn.disabled    = false;
+            btn.innerHTML   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Post Tweet';
+        }
+
+        function showToast(message, type) {
+            var existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            var toast       = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(function() { toast.remove(); }, 3500);
+        }
+
+        // Enter key se submit
+        document.addEventListener('DOMContentLoaded', function() {
+            var textarea = document.getElementById('tweet-text');
+            if (textarea) {
+                textarea.addEventListener('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'Enter') postTweet();
+                });
+            }
+        });
+    </script>
+
+    @Html.AntiForgeryToken()
+</body>
+</html>
