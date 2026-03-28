@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.ViewModels;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -157,5 +159,130 @@ namespace SocialMediaPanel.Controllers
             if (lead == null) return NotFound();
             return Json(lead);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> PublishPost(IFormFile image, string message)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            if (userId == null)
+                return Json(new { success = false, message = "User not logged in" });
+
+            // ✅ Get page from DB (you can filter by selected page later)
+            var page = await _context.FacebookPages
+                .Where(x => x.user_id == userId)
+                .OrderByDescending(x => x.id)
+                .FirstOrDefaultAsync();
+
+            if (page == null)
+                return Json(new { success = false, message = "No Facebook page connected" });
+
+            string pageid = page.page_id;
+            string pageaccess = page.page_access_token;
+
+            using var client = new HttpClient();
+
+            // ✅ IMAGE POST
+            if (image != null)
+            {
+                var content = new MultipartFormDataContent();
+                content.Add(new StringContent(message ?? ""), "caption");
+
+                var streamContent = new StreamContent(image.OpenReadStream());
+                streamContent.Headers.ContentType =
+                    new System.Net.Http.Headers.MediaTypeHeaderValue(image.ContentType);
+
+                content.Add(streamContent, "source", image.FileName);
+
+                var response = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{pageid}/photos?access_token={pageaccess}",
+                    content
+                );
+
+                var respText = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { success = false, message = respText });
+
+                // ✅ Parse response
+                var json = JsonDocument.Parse(respText);
+                var postId = json.RootElement.GetProperty("id").GetString();
+
+                // ✅ Save in DB
+                var newPost = new SocialPost
+                {
+                    user_id = userId,
+                    page_id = pageid,
+                    post_id = postId,
+                    message = message,
+                    media_url = "", // optional (you can store image path if you save it)
+                    platform = "facebook",
+                    created_at = DateTime.UtcNow
+                };
+
+                _context.SocialPosts.Add(newPost);
+                var res = await _context.SaveChangesAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { success = false, message = respText });
+            }
+            else
+            {
+                // ✅ TEXT POST
+                var data = new FormUrlEncodedContent(new[]
+                {
+            new KeyValuePair<string, string>("message", message ?? ""),
+            new KeyValuePair<string, string>("access_token", pageaccess)
+        });
+
+                var response = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{pageid}/feed",
+                    data
+                );
+
+                var respText = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { success = false, message = respText });
+
+                // ✅ Parse response
+                var json = JsonDocument.Parse(respText);
+                var postId = json.RootElement.GetProperty("id").GetString();
+
+                // ✅ Save in DB
+                var newPost = new SocialPost
+                {
+                    user_id = userId,
+                    page_id = pageid,
+                    post_id = postId,
+                    message = message,
+                    media_url = "", // optional (you can store image path if you save it)
+                    platform = "facebook",
+                    created_at = DateTime.UtcNow
+                };
+
+                _context.SocialPosts.Add(newPost);
+                var res = await _context.SaveChangesAsync();
+
+
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { success = false, message = respText });
+            }
+
+            return Json(new { success = true, message = "Post published successfully!" });
+        }
+
+    }
+
+    public class SocialPost
+    {
+        public int id { get; set; }
+        public int? user_id { get; set; }
+        public string page_id { get; set; }
+        public string post_id { get; set; }
+        public string message { get; set; }
+        public string? media_url { get; set; }
+        public string platform { get; set; }
+        public DateTime created_at { get; set; }
     }
 }

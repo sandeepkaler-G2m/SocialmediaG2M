@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
+builder.Services.AddScoped<InstagramService>();
 
 builder.Services.AddHttpClient<SocialMediaPanel.Services.GmailService>(c =>
     c.Timeout = TimeSpan.FromSeconds(15));

@@ -1,7 +1,7 @@
 ﻿@model IEnumerable<SocialMediaPanel.ViewModels.LeadViewModel>
 @{
-    ViewData["Title"]     = "Cases";
-    ViewData["PageTitle"] = "Cases";
+    ViewData["Title"]     = "Leads";
+    ViewData["PageTitle"] = "Leads";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -331,19 +331,19 @@
         </div>
 
         <a class="cases-nav-item active" href="#" onclick="filterLeads('open',this);return false">
-            My Open Cases
+            My Open Leads
             <span class="cases-nav-badge" id="badge-open">0</span>
         </a>
         <a class="cases-nav-item" href="#" onclick="filterLeads('onhold',this);return false">
-            My On Hold Cases
+            My On Hold Leads
             <span class="cases-nav-badge" id="badge-onhold">0</span>
         </a>
         <a class="cases-nav-item" href="#" onclick="filterLeads('closed',this);return false">
-            My Closed Cases
+            My Closed Leads
             <span class="cases-nav-badge" id="badge-closed">0</span>
         </a>
         <a class="cases-nav-item" href="#" onclick="filterLeads('all',this);return false">
-            All Cases
+            All Leads
             <span class="cases-nav-badge" id="badge-all">0</span>
         </a>
 
@@ -355,7 +355,7 @@
 
         <!-- Top bar -->
         <div class="cases-topbar">
-            <h2 id="casesTitle">My Open Cases</h2>
+            <h2 id="casesTitle">My Open Leads</h2>
             <div class="cases-topbar-right">
                 <div class="cases-search">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -365,49 +365,14 @@
                     <span class="status-dot dot-open"></span>
                     <span id="statusPillText">0 Open</span>
                 </div>
-                <div class="icon-btn" title="More options">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-                </div>
-                <button class="filter-btn">
+          @*       <button class="filter-btn">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
                     Filters
-                </button>
+                </button> *@
             </div>
         </div>
 
-        <!-- Filter dropdowns -->
-        <div class="cases-filters">
-            <div class="filter-dd">
-                <span class="filter-dd-label">Types</span>
-                <span>Viewing all</span>
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="filter-sep"></div>
-            <div class="filter-dd">
-                <span class="filter-dd-label">Priority</span>
-                <span>Viewing all</span>
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="filter-sep"></div>
-            <div class="filter-dd">
-                <span class="filter-dd-label">Platform</span>
-                <select onchange="applyPlatformFilter(this.value)" style="border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;cursor:pointer;">
-                    <option value="">All platforms</option>
-                    <option value="facebook">Facebook</option>
-                    <option value="linkedin">LinkedIn</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="twitter">Twitter</option>
-                    <option value="whatsapp">WhatsApp</option>
-                </select>
-            </div>
-            <div class="filter-sep"></div>
-            <div class="filter-dd">
-                <span class="filter-dd-label">Tags</span>
-                <span>None selected</span>
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-        </div>
-
+    
         <!-- Toolbar -->
         <div class="cases-toolbar">
             <select class="sort-select-inline" onchange="applySort(this.value)">
