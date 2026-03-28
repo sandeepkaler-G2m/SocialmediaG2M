@@ -1,0 +1,827 @@
+﻿@model SocialMediaPanel.ViewModels.PostListViewModel
+@{
+    ViewData["Title"] = "Posts";
+    ViewData["ActiveNav"] = "Posts";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .posts-page {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: var(--bg);
+    }
+
+    /* ── Top bar: platform icons + view toggles ── */
+    .posts-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .plat-icon-tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .plat-icon-tab {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: 2px solid transparent;
+        transition: all .15s;
+    }
+
+        .plat-icon-tab svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .plat-icon-tab.active-fb {
+            border-color: #1877F2;
+        }
+
+        .plat-icon-tab.active-tw {
+            border-color: #000;
+        }
+
+        .plat-icon-tab.active-li {
+            border-color: #0A66C2;
+        }
+
+        .plat-icon-tab.active-ig {
+            border-color: #E1306C;
+        }
+
+        .plat-icon-tab:not([class*="active"]):hover {
+            background: var(--bg);
+        }
+
+    .posts-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .view-icon-btn {
+        width: 30px;
+        height: 30px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--muted);
+        transition: all .15s;
+    }
+
+        .view-icon-btn:hover, .view-icon-btn.active {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .view-icon-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .sort-label {
+        font-size: 12.5px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+        .sort-label strong {
+            color: var(--text);
+        }
+
+        .sort-label svg {
+            width: 12px;
+            height: 12px;
+            stroke: var(--muted);
+            fill: none;
+        }
+
+    /* ── Sub nav ── */
+    .posts-subnav {
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        overflow-x: auto;
+    }
+
+        .posts-subnav a {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            transition: color .15s, border-color .15s;
+            white-space: nowrap;
+        }
+
+            .posts-subnav a svg {
+                width: 13px;
+                height: 13px;
+                stroke: currentColor;
+                fill: none;
+                flex-shrink: 0;
+            }
+
+            .posts-subnav a:hover {
+                color: var(--text);
+            }
+
+            .posts-subnav a.active {
+                color: var(--green);
+                border-bottom-color: var(--green);
+            }
+
+                .posts-subnav a.active svg {
+                    stroke: var(--green);
+                }
+
+    .subnav-sep {
+        color: var(--muted);
+        opacity: .4;
+        font-size: 11px;
+        padding: 0 4px;
+        align-self: center;
+    }
+
+    /* ── Table ── */
+    .posts-table-wrap {
+        flex: 1;
+        overflow-y: auto;
+        background: #fff;
+    }
+
+    .posts-tbl {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .posts-tbl thead th {
+            padding: 10px 18px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            border-bottom: 1px solid var(--border);
+            background: #fafbfc;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+    .post-tr {
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+        transition: background .13s;
+    }
+
+        .post-tr:hover {
+            background: rgba(75,181,67,.04);
+        }
+
+        .post-tr td {
+            padding: 13px 18px;
+            vertical-align: middle;
+        }
+
+    .p-date {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        white-space: nowrap;
+    }
+
+    .p-time {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+
+    .p-content-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .p-thumb {
+        width: 52px;
+        height: 52px;
+        border-radius: 8px;
+        background: rgba(75,181,67,.08);
+        border: 1px solid rgba(75,181,67,.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: hidden;
+        color: var(--green);
+        position: relative;
+    }
+
+        .p-thumb svg {
+            width: 20px;
+            height: 20px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .p-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    /* image icon badge top-left */
+    .p-thumb-icon {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 14px;
+        height: 14px;
+        background: rgba(0,0,0,.3);
+        border-radius: 3px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .p-thumb-icon svg {
+            width: 9px;
+            height: 9px;
+            stroke: #fff;
+            fill: none;
+        }
+
+    .p-text-preview {
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .p-engage-num {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--green);
+        font-family: 'Sora',sans-serif;
+    }
+
+    .p-engage-dash {
+        color: var(--muted);
+        font-size: 20px;
+        font-weight: 300;
+    }
+
+    .p-via {
+        font-size: 12.5px;
+        color: var(--muted);
+    }
+
+    /* Empty state */
+    .posts-empty {
+        text-align: center;
+        padding: 70px 24px;
+        color: var(--muted);
+    }
+
+    .posts-empty-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(75,181,67,.07);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 14px;
+        color: var(--green);
+    }
+
+        .posts-empty-icon svg {
+            width: 28px;
+            height: 28px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .posts-empty p {
+        font-size: 13.5px;
+        font-weight: 500;
+    }
+
+    /* ══ MODAL ══════════════════════════════════════════════════════ */
+    .pm-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 800;
+        background: rgba(26,35,52,.38);
+    }
+
+        .pm-overlay.open {
+            display: block;
+        }
+
+    .pm-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100vh;
+        background: #fff;
+        box-shadow: -4px 0 28px rgba(0,0,0,.14);
+        display: none;
+        flex-direction: column;
+        z-index: 801;
+        overflow: hidden;
+        animation: pmSlide .22s ease;
+    }
+
+        .pm-panel.open {
+            display: flex;
+        }
+
+    @@keyframes pmSlide {
+        from {
+            transform: translateX(100%);
+        }
+
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    .pm-close {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        width: 28px;
+        height: 28px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        color: var(--muted);
+        transition: all .15s;
+    }
+
+        .pm-close:hover {
+            background: #e3e6ea;
+            color: var(--text);
+        }
+
+        .pm-close svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .pm-tab-bar {
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+        flex-shrink: 0;
+    }
+
+    .pm-tab {
+        padding: 14px 12px 12px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-family: 'DM Sans',sans-serif;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        margin-bottom: -1px;
+        transition: color .15s, border-color .15s;
+    }
+
+        .pm-tab:hover {
+            color: var(--text);
+        }
+
+        .pm-tab.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+        }
+
+    .pm-export {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .pm-export svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        .pm-export:hover {
+            border-color: var(--green);
+            color: var(--green-d);
+        }
+
+    .pm-body {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .pm-pane {
+        display: none;
+        padding: 18px;
+    }
+
+        .pm-pane.active {
+            display: block;
+        }
+
+    .pm-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        height: 200px;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .pm-spinner {
+        width: 26px;
+        height: 26px;
+        border: 3px solid var(--border);
+        border-top-color: var(--green);
+        border-radius: 50%;
+        animation: spin .65s linear infinite;
+    }
+
+    @@keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div class="posts-page">
+
+    <!-- Platform icon tabs + view toggles -->
+    <div class="posts-top-bar">
+        <div class="plat-icon-tabs">
+            <a href="/Posts?platform=facebook&tab=@Model.ActiveTab"
+               class="plat-icon-tab @(Model.ActivePlatform == "facebook" ? "active-fb" : "")">
+                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "facebook" ? "#1877F2" : "#9CA3AF")">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                </svg>
+            </a>
+            <a href="/Posts?platform=twitter&tab=@Model.ActiveTab"
+               class="plat-icon-tab @(Model.ActivePlatform == "twitter" ? "active-tw" : "")">
+                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "twitter" ? "#000" : "#9CA3AF")" width="17" height="17">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+            </a>
+            <a href="/Posts?platform=linkedin&tab=@Model.ActiveTab"
+               class="plat-icon-tab @(Model.ActivePlatform == "linkedin" ? "active-li" : "")">
+                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "linkedin" ? "#0A66C2" : "#9CA3AF")">
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
+                    <circle cx="4" cy="4" r="2" />
+                </svg>
+            </a>
+            <a href="/Posts?platform=instagram&tab=@Model.ActiveTab"
+               class="plat-icon-tab @(Model.ActivePlatform == "instagram" ? "active-ig" : "")">
+                <svg viewBox="0 0 24 24" fill="none"
+                     stroke="@(Model.ActivePlatform == "instagram" ? "#E1306C" : "#9CA3AF")" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="5" />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+            </a>
+        </div>
+
+        <div class="posts-bar-right">
+            <button class="view-icon-btn active" title="List view">
+                <svg viewBox="0 0 24 24" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6" />
+                    <line x1="8" y1="12" x2="21" y2="12" />
+                    <line x1="8" y1="18" x2="21" y2="18" />
+                    <line x1="3" y1="6" x2="3.01" y2="6" />
+                    <line x1="3" y1="12" x2="3.01" y2="12" />
+                    <line x1="3" y1="18" x2="3.01" y2="18" />
+                </svg>
+            </button>
+            <button class="view-icon-btn" title="Grid view">
+                <svg viewBox="0 0 24 24" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                </svg>
+            </button>
+            <button class="view-icon-btn" title="Refresh" onclick="location.reload()">
+                <svg viewBox="0 0 24 24" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                </svg>
+            </button>
+            <span class="sort-label">
+                Sort by: <strong>Recent Posts</strong>
+                <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+            </span>
+        </div>
+    </div>
+
+    <!-- Sub nav tabs -->
+    <div class="posts-subnav">
+        <a href="/Posts?platform=@Model.ActivePlatform&tab=published"
+           class="@(Model.ActiveTab == "published" ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+            Published Posts
+        </a>
+        <a href="/Posts?platform=@Model.ActivePlatform&tab=scheduled"
+           class="@(Model.ActiveTab == "scheduled" ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Scheduled Posts
+        </a>
+        <a href="/Posts?platform=@Model.ActivePlatform&tab=approvals"
+           class="@(Model.ActiveTab == "approvals" ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+            Approvals
+        </a>
+        <a href="/Posts?platform=@Model.ActivePlatform&tab=unpublished"
+           class="@(Model.ActiveTab == "unpublished" ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+            Unpublished Posts
+        </a>
+        <a href="/Posts?platform=@Model.ActivePlatform&tab=draft"
+           class="@(Model.ActiveTab == "draft" ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+            </svg>
+            Drafts
+        </a>
+        <a href="#">
+            <svg viewBox="0 0 24 24" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Calendar
+        </a>
+        <span class="subnav-sep">|</span>
+        <a href="#">RSS Feeds</a>
+        <a href="#">Social Library</a>
+    </div>
+
+    <!-- Posts Table -->
+    <div class="posts-table-wrap">
+        <table class="posts-tbl">
+            <thead>
+                <tr>
+                    <th style="width:155px">PUBLISHED ON</th>
+                    <th>POST CONTENT</th>
+                    <th style="width:130px;text-align:center">
+                        INTERACTION
+                        <svg viewBox="0 0 24 24" width="11" height="11" style="stroke:var(--muted);fill:none;stroke-width:2;vertical-align:middle;margin-left:2px">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                        </svg>
+                    </th>
+                    <th style="width:160px">PUBLISHED BY</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Posts.Any())
+                {
+                    <tr>
+                        <td colspan="4">
+                            <div class="posts-empty">
+                                <div class="posts-empty-icon">
+                                    <svg viewBox="0 0 24 24" stroke-width="1.5">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" />
+                                        <line x1="8" y1="21" x2="16" y2="21" />
+                                        <line x1="12" y1="17" x2="12" y2="21" />
+                                    </svg>
+                                </div>
+                                <p>No posts found for @Model.ActivePlatform.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var post in Model.Posts)
+                    {
+                        // Date: CreatedTime (Graph API) > UpdatedAt (DB)
+                        var postDate = post.CreatedTime.HasValue
+                        ? post.CreatedTime.Value.ToLocalTime()
+                        : post.UpdatedAt.ToLocalTime();
+
+                        <tr class="post-tr" onclick="openPM('@post.PostId', '@post.PageId')">
+                            <td>
+                                <div class="p-date">@postDate.ToString("dd MMM yyyy")</div>
+                                <div class="p-time">@postDate.ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                <div class="p-content-cell">
+                                    <div class="p-thumb">
+                                        <div class="p-thumb-icon">
+                                            <svg viewBox="0 0 24 24" stroke-width="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(post.FullPicture))
+                                        {
+                                            <img src="@post.FullPicture" alt="post" />
+                                        }
+                                        else
+                                        {
+                                            <svg viewBox="0 0 24 24" stroke-width="1.5">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                        }
+                                    </div>
+                                    <span class="p-text-preview">
+                                        @(string.IsNullOrEmpty(post.Message) ? "(No text)" : post.Message)
+                                    </span>
+                                </div>
+                            </td>
+                            <td style="text-align:center">
+                                @if (post.TotalEngagement > 0)
+                                {
+                                    <span class="p-engage-num">@post.TotalEngagement</span>
+                                }
+                                else
+                                {
+                                    <span class="p-engage-dash">-</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="p-via">via @Model.ActivePlatform</span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="pm-overlay" id="pmOverlay" onclick="if(event.target===this)closePM()"></div>
+
+<!-- Modal Panel -->
+<div class="pm-panel" id="pmPanel">
+    <button class="pm-close" onclick="closePM()">
+        <svg viewBox="0 0 24 24" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+    </button>
+    <div class="pm-tab-bar">
+        <button class="pm-tab active" data-tab="pm-details">Post Details</button>
+        <button class="pm-tab" data-tab="pm-stats">Post Stats</button>
+        <button class="pm-export">
+            <svg viewBox="0 0 24 24" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Export
+        </button>
+    </div>
+    <div class="pm-body" id="pmBody">
+        <div class="pm-loading">
+            <div class="pm-spinner"></div>
+            <span>Loading...</span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openPM(postId, pageId) {
+            document.getElementById('pmOverlay').classList.add('open');
+            document.getElementById('pmPanel').classList.add('open');
+            document.getElementById('pmBody').innerHTML =
+                '<div class="pm-loading"><div class="pm-spinner"></div><span>Loading...</span></div>';
+
+            // Tab reset
+            document.querySelectorAll('.pm-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.pm-tab[data-tab="pm-details"]').classList.add('active');
+
+            // pageId null/undefined guard
+            pageId = pageId || '';
+
+            fetch('/Posts/Details?postId=' + encodeURIComponent(postId)
+                             + '&pageId=' + encodeURIComponent(pageId),
+                {
+                    credentials: 'same-origin',  // session cookie bhejta hai
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.text();
+                })
+                .then(html => {
+                    document.getElementById('pmBody').innerHTML = html;
+                    initPMTabs();
+                })
+                .catch(err => {
+                    document.getElementById('pmBody').innerHTML =
+                        '<p style="padding:30px;color:#dc3545;text-align:center">Failed to load post. (' + err.message + ')</p>';
+                });
+        }
+
+        function closePM() {
+            document.getElementById('pmOverlay').classList.remove('open');
+            document.getElementById('pmPanel').classList.remove('open');
+        }
+
+        function initPMTabs() {
+            document.querySelectorAll('.pm-tab').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.pm-tab').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.pm-pane').forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    const t = document.getElementById(this.dataset.tab);
+                    if (t) t.classList.add('active');
+                });
+            });
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closePM(); });
+    </script>
+}

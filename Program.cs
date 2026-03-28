@@ -32,6 +32,7 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IPostService, PostService>();
 
 var app = builder.Build();
 
