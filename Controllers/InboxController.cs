@@ -300,7 +300,7 @@ namespace SocialMediaPanel.Controllers
             var userid = HttpContext.Session.GetInt32("UserId");
 
             var account = await _db.UserTokens
-                .Where(a => a.userId == userid.ToString())
+                .Where(a => a.userId == userid)
                 .Select(a => a.facebooktoken)
                 .FirstOrDefaultAsync();
 

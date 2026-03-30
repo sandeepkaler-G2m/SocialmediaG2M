@@ -80,7 +80,7 @@ namespace SocialMediaPanel.Controllers
      string? code,
      string? state,
      string? error,
-     string? error_description)
+     string? error_description, int? userid)
         {
             // ── Handle OAuth errors ─────────────────────────────
             if (error != null)
@@ -147,13 +147,13 @@ namespace SocialMediaPanel.Controllers
 
                 //var account = accounts.First();
 
-                var userid = HttpContext.Session.GetInt32("UserId");
+                var Userid = HttpContext.Session.GetInt32("UserId");
                 var username = HttpContext.Session.GetString("UserEmail");
 
                 // Step 3: Save token
                 var token = new UserToken
                 {
-                    userId = userid.ToString(),
+                    userId = (int)userid,
                     username = username.ToString(),
                     instagramtoken = longToken,
                     CreatedAt = DateTime.UtcNow
@@ -320,7 +320,7 @@ namespace SocialMediaPanel.Controllers
 
                 var token = new UserToken
                 {
-                    userId = userid.ToString(),
+                    userId = (int)userid,
                     username = username.ToString(),
                     facebooktoken = tokenResult.LongLivedToken,
                     CreatedAt = DateTime.UtcNow

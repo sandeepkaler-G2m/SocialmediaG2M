@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SocialMediaPanel.Data;
 using SocialMediaPanel.Services;
 
 namespace SocialMediaPanel.Controllers
@@ -8,86 +6,92 @@ namespace SocialMediaPanel.Controllers
     public class PostsController : Controller
     {
         private readonly IPostService _postService;
-        private readonly AppDbContext _db;
 
-        public PostsController(IPostService postService, AppDbContext db)
+        public PostsController(IPostService postService)
         {
             _postService = postService;
-            _db = db;
         }
 
-        // ── Session se userId lo ─────────────────────────────────────
         private int? GetUserId() => HttpContext.Session.GetInt32("UserId");
+        private string GetUserEmail() => HttpContext.Session.GetString("UserEmail") ?? string.Empty;
 
-        // ── PageId: session mein hai toh wahi, warna post_insights se pehla ──
-        private async Task<string?> GetPageIdAsync()
-        {
-            // Session mein stored pageId (Facebook connect ke waqt save hoti hai)
-            var sessionPageId = HttpContext.Session.GetString("PageId");
-            if (!string.IsNullOrEmpty(sessionPageId))
-                return sessionPageId;
-
-            // Fallback: post_insights table se pehla pageId uthao
-            var pageId = await _db.PostInsights
-                .Where(p => p.PageId != null)
-                .Select(p => p.PageId)
-                .FirstOrDefaultAsync();
-
-            return pageId;
-        }
-
-        // ── GET /Posts?platform=facebook&tab=published ────────────────
+        // ── GET /Posts ────────────────────────────────────────────────
         public async Task<IActionResult> Index(string platform = "facebook", string tab = "published")
         {
-            var userId = GetUserId();
-            if (userId == null) return RedirectToAction("Login", "Account");
+            if (GetUserId() == null) return RedirectToAction("Login", "Account");
 
+            var email = GetUserEmail();
             ViewBag.UserName = HttpContext.Session.GetString("UserName") ?? "User";
             ViewBag.CompanyName = HttpContext.Session.GetString("CompanyName") ?? "Your Workspace";
 
-            // PageId — session ya DB se
-            var pageId = await GetPageIdAsync();
-
-            if (string.IsNullOrEmpty(pageId))
+            if (string.IsNullOrEmpty(email))
             {
-                // Koi page connected nahi — empty list dikhao
-                var empty = new SocialMediaPanel.ViewModels.PostListViewModel
+                ViewBag.NoToken = true;
+                return View(new SocialMediaPanel.ViewModels.PostListViewModel
                 {
                     ActivePlatform = platform,
                     ActiveTab = tab
-                };
-                ViewBag.NoPageConnected = true;
-                return View(empty);
+                });
             }
 
-            var vm = await _postService.GetPostsAsync(pageId, platform);
+            var vm = await _postService.GetPostsAsync(email, platform);
             vm.ActiveTab = tab;
-
             return View(vm);
         }
 
-        // ── GET /Posts/Details?postId=xxx&pageId=yyy → modal partial ─
-        // postId aur pageId directly post_insights table ke fields hain
+        // ── GET /Posts/Details → modal partial ───────────────────────
         [HttpGet]
         public async Task<IActionResult> Details(string postId, string pageId)
         {
-            // pageId agar empty ho toh session/DB se lo
-            if (string.IsNullOrEmpty(pageId))
-                pageId = await GetPageIdAsync() ?? string.Empty;
+            if (GetUserId() == null) return Unauthorized();
+            if (string.IsNullOrEmpty(postId)) return BadRequest("postId required");
 
-            if (string.IsNullOrEmpty(postId))
-                return BadRequest("postId is required");
+            var email = GetUserEmail();
+            if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-            // Pehle verify karo ki yeh post exist karti hai post_insights mein
-            var exists = await _db.PostInsights
-                .AnyAsync(p => p.PostId == postId && p.PageId == pageId);
-
-            if (!exists) return NotFound();
-
-            var post = await _postService.GetPostDetailAsync(postId, pageId);
+            var post = await _postService.GetPostDetailAsync(postId, email);
             if (post == null) return NotFound();
 
             return PartialView("_PostModal", post);
+        }
+
+        // ── POST /Posts/Like ──────────────────────────────────────────
+        [HttpPost]
+        public async Task<IActionResult> Like(string postId)
+        {
+            if (GetUserId() == null)
+                return Json(new { success = false, message = "Not logged in" });
+
+            var ok = await _postService.LikePostAsync(postId, GetUserEmail());
+            return Json(new { success = ok, message = ok ? "Liked!" : "Failed. Token expired?" });
+        }
+
+        // ── POST /Posts/Comment ───────────────────────────────────────
+        [HttpPost]
+        public async Task<IActionResult> Comment(string postId, string message)
+        {
+            if (GetUserId() == null)
+                return Json(new { success = false, message = "Not logged in" });
+
+            if (string.IsNullOrEmpty(message))
+                return Json(new { success = false, message = "Comment empty" });
+
+            var ok = await _postService.AddCommentAsync(postId, message, GetUserEmail());
+            return Json(new { success = ok, message = ok ? "Comment posted!" : "Failed." });
+        }
+
+        // ── POST /Posts/Reply → comment ka reply ─────────────────────
+        [HttpPost]
+        public async Task<IActionResult> Reply(string commentId, string message)
+        {
+            if (GetUserId() == null)
+                return Json(new { success = false, message = "Not logged in" });
+
+            if (string.IsNullOrEmpty(message))
+                return Json(new { success = false, message = "Reply empty" });
+
+            var ok = await _postService.ReplyToCommentAsync(commentId, message, GetUserEmail());
+            return Json(new { success = ok, message = ok ? "Reply posted!" : "Failed." });
         }
     }
 }
