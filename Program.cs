@@ -5,6 +5,11 @@ using SocialMediaPanel.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8080); // accessible via public IP
+});
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
