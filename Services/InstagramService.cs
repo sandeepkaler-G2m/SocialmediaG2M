@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Azure.Core;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace SocialMediaPanel.Services
@@ -14,111 +15,115 @@ namespace SocialMediaPanel.Services
             _http = factory.CreateClient("Facebook"); // same client
         }
 
-        private string AppId => _config["Facebook:AppId"]!;
-        private string AppSecret => _config["Facebook:AppSecret"]!;
+        private string AppId => _config["Instagram:AppId"]!;
+        private string AppSecret => _config["Instagram:AppSecret"]!;
         private string RedirectUri => "https://localhost:7276/Integrations/Callback/instagram";
 
         // ✅ Instagram scopes (IMPORTANT)
-        private string scope =
-            "instagram_basic,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement";
-
+        private string Scope =
+    "instagram_business_basic," +
+    "instagram_business_manage_comments," +
+    "instagram_business_manage_insights," +
+    "instagram_business_content_publish," +
+    "instagram_business_manage_messages";
         // ── Step 1: OAuth URL ───────────────────────────────
         public string BuildOAuthUrl(string state)
         {
-            return "https://www.facebook.com/v19.0/dialog/oauth"
+            // ✅ www.instagram.com NOT api.instagram.com
+            return "https://www.instagram.com/oauth/authorize"
                 + $"?client_id={Uri.EscapeDataString(AppId)}"
                 + $"&redirect_uri={Uri.EscapeDataString(RedirectUri)}"
-                + $"&scope={Uri.EscapeDataString(scope)}"
+                + $"&scope={Uri.EscapeDataString(Scope)}"
                 + $"&state={Uri.EscapeDataString(state)}"
-                + "&response_type=code";
+                + "&response_type=code"
+                + "&force_reauth=true";  // optional but good UX
         }
 
         // ── Step 2: Exchange Token (same as FB) ─────────────
         public async Task<string> ExchangeCodeAsync(string code)
         {
-            var url = "https://graph.facebook.com/v19.0/oauth/access_token"
-                + $"?client_id={AppId}"
-                + $"&redirect_uri={Uri.EscapeDataString(RedirectUri)}"
-                + $"&client_secret={AppSecret}"
-                + $"&code={code}";
+            var body = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string,string>("client_id", AppId),
+                new KeyValuePair<string,string>("client_secret", AppSecret),
+                new KeyValuePair<string,string>("grant_type", "authorization_code"),
+                new KeyValuePair<string,string>("redirect_uri", RedirectUri),
+                new KeyValuePair<string,string>("code", code)
+            });
 
-            var res = await _http.GetAsync(url);
+            var res = await _http.PostAsync("https://api.instagram.com/oauth/access_token", body);
             res.EnsureSuccessStatusCode();
 
             var json = await res.Content.ReadAsStringAsync();
-            var payload = JsonSerializer.Deserialize<FbTokenPayloadInsta>(json);
+            var payload = JsonSerializer.Deserialize<IgTokenPayload>(json);
 
-            return payload?.AccessToken ?? throw new Exception("Token failed");
+            return payload?.AccessToken ?? throw new Exception("Token exchange failed");
+        }
+
+        // ── Step 3: Exchange for long-lived token (60 days) ─
+        // ── Step 3: Get long-lived token — with fallback ───
+        public async Task<string> GetLongLivedTokenAsync(string shortLivedToken)
+        {
+            try
+            {
+                var url = "https://graph.instagram.com/access_token"
+    + $"?grant_type=ig_exchange_token"
+    + $"&client_secret={AppSecret}"
+    + $"&access_token={shortLivedToken}";
+
+                var res = await _http.GetAsync(url);
+                var json = await res.Content.ReadAsStringAsync();
+                Console.WriteLine("LONG TOKEN RESPONSE: " + json);
+                res.EnsureSuccessStatusCode();
+
+                using var doc = JsonDocument.Parse(json);
+                return doc.RootElement.GetProperty("access_token").GetString();
+            }
+            catch
+            {
+                return shortLivedToken; // fallback
+            }
         }
 
         // ── Step 3: Get Instagram Business Account ─────────
-        public async Task<List<InstagramAccount>> GetInstagramAccountsAsync(string userToken)
+        public async Task<InstagramAccount> GetInstagramAccountsAsync(string accessToken)
         {
-            // Step 1: get pages
-            var pagesUrl = $"https://graph.facebook.com/v19.0/me/accounts?access_token={userToken}";
-            var pagesRes = await _http.GetAsync(pagesUrl);
-            pagesRes.EnsureSuccessStatusCode();
+            // Uses graph.instagram.com NOT graph.facebook.com
+            var fields = "id,username,name,profile_picture_url";
+            var url = $"https://graph.instagram.com/me?fields={fields}&access_token={accessToken}";
+            var res = await _http.GetAsync(url);
+            res.EnsureSuccessStatusCode();
 
-            var pagesJson = JsonDocument.Parse(await pagesRes.Content.ReadAsStringAsync());
+            var json = JsonDocument.Parse(await res.Content.ReadAsStringAsync());
+            var root = json.RootElement;
 
-            var result = new List<InstagramAccount>();
-
-            foreach (var page in pagesJson.RootElement.GetProperty("data").EnumerateArray())
+            return new InstagramAccount
             {
-                var pageId = page.GetProperty("id").GetString();
-                var pageToken = page.GetProperty("access_token").GetString();
-
-                // Step 2: get IG account from page
-                var igUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=instagram_business_account&access_token={pageToken}";
-                var igRes = await _http.GetAsync(igUrl);
-                igRes.EnsureSuccessStatusCode();
-
-                var igJson = JsonDocument.Parse(await igRes.Content.ReadAsStringAsync());
-
-                if (igJson.RootElement.TryGetProperty("instagram_business_account", out var igAcc))
-                {
-                    var igId = igAcc.GetProperty("id").GetString();
-
-                    // Step 3: get IG details
-                    var detailUrl = $"https://graph.facebook.com/v19.0/{igId}?fields=username,profile_picture_url&access_token={pageToken}";
-                    var detailRes = await _http.GetAsync(detailUrl);
-                    detailRes.EnsureSuccessStatusCode();
-
-                    var detailJson = JsonDocument.Parse(await detailRes.Content.ReadAsStringAsync());
-
-                    result.Add(new InstagramAccount
-                    {
-                        InstagramId = igId!,
-                        Username = detailJson.RootElement.GetProperty("username").GetString() ?? "",
-                        ProfilePicture = detailJson.RootElement.GetProperty("profile_picture_url").GetString() ?? "",
-                        PageId = pageId!,
-                        PageAccessToken = pageToken!
-                    });
-                }
-            }
-
-            return result;
+                InstagramId = root.GetProperty("id").GetString()!,
+                Username = root.GetProperty("username").GetString()!,
+                ProfilePicture = root.TryGetProperty("profile_picture_url", out var pic)
+                    ? pic.GetString() ?? "" : "",
+                AccessToken = accessToken  // store this directly, no page token needed
+            };
         }
 
         // ── Reply to comment ───────────────────────────────
         public async Task<(bool Success, string Error)> ReplyToCommentAsync(
-            string commentId, string message, string pageToken)
+            string commentId, string message, string accessToken)
         {
-            var url = $"https://graph.facebook.com/v19.0/{commentId}/replies";
+            // Now uses graph.instagram.com
+            var url = $"https://graph.instagram.com/v21.0/{commentId}/replies";
 
             var body = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string,string>("message", message),
-                new KeyValuePair<string,string>("access_token", pageToken)
+                new KeyValuePair<string,string>("access_token", accessToken)
             });
 
             var res = await _http.PostAsync(url, body);
             var json = await res.Content.ReadAsStringAsync();
 
-            if (!res.IsSuccessStatusCode)
-                return (false, json);
-
-            return (true, "");
+            return res.IsSuccessStatusCode ? (true, "") : (false, json);
         }
     }
 
@@ -127,13 +132,24 @@ namespace SocialMediaPanel.Services
         public string InstagramId { get; set; } = "";
         public string Username { get; set; } = "";
         public string ProfilePicture { get; set; } = "";
-        public string PageId { get; set; } = "";
-        public string PageAccessToken { get; set; } = "";
+        public string AccessToken { get; set; } = "";  // No more PageAccessToken!
     }
 
-    internal class FbTokenPayloadInsta
+    internal class IgTokenPayload
     {
         [System.Text.Json.Serialization.JsonPropertyName("access_token")]
         public string? AccessToken { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("user_id")]
+        public long UserId { get; set; }
+    }
+
+    internal class IgLongLivedTokenPayload
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("access_token")]
+        public string? AccessToken { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("expires_in")]
+        public int ExpiresIn { get; set; }
     }
 }

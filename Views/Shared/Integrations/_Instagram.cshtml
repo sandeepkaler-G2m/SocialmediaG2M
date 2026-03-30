@@ -362,26 +362,28 @@
             }
         }
 
-        function _wireOAuthBtn() {
-            var btn  = document.getElementById('fbOauthBtn');
-            if (!btn) return;
-            var href = btn.getAttribute('href') || '';
+            function _wireOAuthBtn() {
+        var btn  = document.getElementById('fbOauthBtn');
+        if (!btn) return;
+        var href = btn.getAttribute('href') || '';
 
-            if (href.indexOf('facebook.com') === -1) {
-                btn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    var sideBtn = document.querySelector('.connect-btn[data-platform="facebook"]');
-                    if (sideBtn) { sideBtn.classList.add('connected'); sideBtn.textContent = '\u2713 Connected'; }
-                    window._fbShowSuccess('Your Facebook Page');
-                });
-            } else {
-                btn.addEventListener('click', function () {
-                    btn.style.opacity      = '0.7';
-                    btn.style.pointerEvents = 'none';
-                    btn.innerHTML          = '<span>Redirecting to Facebook\u2026</span>';
-                });
-            }
+        if (!href || href === '#') {
+            // No real URL — demo/fallback mode
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                var sideBtn = document.querySelector('.connect-btn[data-platform="instagram"]');
+                if (sideBtn) { sideBtn.classList.add('connected'); sideBtn.textContent = '\u2713 Connected'; }
+                window._fbShowSuccess('Your Instagram Account');
+            });
+        } else {
+            // Real OAuth URL — just show loading state and let the href do its job
+            btn.addEventListener('click', function () {
+                btn.style.opacity       = '0.7';
+                btn.style.pointerEvents = 'none';
+                btn.innerHTML           = '<span>Redirecting to Instagram\u2026</span>';
+            });
         }
+    }
 
         _show(1);
     })();

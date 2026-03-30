@@ -127,18 +127,25 @@ namespace SocialMediaPanel.Controllers
             try
             {
                 // Step 1: Exchange token
-                var userToken = await _instagram.ExchangeCodeAsync(code);
+                //var userToken = await _instagram.ExchangeCodeAsync(code);
+                var shortToken = await _instagram.ExchangeCodeAsync(code);
 
-                // Step 2: Get Instagram accounts via pages
-                var accounts = await _instagram.GetInstagramAccountsAsync(userToken);
+                var longToken = await _instagram.GetLongLivedTokenAsync(shortToken);
 
-                if (accounts.Count == 0)
-                {
-                    TempData["IntegrationError"] = "No Instagram Business account found. Please connect your Instagram to a Facebook Page.";
-                    return RedirectToAction("Index", "Dashboard");
-                }
+                var account = await _instagram.GetInstagramAccountsAsync(longToken);
 
-                var account = accounts.First();
+
+
+                //// Step 2: Get Instagram accounts via pages
+                //var accounts = await _instagram.GetInstagramAccountsAsync(userToken);
+
+                //if (accounts.Count == 0)
+                //{
+                //    TempData["IntegrationError"] = "No Instagram Business account found. Please connect your Instagram to a Facebook Page.";
+                //    return RedirectToAction("Index", "Dashboard");
+                //}
+
+                //var account = accounts.First();
 
                 var userid = HttpContext.Session.GetInt32("UserId");
                 var username = HttpContext.Session.GetString("UserEmail");
@@ -148,12 +155,12 @@ namespace SocialMediaPanel.Controllers
                 {
                     userId = userid.ToString(),
                     username = username.ToString(),
-                    instagramtoken = account.PageAccessToken,
+                    instagramtoken = longToken,
                     CreatedAt = DateTime.UtcNow
                 };
 
                 _context.UserTokens.Add(token);
-                await _context.SaveChangesAsync();
+                var res = await _context.SaveChangesAsync();
 
                 TempData["IntegrationSuccess"] = "instagram";
                 TempData["InstagramName"] = account.Username;
