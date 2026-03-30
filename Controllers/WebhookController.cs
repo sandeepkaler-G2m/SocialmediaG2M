@@ -525,6 +525,23 @@ namespace SocialMediaPanel.Controllers
                         .FirstOrDefaultAsync();
 
                 var pageToken = account?.AccessToken;
+                var userAccount = await context.UserTokens
+    .Where(a => a.userId == 1) // ya session se userId le
+    .OrderByDescending(a => a.Id)
+    .FirstOrDefaultAsync();
+
+                string? PageToken = null;
+
+                // 🔥 Platform ke hisaab se token select karo
+                if (platform == "instagram" || platform == "instagram_dm")
+                {
+                    pageToken = userAccount?.instagramtoken;
+                }
+                else
+                {
+                    pageToken = userAccount?.facebooktoken;
+                }
+
 
                 if (string.IsNullOrEmpty(pageToken))
                 {
