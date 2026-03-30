@@ -5,252 +5,369 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SocialMediaPanel.Data;
-using SocialMediaPanel.Models;
 using SocialMediaPanel.ViewModels;
 
 namespace SocialMediaPanel.Services
 {
     public interface IPostService
     {
-        Task<PostListViewModel> GetPostsAsync(string pageId, string platform = "facebook");
-        Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string pageId);
-        Task<bool> LikePostAsync(string postId);
-        Task<bool> AddCommentAsync(string postId, string message);
+        Task<PostListViewModel> GetPostsAsync(string userEmail, string platform = "facebook");
+        Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail);
+        Task<bool> LikePostAsync(string postId, string userEmail);
+        Task<bool> AddCommentAsync(string postId, string message, string userEmail);
+        Task<bool> ReplyToCommentAsync(string commentId, string message, string userEmail); // ← NEW
     }
 
     public class PostService : IPostService
     {
         private readonly AppDbContext _db;
         private readonly IHttpClientFactory _http;
-        private readonly IConfiguration _config;
         private readonly ILogger<PostService> _logger;
 
-        public PostService(AppDbContext db, IHttpClientFactory http,
-                           IConfiguration config, ILogger<PostService> logger)
+        public PostService(AppDbContext db, IHttpClientFactory http, ILogger<PostService> logger)
         {
             _db = db;
             _http = http;
-            _config = config;
             _logger = logger;
         }
 
-        // Token from appsettings.json → "Facebook:PageAccessToken"
-        private string Token => _config["Facebook:PageAccessToken"] ?? "";
-
-        // ── 1. POSTS LIST ─────────────────────────────────────────────
-        public async Task<PostListViewModel> GetPostsAsync(string pageId, string platform = "facebook")
+        // ── Token fetch ───────────────────────────────────────────────
+        private async Task<string?> GetTokenAsync(string userEmail)
         {
-            var insights = await _db.PostInsights
-                .Where(p => p.PageId == pageId && p.Platform == platform)
-                .OrderByDescending(p => p.UpdatedAt)
-                .ToListAsync();
+            var row = await _db.UserTokens
+                .Where(t => t.username == userEmail
+                         && t.facebooktoken != null
+                         && t.facebooktoken != "")
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
 
-            var rows = new List<PostRowViewModel>();
-
-            foreach (var ins in insights)
-            {
-                var row = new PostRowViewModel
-                {
-                    Id = ins.Id,
-                    PostId = ins.PostId,
-                    PageId = ins.PageId,
-                    Platform = ins.Platform,
-                    LikesCount = ins.LikesCount,
-                    CommentsCount = ins.CommentsCount,
-                    SharesCount = ins.SharesCount,
-                    Reach = ins.Reach,
-                    Impressions = ins.Impressions,
-                    SavesCount = ins.SavesCount,
-                    UpdatedAt = ins.UpdatedAt,
-                };
-
-                // Graph API se message, image, date fetch karo
-                var fb = await FetchGraphPostAsync(ins.PostId);
-                if (fb != null)
-                {
-                    row.Message = fb.Message;
-                    row.FullPicture = fb.FullPicture;
-                    row.CreatedTime = fb.CreatedTime;
-                    row.PermalinkUrl = fb.PermalinkUrl;
-                }
-
-                rows.Add(row);
-            }
-
-            return new PostListViewModel
-            {
-                Posts = rows,
-                ActivePlatform = platform,
-                ActiveTab = "published"
-            };
+            if (row == null) { _logger.LogWarning("No token: {e}", userEmail); return null; }
+            return row.facebooktoken;
         }
 
-        // ── 2. POST DETAIL ────────────────────────────────────────────
-        public async Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string pageId)
+        // ── Page ID + Page Token ──────────────────────────────────────
+        private async Task<(string pageId, string pageToken)?> GetFirstPageAsync(string userToken)
         {
-            var ins = await _db.PostInsights
-                .FirstOrDefaultAsync(p => p.PostId == postId && p.PageId == pageId);
-
-            if (ins == null) return null;
-
-            var vm = new PostDetailViewModel
-            {
-                Id = ins.Id,
-                PostId = ins.PostId,
-                PageId = ins.PageId,
-                Platform = ins.Platform,
-                LikesCount = ins.LikesCount,
-                CommentsCount = ins.CommentsCount,
-                SharesCount = ins.SharesCount,
-                Reach = ins.Reach,
-                Impressions = ins.Impressions,
-                SavesCount = ins.SavesCount,
-                UpdatedAt = ins.UpdatedAt,
-            };
-
-            // Graph API se post content
-            var fb = await FetchGraphPostAsync(postId);
-            if (fb != null)
-            {
-                vm.Message = fb.Message;
-                vm.FullPicture = fb.FullPicture;
-                vm.CreatedTime = fb.CreatedTime;
-                vm.PermalinkUrl = fb.PermalinkUrl;
-            }
-
-            // Comments from page_comments table
-            try
-            {
-                vm.Comments = await _db.PageComments
-                    .Where(c => c.PostId == postId && c.PageId == pageId)
-                    .OrderBy(c => c.CommentTime)
-                    .Select(c => new CommentRowViewModel
-                    {
-                        SenderName = c.SenderName ?? "Unknown",
-                        Message = c.Message,
-                        CommentTime = c.CommentTime
-                    })
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("PageComments load failed: {msg}", ex.Message);
-                vm.Comments = new List<CommentRowViewModel>();
-            }
-
-            return vm;
-        }
-
-        // ── 3. LIKE POST (Facebook Graph API) ────────────────────────
-        public async Task<bool> LikePostAsync(string postId)
-        {
-            if (string.IsNullOrEmpty(Token)) return false;
             try
             {
                 var client = _http.CreateClient();
-                var url = $"https://graph.facebook.com/v19.0/{postId}/likes"
-                           + $"?access_token={Token}";
-                var resp = await client.PostAsync(url, null);
-                return resp.IsSuccessStatusCode;
+                var resp = await client.GetAsync(
+                    $"https://graph.facebook.com/v19.0/me/accounts"
+                    + $"?fields=id,name,access_token&access_token={userToken}");
+
+                var body = await resp.Content.ReadAsStringAsync();
+                if (!resp.IsSuccessStatusCode) return null;
+
+                using var doc = JsonDocument.Parse(body);
+                if (!doc.RootElement.TryGetProperty("data", out var data)) return null;
+
+                var pages = data.EnumerateArray().ToList();
+                if (!pages.Any()) return null;
+
+                var first = pages[0];
+                var pageId = first.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+                var pageToken = first.TryGetProperty("access_token", out var at) ? at.GetString() ?? "" : "";
+
+                if (string.IsNullOrEmpty(pageId) || string.IsNullOrEmpty(pageToken)) return null;
+                return (pageId, pageToken);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError("LikePost failed: {msg}", ex.Message);
-                return false;
-            }
+            catch (Exception ex) { _logger.LogError("GetPage ex: {m}", ex.Message); return null; }
         }
 
-        // ── 4. ADD COMMENT (Facebook Graph API) ──────────────────────
-        public async Task<bool> AddCommentAsync(string postId, string message)
+        // ════════════════════════════════════════════════════════════
+        // 1. POSTS LIST
+        // ════════════════════════════════════════════════════════════
+        public async Task<PostListViewModel> GetPostsAsync(string userEmail, string platform = "facebook")
         {
-            if (string.IsNullOrEmpty(Token) || string.IsNullOrEmpty(message)) return false;
-            try
-            {
-                var client = _http.CreateClient();
-                var url = $"https://graph.facebook.com/v19.0/{postId}/comments"
-                            + $"?message={Uri.EscapeDataString(message)}"
-                            + $"&access_token={Token}";
-                var resp = await client.PostAsync(url, null);
-                return resp.IsSuccessStatusCode;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("AddComment failed: {msg}", ex.Message);
-                return false;
-            }
-        }
+            var userToken = await GetTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(userToken))
+                return new PostListViewModel { ActivePlatform = platform };
 
-        // ── 5. FACEBOOK GRAPH API FETCH ───────────────────────────────
-        private async Task<FbPostData?> FetchGraphPostAsync(string postId)
-        {
-            if (string.IsNullOrEmpty(Token))
-            {
-                _logger.LogWarning("Facebook:PageAccessToken is missing in appsettings.json");
-                return null;
-            }
+            var page = await GetFirstPageAsync(userToken);
+            if (page == null)
+                return new PostListViewModel { ActivePlatform = platform };
+
+            var (pageId, pageToken) = page.Value;
 
             try
             {
                 var client = _http.CreateClient();
-                var url = $"https://graph.facebook.com/v19.0/{postId}"
-                           + $"?fields=message,full_picture,created_time,permalink_url,attachments"
-                           + $"&access_token={Token}";
+                var url = $"https://graph.facebook.com/v19.0/{pageId}/posts"
+                           + $"?fields=id,message,full_picture,created_time,permalink_url"
+                           + $",likes.summary(true),comments.summary(true),shares"
+                           + $"&limit=25&access_token={pageToken}";
 
                 var resp = await client.GetAsync(url);
+                var body = await resp.Content.ReadAsStringAsync();
 
                 if (!resp.IsSuccessStatusCode)
+                    return new PostListViewModel { ActivePlatform = platform };
+
+                using var doc = JsonDocument.Parse(body);
+                var rows = new List<PostRowViewModel>();
+
+                if (doc.RootElement.TryGetProperty("data", out var data))
                 {
-                    var errBody = await resp.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Graph API error for {postId}: {status} — {body}",
-                        postId, resp.StatusCode, errBody);
-                    return null;
-                }
-
-                var json = await resp.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                var d = new FbPostData();
-
-                if (root.TryGetProperty("message", out var m)) d.Message = m.GetString();
-                if (root.TryGetProperty("full_picture", out var p)) d.FullPicture = p.GetString();
-                if (root.TryGetProperty("permalink_url", out var pl)) d.PermalinkUrl = pl.GetString();
-                if (root.TryGetProperty("created_time", out var ct) &&
-                    DateTime.TryParse(ct.GetString(), out var dt)) d.CreatedTime = dt;
-
-                // Agar full_picture nahi mila toh attachments se try karo
-                if (string.IsNullOrEmpty(d.FullPicture) &&
-                    root.TryGetProperty("attachments", out var att) &&
-                    att.TryGetProperty("data", out var attData) &&
-                    attData.GetArrayLength() > 0)
-                {
-                    var first = attData[0];
-                    if (first.TryGetProperty("media", out var media) &&
-                        media.TryGetProperty("image", out var img) &&
-                        img.TryGetProperty("src", out var src))
+                    foreach (var post in data.EnumerateArray())
                     {
-                        d.FullPicture = src.GetString();
+                        var row = new PostRowViewModel
+                        {
+                            PostId = post.TryGetProperty("id", out var pid) ? pid.GetString() ?? "" : "",
+                            PageId = pageId,
+                            Platform = platform,
+                        };
+
+                        if (post.TryGetProperty("message", out var msg)) row.Message = msg.GetString();
+                        if (post.TryGetProperty("full_picture", out var pic)) row.FullPicture = pic.GetString();
+                        if (post.TryGetProperty("permalink_url", out var pl)) row.PermalinkUrl = pl.GetString();
+                        if (post.TryGetProperty("created_time", out var ct) &&
+                            DateTime.TryParse(ct.GetString(), out var dt)) row.CreatedTime = dt;
+
+                        if (post.TryGetProperty("likes", out var likes) &&
+                            likes.TryGetProperty("summary", out var ls) &&
+                            ls.TryGetProperty("total_count", out var lc))
+                            row.LikesCount = lc.GetInt32();
+
+                        if (post.TryGetProperty("comments", out var cmts) &&
+                            cmts.TryGetProperty("summary", out var cs) &&
+                            cs.TryGetProperty("total_count", out var cc))
+                            row.CommentsCount = cc.GetInt32();
+
+                        if (post.TryGetProperty("shares", out var sh) &&
+                            sh.TryGetProperty("count", out var sc))
+                            row.SharesCount = sc.GetInt32();
+
+                        row.UpdatedAt = row.CreatedTime?.ToUniversalTime() ?? DateTime.UtcNow;
+                        rows.Add(row);
                     }
                 }
 
-                return d;
+                return new PostListViewModel { Posts = rows, ActivePlatform = platform, ActiveTab = "published" };
             }
             catch (Exception ex)
             {
-                _logger.LogError("FetchGraphPost exception for {postId}: {msg}", postId, ex.Message);
+                _logger.LogError("GetPosts ex: {m}", ex.Message);
+                return new PostListViewModel { ActivePlatform = platform };
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════
+        // 2. POST DETAIL — message, image, likes, comments with replies
+        // ════════════════════════════════════════════════════════════
+        public async Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail)
+        {
+            var userToken = await GetTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(userToken)) return null;
+
+            var page = await GetFirstPageAsync(userToken);
+            if (page == null) return null;
+
+            var (pageId, pageToken) = page.Value;
+
+            try
+            {
+                var client = _http.CreateClient();
+
+                // comments mein replies bhi fetch karo
+                var url = $"https://graph.facebook.com/v19.0/{postId}"
+                        + $"?fields=id,message,full_picture,created_time,permalink_url"
+                        + $",likes.summary(true)"
+                        + $",comments{{id,message,from,created_time,likes.summary(true),comments{{id,message,from,created_time}}}}"
+                        + $",shares"
+                        + $"&access_token={pageToken}";
+
+                var resp = await client.GetAsync(url);
+                var body = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("GetPostDetail failed: {b}", body);
+                    return null;
+                }
+
+                using var doc = JsonDocument.Parse(body);
+                var root = doc.RootElement;
+
+                var vm = new PostDetailViewModel
+                {
+                    PostId = postId,
+                    PageId = pageId,
+                    Platform = "facebook",
+                };
+
+                if (root.TryGetProperty("message", out var msg)) vm.Message = msg.GetString();
+                if (root.TryGetProperty("full_picture", out var pic)) vm.FullPicture = pic.GetString();
+                if (root.TryGetProperty("permalink_url", out var pl)) vm.PermalinkUrl = pl.GetString();
+                if (root.TryGetProperty("created_time", out var ct) &&
+                    DateTime.TryParse(ct.GetString(), out var dt)) vm.CreatedTime = dt;
+
+                vm.UpdatedAt = vm.CreatedTime?.ToUniversalTime() ?? DateTime.UtcNow;
+
+                if (root.TryGetProperty("likes", out var likes) &&
+                    likes.TryGetProperty("summary", out var ls) &&
+                    ls.TryGetProperty("total_count", out var lc))
+                    vm.LikesCount = lc.GetInt32();
+
+                if (root.TryGetProperty("shares", out var shares) &&
+                    shares.TryGetProperty("count", out var sc))
+                    vm.SharesCount = sc.GetInt32();
+
+                // Comments + nested replies
+                if (root.TryGetProperty("comments", out var cmts))
+                {
+                    if (cmts.TryGetProperty("summary", out var cs) &&
+                        cs.TryGetProperty("total_count", out var cc))
+                        vm.CommentsCount = cc.GetInt32();
+
+                    if (cmts.TryGetProperty("data", out var cdata))
+                    {
+                        foreach (var c in cdata.EnumerateArray())
+                        {
+                            var cr = new CommentRowViewModel();
+                            cr.CommentId = c.TryGetProperty("id", out var cid) ? cid.GetString() : "";
+                            cr.Message = c.TryGetProperty("message", out var cm) ? cm.GetString() : "";
+                            cr.SenderName = "";
+
+                            if (c.TryGetProperty("from", out var from) &&
+                                from.TryGetProperty("name", out var fn))
+                                cr.SenderName = fn.GetString() ?? "Unknown";
+
+                            if (c.TryGetProperty("created_time", out var cct) &&
+                                DateTime.TryParse(cct.GetString(), out var cdt))
+                                cr.CommentTime = cdt;
+
+                            // Comment likes
+                            if (c.TryGetProperty("likes", out var cLikes) &&
+                                cLikes.TryGetProperty("summary", out var cls) &&
+                                cls.TryGetProperty("total_count", out var clc))
+                                cr.LikesCount = clc.GetInt32();
+
+                            // Nested replies
+                            if (c.TryGetProperty("comments", out var replies) &&
+                                replies.TryGetProperty("data", out var rdata))
+                            {
+                                foreach (var r in rdata.EnumerateArray())
+                                {
+                                    var rr = new CommentRowViewModel();
+                                    rr.CommentId = r.TryGetProperty("id", out var rid) ? rid.GetString() : "";
+                                    rr.Message = r.TryGetProperty("message", out var rm) ? rm.GetString() : "";
+                                    rr.SenderName = "";
+
+                                    if (r.TryGetProperty("from", out var rfrom) &&
+                                        rfrom.TryGetProperty("name", out var rfn))
+                                        rr.SenderName = rfn.GetString() ?? "Unknown";
+
+                                    if (r.TryGetProperty("created_time", out var rct) &&
+                                        DateTime.TryParse(rct.GetString(), out var rdt))
+                                        rr.CommentTime = rdt;
+
+                                    cr.Replies.Add(rr);
+                                }
+                            }
+
+                            vm.Comments.Add(cr);
+                        }
+                    }
+                }
+
+                // Insights
+                try
+                {
+                    var insResp = await client.GetAsync(
+                        $"https://graph.facebook.com/v19.0/{postId}/insights"
+                        + $"?metric=post_impressions,post_reach"
+                        + $"&access_token={pageToken}");
+
+                    if (insResp.IsSuccessStatusCode)
+                    {
+                        var insBody = await insResp.Content.ReadAsStringAsync();
+                        using var insDoc = JsonDocument.Parse(insBody);
+                        if (insDoc.RootElement.TryGetProperty("data", out var insData))
+                        {
+                            foreach (var m in insData.EnumerateArray())
+                            {
+                                var mName = m.TryGetProperty("name", out var mn) ? mn.GetString() : "";
+                                if (m.TryGetProperty("values", out var mVals))
+                                {
+                                    var last = mVals.EnumerateArray().LastOrDefault();
+                                    if (last.TryGetProperty("value", out var v) &&
+                                        v.ValueKind == JsonValueKind.Number)
+                                    {
+                                        if (mName == "post_impressions") vm.Impressions = v.GetInt32();
+                                        if (mName == "post_reach") vm.Reach = v.GetInt32();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { /* insights optional */ }
+
+                return vm;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetPostDetail ex: {m}", ex.Message);
                 return null;
             }
         }
 
-        private class FbPostData
+        // ── 3. LIKE POST ──────────────────────────────────────────────
+        public async Task<bool> LikePostAsync(string postId, string userEmail)
         {
-            public string? Message { get; set; }
-            public string? FullPicture { get; set; }
-            public string? PermalinkUrl { get; set; }
-            public DateTime? CreatedTime { get; set; }
+            var userToken = await GetTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(userToken)) return false;
+            var page = await GetFirstPageAsync(userToken);
+            if (page == null) return false;
+            try
+            {
+                var client = _http.CreateClient();
+                var resp = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{postId}/likes?access_token={page.Value.pageToken}", null);
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex) { _logger.LogError("Like ex: {m}", ex.Message); return false; }
+        }
+
+        // ── 4. ADD COMMENT ────────────────────────────────────────────
+        public async Task<bool> AddCommentAsync(string postId, string message, string userEmail)
+        {
+            var userToken = await GetTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(userToken)) return false;
+            var page = await GetFirstPageAsync(userToken);
+            if (page == null) return false;
+            try
+            {
+                var client = _http.CreateClient();
+                var resp = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{postId}/comments"
+                    + $"?message={Uri.EscapeDataString(message)}"
+                    + $"&access_token={page.Value.pageToken}", null);
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex) { _logger.LogError("Comment ex: {m}", ex.Message); return false; }
+        }
+
+        // ── 5. REPLY TO COMMENT ───────────────────────────────────────
+        // commentId ke /comments endpoint pe POST karo
+        public async Task<bool> ReplyToCommentAsync(string commentId, string message, string userEmail)
+        {
+            var userToken = await GetTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(userToken)) return false;
+            var page = await GetFirstPageAsync(userToken);
+            if (page == null) return false;
+            try
+            {
+                var client = _http.CreateClient();
+                var resp = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{commentId}/comments"
+                    + $"?message={Uri.EscapeDataString(message)}"
+                    + $"&access_token={page.Value.pageToken}", null);
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex) { _logger.LogError("Reply ex: {m}", ex.Message); return false; }
         }
     }
 }

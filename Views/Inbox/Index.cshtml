@@ -5,18 +5,22 @@
 }
 
 <style>
-    /* ── Full-height shell ───────────────────────── */
+    .inbox-shell * {
+        box-sizing: border-box;
+    }
+
     .inbox-shell {
         display: flex;
         height: calc(100vh - 58px);
         margin: -28px;
         overflow: hidden;
+        font-family: 'DM Sans', sans-serif;
     }
 
-    /* ══ LEFT SUB-NAV ════════════════════════════ */
+    /* ══ LEFT NAV ══ */
     .inbox-nav {
-        width: 210px;
-        min-width: 210px;
+        width: 200px;
+        min-width: 200px;
         background: #fff;
         border-right: 1px solid var(--border);
         display: flex;
@@ -36,29 +40,29 @@
     }
 
     .inbox-nav-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 18px;
-        font-size: 13px;
-        color: var(--muted);
-        font-weight: 500;
-        cursor: pointer;
-        text-decoration: none;
-        border-left: 3px solid transparent;
-        transition: background .12s, color .12s;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 10px 18px !important;
+        font-size: 13px !important;
+        color: var(--muted) !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        border-left: 3px solid transparent !important;
+        transition: background .12s, color .12s !important;
     }
 
         .inbox-nav-item:hover {
-            background: #f4f5f7;
-            color: var(--text);
+            background: #f4f5f7 !important;
+            color: var(--text) !important;
         }
 
         .inbox-nav-item.active {
-            background: rgba(75,181,67,.07);
-            border-left-color: var(--green);
-            color: var(--green);
-            font-weight: 600;
+            background: rgba(75,181,67,.07) !important;
+            border-left-color: var(--green) !important;
+            color: var(--green) !important;
+            font-weight: 600 !important;
         }
 
     .inbox-nav-group {
@@ -89,105 +93,118 @@
         padding: 1px 6px;
         min-width: 18px;
         text-align: center;
+        line-height: 1.6;
     }
 
-    /* ══ MAIN AREA ═══════════════════════════════ */
-    .inbox-main {
-        flex: 1;
+    /* ══ CENTER — inbox list ══ */
+    .inbox-center {
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        background: #f2f3f5;
+        transition: width .25s ease, min-width .25s ease;
+        width: 40%;
         min-width: 0;
-        background: #f4f5f7;
+        flex-shrink: 0;
+    }
+    /* when detail panel is open, list shrinks to 40% */
+    .inbox-shell.detail-open .inbox-center {
+        width: 40%;
+        min-width: 320px;
     }
 
     .inbox-topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 20px;
+        padding: 11px 16px;
         background: #fff;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
-        gap: 10px;
+        gap: 8px;
         flex-wrap: wrap;
     }
 
         .inbox-topbar h2 {
             font-family: 'Sora', sans-serif;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--text);
             white-space: nowrap;
+            margin: 0;
         }
 
     .inbox-topbar-right {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
 
     .inbox-search {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 7px 14px;
-        background: #fff;
+        gap: 7px;
+        padding: 6px 11px;
+        background: #f4f5f7;
         border: 1px solid var(--border);
         border-radius: 9px;
-        width: 230px;
-        transition: border-color .15s;
+        width: 180px;
+        transition: border-color .15s, width .25s;
     }
 
-        .inbox-search:focus-within {
-            border-color: var(--green);
-        }
+    .inbox-shell.detail-open .inbox-search {
+        width: 130px;
+    }
 
-        .inbox-search svg {
-            width: 14px;
-            height: 14px;
-            stroke: var(--muted);
-            fill: none;
-            flex-shrink: 0;
-        }
+    .inbox-search:focus-within {
+        border-color: var(--green);
+        background: #fff;
+    }
 
-        .inbox-search input {
-            border: none;
-            outline: none;
-            background: none;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            width: 100%;
-        }
+    .inbox-search svg {
+        width: 12px;
+        height: 12px;
+        stroke: var(--muted);
+        fill: none;
+        flex-shrink: 0;
+    }
 
-            .inbox-search input::placeholder {
-                color: var(--muted);
-            }
+    .inbox-search input {
+        border: none;
+        outline: none;
+        background: none;
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--text);
+        width: 100%;
+    }
+
+        .inbox-search input::placeholder {
+            color: var(--muted);
+        }
 
     .tb-pill {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        background: #fff;
+        gap: 5px;
+        padding: 5px 10px;
+        background: #f4f5f7;
         border: 1px solid var(--border);
         border-radius: 8px;
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text);
         font-weight: 500;
         white-space: nowrap;
     }
 
         .tb-pill svg {
-            width: 13px;
-            height: 13px;
-            stroke: currentColor;
+            width: 12px;
+            height: 12px;
+            stroke: var(--muted);
             fill: none;
         }
 
-    /* Filter button wrapper */
     .tb-btn-filter-wrap {
         position: relative;
         display: inline-flex;
@@ -197,11 +214,11 @@
         display: flex;
         align-items: center;
         gap: 5px;
-        padding: 6px 14px;
+        padding: 5px 11px;
         background: #fff;
         border: 1.5px solid var(--border);
         border-radius: 8px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         color: var(--text);
         font-family: 'DM Sans', sans-serif;
@@ -215,8 +232,8 @@
         }
 
         .tb-btn-filter svg {
-            width: 13px;
-            height: 13px;
+            width: 12px;
+            height: 12px;
             stroke: currentColor;
             fill: none;
         }
@@ -226,8 +243,8 @@
         position: absolute;
         top: -5px;
         right: -5px;
-        width: 17px;
-        height: 17px;
+        width: 16px;
+        height: 16px;
         background: var(--green);
         color: #fff;
         border-radius: 50%;
@@ -242,37 +259,37 @@
             display: flex;
         }
 
-    /* Sort bar */
     .inbox-sortbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 8px 20px;
-        background: #fafbfc;
+        padding: 6px 16px;
+        background: #fff;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
     }
 
     .sort-dd {
-        padding: 5px 10px;
-        background: #fff;
+        padding: 4px 8px;
+        background: #f4f5f7;
         border: 1px solid var(--border);
         border-radius: 7px;
-        font-size: 12px;
+        font-size: 11px;
         font-family: 'DM Sans', sans-serif;
         color: var(--text);
         cursor: pointer;
+        outline: none;
     }
 
     .reload-btn {
         display: flex;
         align-items: center;
-        gap: 5px;
-        padding: 5px 12px;
+        gap: 4px;
+        padding: 4px 10px;
         background: #fff;
         border: 1px solid var(--border);
         border-radius: 7px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: var(--text);
         font-family: 'DM Sans', sans-serif;
@@ -286,8 +303,8 @@
         }
 
         .reload-btn svg {
-            width: 13px;
-            height: 13px;
+            width: 12px;
+            height: 12px;
             stroke: currentColor;
             fill: none;
         }
@@ -296,356 +313,782 @@
             animation: spin360 .7s linear infinite;
         }
 
-
-
-    /* Feed */
-    .inbox-feed {
-        flex: 1 !important;
-        overflow-y: auto !important;
-        padding: 16px 20px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 10px !important;
-        background: #f4f5f7 !important;
+    @@keyframes spin360 {
+        to {
+            transform: rotate(360deg);
+        }
     }
 
-    /* Message card */
+    .inbox-feed {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* ══ MESSAGE CARD ══ */
     .msg-card {
-        background: #fff !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 14px !important;
-        overflow: visible !important;
-        transition: box-shadow .15s;
-        display: block !important;
-        width: 100% !important;
+        background: #fff;
+        border: 1px solid #e2e4e9;
+        border-radius: 10px;
+        width: 100%;
+        overflow: visible;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04);
+        transition: box-shadow .15s, transform .1s, border-color .15s;
+        flex-shrink: 0;
     }
 
         .msg-card:hover {
             box-shadow: 0 3px 12px rgba(0,0,0,.08);
+            transform: translateY(-1px);
         }
 
-    .msg-card-header {
-        display: flex !important;
-        align-items: center !important;
-        gap: 12px;
-        padding: 14px 18px 10px !important;
+        .msg-card.active-card {
+            border-color: var(--green);
+            box-shadow: 0 0 0 2px rgba(75,181,67,.15);
+        }
+
+    .msg-card-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 11px 14px 7px;
         background: #fff;
+        border-radius: 10px 10px 0 0;
     }
 
-    .msg-avatar {
-        width: 40px !important;
-        height: 40px !important;
-        border-radius: 50% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 14px !important;
-        font-weight: 700 !important;
-        color: #fff !important;
-        flex-shrink: 0 !important;
-        position: relative !important;
-        line-height: 1 !important;
+    .msg-ava-wrap {
+        position: relative;
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
     }
 
-    .msg-platform-badge {
-        position: absolute !important;
-        bottom: -2px !important;
-        right: -2px !important;
-        width: 16px !important;
-        height: 16px !important;
-        border-radius: 50% !important;
-        background: #fff !important;
-        border: 1.5px solid #fff !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+    .msg-ava {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1;
+        user-select: none;
     }
 
-        .msg-platform-badge svg {
-            width: 11px !important;
-            height: 11px !important;
+    .msg-plat-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1.5px solid #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .msg-plat-dot svg {
+            width: 9px;
+            height: 9px;
+            display: block;
         }
 
-    .msg-avatar-info {
-        flex: 1 !important;
-        min-width: 0 !important;
+    .msg-meta {
+        flex: 1;
+        min-width: 0;
     }
 
-    .msg-sender-name {
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        color: var(--text) !important;
-        display: flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        margin: 0 !important;
+    .msg-name-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+        line-height: 1.3;
+        margin-bottom: 2px;
     }
 
-    .msg-sender-sub {
-        font-size: 11px !important;
-        color: var(--muted) !important;
-        margin-top: 2px !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+    .msg-profile-link {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1a1a2e;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
     }
 
-    .msg-header-right {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        flex-shrink: 0 !important;
+        .msg-profile-link:hover {
+            color: var(--green);
+        }
+
+        .msg-profile-link svg {
+            width: 9px;
+            height: 9px;
+            stroke: #aaa;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+    .msg-type-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .tbadge-comment {
+        background: #edfbe9;
+        color: #2e7d25;
+    }
+
+    .tbadge-message {
+        background: #e3f8f8;
+        color: #0e7a7a;
+    }
+
+    .tbadge-mention {
+        background: #fde8f3;
+        color: #c0166d;
+    }
+
+    .tbadge-live {
+        background: #fff0e6;
+        color: #c4511a;
+    }
+
+    .msg-replied-badge {
+        font-size: 9px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #e3f8f8;
+        color: #0e7a7a;
+    }
+
+    .msg-done-badge {
+        font-size: 9px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #edfbe9;
+        color: #2e7d25;
+    }
+
+    .msg-ctx {
+        font-size: 10px;
+        color: #8a8fa8;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        flex-wrap: wrap;
+    }
+
+        .msg-ctx svg {
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+        }
+
+        .msg-ctx strong {
+            color: #444;
+            font-weight: 600;
+        }
+
+        .msg-ctx a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+            .msg-ctx a:hover {
+                text-decoration: underline;
+            }
+
+    .msg-top-right {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-shrink: 0;
+        margin-left: auto;
+        padding-left: 6px;
     }
 
     .msg-time {
-        font-size: 11px !important;
-        color: var(--muted) !important;
-        white-space: nowrap !important;
+        font-size: 10px;
+        color: #aaa;
+        white-space: nowrap;
     }
 
-    .msg-type-badge {
-        font-size: 10px !important;
-        font-weight: 600 !important;
-        padding: 2px 8px !important;
-        border-radius: 4px !important;
-        display: inline-block !important;
-        line-height: 1.4 !important;
+    .msg-checkbox {
+        width: 14px;
+        height: 14px;
+        accent-color: var(--green);
+        cursor: pointer;
     }
 
-    .type-comment {
-        background: rgba(75,181,67,.1) !important;
-        color: #3a9e34 !important;
+    .msg-body-text {
+        padding: 2px 14px 11px 59px;
+        font-size: 12px;
+        color: #2a2a3a;
+        line-height: 1.6;
+        background: #fff;
+        word-break: break-word;
+        min-height: 24px;
     }
 
-    .type-message {
-        background: rgba(29,161,161,.1) !important;
-        color: #1DA1A1 !important;
+    .msg-body-empty {
+        color: #aaa;
+        font-style: italic;
+        font-size: 11px;
     }
 
-    .type-mention {
-        background: rgba(255,107,157,.1) !important;
-        color: #e91e8c !important;
+    .msg-actions-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 12px;
+        background: #fafbfc;
+        border-top: 1px solid #f0f1f4;
+        border-radius: 0 0 10px 10px;
     }
 
-    .msg-body {
-        display: block !important;
-        padding: 6px 18px 14px 70px !important;
-        font-size: 13px !important;
-        color: var(--text) !important;
-        line-height: 1.6 !important;
-        min-height: 36px !important;
-        background: #fff !important;
+    .msg-act-l {
+        display: flex;
+        align-items: center;
+        gap: 5px;
     }
 
-    .msg-actions {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 8px 18px !important;
-        border-top: 1px solid var(--border) !important;
-        background: #fafbfc !important;
+    .msg-act-r {
+        display: flex;
+        align-items: center;
+        gap: 2px;
     }
 
-    .msg-action-left {
-        display: flex !important;
-        align-items: center !important;
-        gap: 6px !important;
+    .btn-thread {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: #fff;
+        border: 1px solid #e2e4e9;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #333;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: border-color .15s, color .15s;
+        line-height: 1;
     }
 
-    .msg-action-right {
-        display: flex !important;
-        align-items: center !important;
-        gap: 4px !important;
-    }
-
-    .ma-btn {
-        display: flex !important;
-        align-items: center !important;
-        gap: 5px !important;
-        padding: 5px 12px !important;
-        background: #fff !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 7px !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        color: var(--text) !important;
-        font-family: 'DM Sans', sans-serif !important;
-        cursor: pointer !important;
-        text-decoration: none !important;
-        transition: border-color .15s;
-    }
-
-        .ma-btn:hover {
-            border-color: var(--green) !important;
-            color: var(--green) !important;
+        .btn-thread:hover, .btn-thread.active {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(75,181,67,.05);
         }
 
-    .ma-icon {
-        width: 30px !important;
-        height: 30px !important;
-        border-radius: 7px !important;
-        background: none !important;
-        border: 1px solid transparent !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        transition: background .12s, border-color .12s;
-    }
-
-        .ma-icon:hover {
-            background: #f4f5f7 !important;
-            border-color: var(--border) !important;
-        }
-
-        .ma-icon svg {
-            width: 15px !important;
-            height: 15px !important;
-            stroke: var(--muted);
+        .btn-thread svg {
+            width: 11px;
+            height: 11px;
+            stroke: currentColor;
             fill: none;
         }
 
-        .ma-icon.liked svg {
-            stroke: #e91e8c !important;
-            fill: #e91e8c !important;
+    .act-ico {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background: none;
+        border: 1px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background .12s, border-color .12s;
+        padding: 0;
+    }
+
+        .act-ico:hover {
+            background: #f0f1f3;
+            border-color: #e2e4e9;
         }
 
-        .ma-icon.done svg {
-            stroke: var(--green) !important;
+        .act-ico svg {
+            width: 13px;
+            height: 13px;
+            stroke: #aaa;
+            fill: none;
         }
 
-    /* Empty state */
+        .act-ico.liked svg {
+            stroke: #e91e8c;
+            fill: #e91e8c;
+        }
+
+        .act-ico.is-done svg {
+            stroke: var(--green);
+        }
+
+        .act-ico.is-saved svg {
+            stroke: #f39c12;
+            fill: #f39c12;
+        }
+
+    .msg-in-response {
+        padding: 5px 14px 5px 59px;
+        font-size: 10px;
+        color: #aaa;
+        border-top: 1px solid #f0f1f4;
+        background: #f8f9fb;
+        border-radius: 0 0 10px 10px;
+        font-style: italic;
+    }
+
     .inbox-empty {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        flex: 1;
+        padding: 40px;
         text-align: center;
-        padding: 48px;
     }
 
         .inbox-empty svg {
-            width: 64px;
-            height: 64px;
-            stroke: var(--muted);
+            width: 44px;
+            height: 44px;
+            stroke: #ccc;
             fill: none;
-            margin-bottom: 16px;
-            opacity: .4;
+            margin-bottom: 12px;
         }
 
         .inbox-empty h4 {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            color: var(--text);
-            margin-bottom: 8px;
+            color: #333;
+            margin: 0 0 5px;
         }
 
         .inbox-empty p {
-            font-size: 13px;
-            color: var(--muted);
+            font-size: 12px;
+            color: #aaa;
             line-height: 1.6;
+            margin: 0;
         }
 
-    /* Reply modal */
-    .reply-modal-backdrop {
+    /* ══ RIGHT DETAIL PANEL ══ */
+    .inbox-detail {
         display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.4);
-        z-index: 500;
-        align-items: flex-end;
+        flex-direction: column;
+        overflow: hidden;
+        background: #fff;
+        border-left: 1px solid var(--border);
+        width: 47%;
+        flex-shrink: 0;
+        animation: slideIn .2s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(16px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .inbox-shell.detail-open .inbox-detail {
+        display: flex;
+    }
+
+    /* Detail header */
+    .detail-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        flex-shrink: 0;
+    }
+
+    .detail-close-btn {
+        width: 28px;
+        height: 28px;
+        background: #f4f5f7;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: #888;
+        transition: background .12s;
+        flex-shrink: 0;
+    }
+
+        .detail-close-btn:hover {
+            background: #eee;
+        }
+
+    .detail-head-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .detail-head-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .detail-head-sub {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 1px;
+    }
+
+    .detail-head-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .detail-platform-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+        background: #fafbfc;
+    }
+
+    /* Detail body — two rows: post preview + replies */
+    .detail-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Post preview card */
+    .detail-post-preview {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: #f8f9fb;
+        flex-shrink: 0;
+        max-height: 35%;
+        overflow-y: auto;
+    }
+
+    .dpp-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .dpp-card {
+        background: #fff;
+        border: 1px solid #e2e4e9;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .dpp-img {
+        width: 100%;
+        max-height: 160px;
+        object-fit: cover;
+        display: block;
+        background: #f0f1f4;
+    }
+
+    .dpp-img-placeholder {
+        width: 100%;
+        height: 100px;
+        background: linear-gradient(135deg,#f0f1f4,#e2e4e9);
+        display: flex;
+        align-items: center;
         justify-content: center;
     }
 
-        .reply-modal-backdrop.open {
-            display: flex;
+        .dpp-img-placeholder svg {
+            width: 32px;
+            height: 32px;
+            stroke: #ccc;
+            fill: none;
         }
 
-    .reply-modal {
-        background: #fff;
-        border-radius: 16px 16px 0 0;
-        width: 640px;
-        max-width: 100%;
-        box-shadow: 0 -8px 32px rgba(0,0,0,.18);
+    .dpp-content {
+        padding: 10px 14px;
     }
 
-    .reply-modal-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--border);
-    }
-
-        .reply-modal-head h4 {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-    .reply-close {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 18px;
-        color: var(--muted);
-    }
-
-    .reply-to {
-        padding: 10px 20px;
-        font-size: 12px;
-        color: var(--muted);
-        background: #fafbfc;
-        border-bottom: 1px solid var(--border);
-    }
-
-        .reply-to strong {
-            color: var(--text);
-        }
-
-    .reply-original {
-        padding: 8px 20px;
-        font-size: 12px;
-        color: var(--muted);
-        font-style: italic;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .reply-textarea {
-        width: 100%;
-        padding: 14px 20px;
-        border: none;
-        outline: none;
-        resize: none;
+    .dpp-post-title {
         font-size: 13px;
-        font-family: 'DM Sans', sans-serif;
-        color: var(--text);
-        min-height: 90px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 4px;
     }
 
-    .reply-footer {
+    .dpp-post-body {
+        font-size: 12px;
+        color: #555;
+        line-height: 1.55;
+    }
+
+    .dpp-post-meta {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
         gap: 8px;
-        padding: 10px 20px;
-        border-top: 1px solid var(--border);
+        margin-top: 8px;
+        font-size: 10px;
+        color: #aaa;
+        padding-top: 8px;
+        border-top: 1px solid #f0f1f4;
     }
 
-    .reply-cancel {
-        padding: 7px 14px;
-        background: #f4f5f7;
-        border: none;
-        border-radius: 8px;
+        .dpp-post-meta a {
+            color: var(--green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+            .dpp-post-meta a:hover {
+                text-decoration: underline;
+            }
+
+    .dpp-loading {
+        text-align: center;
+        padding: 20px;
         font-size: 12px;
-        font-weight: 600;
-        font-family: 'DM Sans', sans-serif;
-        cursor: pointer;
+        color: #aaa;
+        font-style: italic;
     }
 
-    .reply-send {
-        padding: 7px 18px;
+    /* Original comment highlight */
+    .detail-original-comment {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+        background: #fffbf0;
+        flex-shrink: 0;
+    }
+
+    .doc-label {
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+
+    .doc-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+    }
+
+    .doc-ava {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .doc-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .doc-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 2px;
+    }
+
+        .doc-name a {
+            color: #1a1a2e;
+            text-decoration: none;
+        }
+
+            .doc-name a:hover {
+                color: var(--green);
+                text-decoration: underline;
+            }
+
+    .doc-text {
+        font-size: 13px;
+        color: #2a2a3a;
+        line-height: 1.6;
+    }
+
+    .doc-time {
+        font-size: 10px;
+        color: #aaa;
+        margin-top: 3px;
+    }
+
+    /* Replies list */
+    .detail-replies {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background: #f9fafb;
+    }
+
+    .reply-row {
+        display: flex;
+        gap: 8px;
+    }
+
+        .reply-row.own {
+            flex-direction: row-reverse;
+        }
+
+    .reply-ava {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .reply-bubble {
+        max-width: 72%;
+        padding: 8px 11px;
+        font-size: 12px;
+        color: #2a2a3a;
+        line-height: 1.5;
+        background: #fff;
+        border: 1px solid #e2e4e9;
+        border-radius: 4px 10px 10px 10px;
+    }
+
+    .reply-row.own .reply-bubble {
+        background: #edfbe9;
+        border-color: #c8eebc;
+        border-radius: 10px 4px 10px 10px;
+    }
+
+    .reply-bubble.failed {
+        background: #fff5f5;
+        border-color: #fcc;
+    }
+
+    .reply-name {
+        font-size: 10px;
+        font-weight: 700;
+        color: #555;
+        margin-bottom: 2px;
+    }
+
+    .reply-text {
+        word-break: break-word;
+    }
+
+    .reply-time {
+        font-size: 9px;
+        color: #aaa;
+        margin-top: 4px;
+    }
+
+    .reply-fail-tag {
+        font-size: 9px;
+        color: #e74c3c;
+        margin-top: 3px;
+    }
+
+    .no-replies-msg {
+        text-align: center;
+        padding: 24px;
+        font-size: 12px;
+        color: #aaa;
+        font-style: italic;
+    }
+
+    /* Reply composer */
+    .detail-composer {
+        border-top: 1px solid var(--border);
+        padding: 10px 16px;
+        flex-shrink: 0;
+        background: #fff;
+    }
+
+    .detail-composer-lbl {
+        font-size: 10px;
+        color: #aaa;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .detail-composer-row {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .d-textarea {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #e2e4e9;
+        border-radius: 9px;
+        font-size: 12px;
+        font-family: 'DM Sans', sans-serif;
+        color: #2a2a3a;
+        resize: none;
+        outline: none;
+        min-height: 36px;
+        max-height: 100px;
+        line-height: 1.5;
+        transition: border-color .15s;
+    }
+
+        .d-textarea:focus {
+            border-color: var(--green);
+        }
+
+    .d-send-btn {
+        padding: 8px 14px;
         background: var(--green);
         border: none;
         border-radius: 8px;
@@ -656,111 +1099,116 @@
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
+        transition: opacity .15s;
+        white-space: nowrap;
     }
 
-        .reply-send svg {
-            width: 13px;
-            height: 13px;
+        .d-send-btn:hover {
+            opacity: .86;
+        }
+
+        .d-send-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .d-send-btn svg {
+            width: 12px;
+            height: 12px;
             stroke: #fff;
             fill: none;
         }
 
-        .reply-send:disabled {
-            opacity: .5;
-            cursor: not-allowed;
-        }
-
-    /* ══ FILTER POPUP ════════════════════════════ */
-    .filter-popup-backdrop {
+    /* ══ FILTER POPUP ══ */
+    .fp-backdrop {
         display: none;
         position: fixed;
         inset: 0;
         z-index: 400;
     }
 
-        .filter-popup-backdrop.open {
+        .fp-backdrop.open {
             display: block;
         }
 
-    .filter-popup {
+    .fp-popup {
         position: fixed;
-        width: 300px;
+        width: 290px;
         background: #fff;
-        border: 1px solid var(--border);
+        border: 1px solid #e2e4e9;
         border-radius: 14px;
-        box-shadow: 0 8px 32px rgba(0,0,0,.14);
+        box-shadow: 0 8px 32px rgba(0,0,0,.13);
         z-index: 401;
-        overflow: hidden;
         display: none;
+        overflow: hidden;
     }
 
-    .fp-head {
+    .fp-head2 {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border);
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
     }
 
-        .fp-head h4 {
+        .fp-head2 h4 {
             font-size: 13px;
             font-weight: 700;
-            color: var(--text);
+            color: #1a1a2e;
             margin: 0;
         }
 
-    .fp-close {
+    .fp-close2 {
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 16px;
-        color: var(--muted);
-        line-height: 1;
+        font-size: 14px;
+        color: #aaa;
         padding: 0;
     }
 
-    .fp-section {
-        padding: 12px 18px;
-        border-bottom: 1px solid var(--border);
+    .fp-sec {
+        padding: 10px 16px;
+        border-bottom: 1px solid #eee;
     }
 
-    .fp-section-label {
+    .fp-sec-lbl {
         font-size: 10px;
         font-weight: 700;
-        color: var(--muted);
+        color: #aaa;
         letter-spacing: .06em;
         text-transform: uppercase;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
-    .fp-check-group {
+    .fp-chk-grp {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 6px;
     }
 
-    .fp-check-item {
+    .fp-chk-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         font-size: 12px;
-        color: var(--text);
+        color: #333;
         cursor: pointer;
         user-select: none;
     }
 
-        .fp-check-item input[type=checkbox] {
-            width: 14px;
-            height: 14px;
+        .fp-chk-item input {
+            width: 13px;
+            height: 13px;
             accent-color: var(--green);
             cursor: pointer;
             flex-shrink: 0;
         }
 
-    .fp-plat-icon {
-        width: 18px;
-        height: 18px;
+    .fp-plat-ico {
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -771,79 +1219,78 @@
     .fp-date-row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
     }
 
         .fp-date-row label {
             font-size: 11px;
-            color: var(--muted);
-            min-width: 28px;
+            color: #aaa;
+            min-width: 26px;
         }
 
-    .fp-date-input {
+    .fp-date-in {
         flex: 1;
-        padding: 6px 8px;
-        border: 1px solid var(--border);
+        padding: 5px 7px;
+        border: 1px solid #e2e4e9;
         border-radius: 7px;
-        font-size: 12px;
+        font-size: 11px;
         font-family: 'DM Sans', sans-serif;
-        color: var(--text);
-        background: #fff;
+        color: #333;
         outline: none;
     }
 
-        .fp-date-input:focus {
+        .fp-date-in:focus {
             border-color: var(--green);
         }
 
-    .fp-type-group {
+    .fp-type-grp {
         display: flex;
-        gap: 6px;
+        gap: 5px;
         flex-wrap: wrap;
     }
 
     .fp-type-pill {
-        padding: 5px 12px;
-        border: 1.5px solid var(--border);
+        padding: 4px 10px;
+        border: 1.5px solid #e2e4e9;
         border-radius: 20px;
         font-size: 11px;
         font-weight: 600;
-        color: var(--muted);
+        color: #aaa;
         cursor: pointer;
-        transition: all .15s;
+        transition: all .14s;
         user-select: none;
     }
 
-        .fp-type-pill.selected {
+        .fp-type-pill.sel {
             border-color: var(--green);
             color: var(--green);
-            background: rgba(75,181,67,.08);
+            background: rgba(75,181,67,.07);
         }
 
-    .fp-footer {
+    .fp-footer2 {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 18px;
+        padding: 10px 16px;
     }
 
-    .fp-clear {
+    .fp-clear2 {
         background: none;
         border: none;
         font-size: 12px;
         font-weight: 600;
-        color: var(--muted);
+        color: #aaa;
         cursor: pointer;
         font-family: 'DM Sans', sans-serif;
         padding: 0;
     }
 
-        .fp-clear:hover {
-            color: var(--text);
+        .fp-clear2:hover {
+            color: #333;
         }
 
-    .fp-apply {
-        padding: 7px 18px;
+    .fp-apply2 {
+        padding: 6px 16px;
         background: var(--green);
         border: none;
         border-radius: 8px;
@@ -853,47 +1300,57 @@
         font-family: 'DM Sans', sans-serif;
         cursor: pointer;
     }
+
+    /* Resizer */
+    .inbox-resizer {
+        width: 4px;
+        background: var(--border);
+        cursor: col-resize;
+        flex-shrink: 0;
+        transition: background .15s;
+        display: none;
+    }
+
+    .inbox-shell.detail-open .inbox-resizer {
+        display: block;
+    }
+
+    .inbox-resizer:hover {
+        background: var(--green);
+    }
 </style>
 
-<div class="inbox-shell">
+<div class="inbox-shell" id="inboxShell">
 
-    <!-- ══ LEFT SUB-NAV ══ -->
+    <!-- LEFT NAV -->
     <nav class="inbox-nav">
         <div class="inbox-nav-header">Smart Inbox</div>
         <a class="inbox-nav-item active" href="#" onclick="setTab('all',this);return false">
-            All Messages
-            <span class="inbox-nav-badge" id="nav-badge-all" style="display:none"></span>
+            All Inbox <span class="inbox-nav-badge" id="nav-badge-all" style="display:none"></span>
         </a>
         <a class="inbox-nav-item" href="#" onclick="setTab('message',this);return false">
-            Private
-            <span class="inbox-nav-badge" id="nav-badge-message" style="display:none"></span>
+            Private <span class="inbox-nav-badge" id="nav-badge-message" style="display:none"></span>
         </a>
         <a class="inbox-nav-item" href="#" onclick="setTab('completed',this);return false">Completed</a>
-        <a class="inbox-nav-item" href="#" onclick="setTab('saved',this);return false">Saved Messages</a>
-        <a class="inbox-nav-item" href="#" onclick="setTab('approvals',this);return false">Reply Approvals</a>
-        <div class="inbox-nav-group">
-            Custom Views
-            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-        </div>
+        <a class="inbox-nav-item" href="#" onclick="setTab('saved',this);return false">Saved</a>
+
     </nav>
 
-    <!-- ══ MAIN ══ -->
-    <div class="inbox-main">
-
-        <!-- Top bar -->
+    <!-- CENTER: inbox list -->
+    <div class="inbox-center" id="inboxCenter">
         <div class="inbox-topbar">
             <h2 id="inboxTitle">All Messages</h2>
             <div class="inbox-topbar-right">
                 <div class="inbox-search">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                    <input type="text" id="searchInput" placeholder="Search messages..." oninput="applySearch()">
+                    <input type="text" id="searchInput" placeholder="Search…" oninput="applySearch()">
                 </div>
                 <div class="tb-pill">
                     <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                    <span id="msgCount">0</span> messages
+                    <span id="msgCount">0</span>
                 </div>
                 <div class="tb-btn-filter-wrap">
-                    <button class="tb-btn-filter" id="filterBtn" onclick="toggleFilterPopup()">
+                    <button class="tb-btn-filter" id="filterBtn" onclick="toggleFP()">
                         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
                         Filters
                     </button>
@@ -901,8 +1358,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Sort + Reload bar -->
         <div class="inbox-sortbar">
             <select class="sort-dd" onchange="applySort(this.value)">
                 <option value="newest">Newest to Oldest</option>
@@ -914,476 +1369,584 @@
                 Reload
             </button>
         </div>
-
-        <!-- Feed -->
         <div class="inbox-feed" id="inboxFeed"></div>
+    </div>
 
+    <!-- RESIZER -->
+    <div class="inbox-resizer" id="inboxResizer"></div>
+
+    <!-- RIGHT DETAIL PANEL -->
+    <div class="inbox-detail" id="inboxDetail">
+
+        <!-- Detail header -->
+        <div class="detail-head">
+            <button class="detail-close-btn" onclick="closeDetail()" title="Close">✕</button>
+            <div class="detail-head-info">
+                <div class="detail-head-name" id="detailHeadName">Thread</div>
+                <div class="detail-head-sub" id="detailHeadSub"></div>
+            </div>
+            <div class="detail-head-right">
+                <div class="detail-platform-badge" id="detailPlatBadge"></div>
+            </div>
+        </div>
+
+        <div class="detail-body">
+            <!-- Post preview (shown for comments) -->
+            <div class="detail-post-preview" id="detailPostPreview" style="display:none">
+                <div class="dpp-label">Original Post</div>
+                <div class="dpp-card" id="dppCard">
+                    <div class="dpp-loading">Loading post…</div>
+                </div>
+            </div>
+
+            <!-- Original comment/message -->
+            <div class="detail-original-comment" id="detailOrigComment"></div>
+
+            <!-- Replies -->
+            <div class="detail-replies" id="detailReplies">
+                <div class="no-replies-msg">Loading…</div>
+            </div>
+
+            <!-- Composer -->
+            <div class="detail-composer">
+                <div class="detail-composer-lbl">Reply as your page</div>
+                <div class="detail-composer-row">
+                    <textarea class="d-textarea" id="dReplyTxt" rows="1"
+                              placeholder="Write a reply…"
+                              oninput="autoGrow(this);document.getElementById('dSendBtn').disabled=!this.value.trim()"></textarea>
+                    <button class="d-send-btn" id="dSendBtn" disabled onclick="sendDetailReply()">
+                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- ══ REPLY MODAL ══ -->
-<div class="reply-modal-backdrop" id="replyBackdrop" onclick="if(event.target===this)closeReply()">
-    <div class="reply-modal">
-        <div class="reply-modal-head">
-            <h4 id="replyTitle">Reply</h4>
-            <button class="reply-close" onclick="closeReply()">✕</button>
-        </div>
-        <div class="reply-to">Replying to <strong id="replyToName"></strong></div>
-        <div class="reply-original" id="replyOriginal"></div>
-        <textarea class="reply-textarea" id="replyText" placeholder="Type your reply…"
-                  oninput="document.getElementById('replySendBtn').disabled=!this.value.trim()"></textarea>
-        <div class="reply-footer">
-            <button class="reply-cancel" onclick="closeReply()">Cancel</button>
-            <button class="reply-send" id="replySendBtn" disabled onclick="sendReply()">
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
-                Send Reply
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- ══ FILTER POPUP ══ -->
-<div class="filter-popup-backdrop" id="filterBackdrop" onclick="closeFilterPopup()"></div>
-<div class="filter-popup" id="filterPopup">
-    <div class="fp-head">
+<!-- FILTER POPUP -->
+<div class="fp-backdrop" id="fpBackdrop" onclick="closeFP()"></div>
+<div class="fp-popup" id="fpPopup">
+    <div class="fp-head2">
         <h4>Filter Messages</h4>
-        <button class="fp-close" onclick="closeFilterPopup()">✕</button>
+        <button class="fp-close2" onclick="closeFP()">✕</button>
     </div>
-
-    <div class="fp-section">
-        <div class="fp-section-label">Platform</div>
-        <div class="fp-check-group">
-            <label class="fp-check-item">
-                <input type="checkbox" id="fp-facebook" value="facebook">
-                <div class="fp-plat-icon" style="background:#e7f0fd">
-                    <svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                </div>
-                Facebook
-            </label>
-            <label class="fp-check-item">
-                <input type="checkbox" id="fp-messenger" value="messenger">
-                <div class="fp-plat-icon" style="background:#e7f0fd">
-                    <svg viewBox="0 0 24 24" fill="#0084FF" width="11" height="11"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z" /></svg>
-                </div>
-                Messenger
-            </label>
-            <label class="fp-check-item">
-                <input type="checkbox" id="fp-instagram" value="instagram">
-                <div class="fp-plat-icon" style="background:#fce4ec">
-                    <svg viewBox="0 0 24 24" fill="none" width="11" height="11">
-                        <defs><linearGradient id="igfp" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs>
-                        <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igfp)" />
-                        <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" />
-                        <circle cx="17" cy="7" r="1.2" fill="#fff" />
-                    </svg>
-                </div>
-                Instagram
-            </label>
-            <label class="fp-check-item">
-                <input type="checkbox" id="fp-instagramdm" value="instagram_dm">
-                <div class="fp-plat-icon" style="background:#fce4ec">
-                    <svg viewBox="0 0 24 24" fill="none" width="11" height="11">
-                        <defs><linearGradient id="igdmfp" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs>
-                        <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igdmfp)" />
-                        <circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" />
-                        <circle cx="17" cy="7" r="1.2" fill="#fff" />
-                    </svg>
-                </div>
-                Instagram DM
-            </label>
+    <div class="fp-sec">
+        <div class="fp-sec-lbl">Platform</div>
+        <div class="fp-chk-grp">
+            <label class="fp-chk-item"><input type="checkbox" value="facebook"><div class="fp-plat-ico" style="background:#e7f0fd"><svg viewBox="0 0 24 24" fill="#1877F2" width="10" height="10"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg></div>Facebook</label>
+            <label class="fp-chk-item"><input type="checkbox" value="messenger"><div class="fp-plat-ico" style="background:#e7f0fd"><svg viewBox="0 0 24 24" fill="#0084FF" width="10" height="10"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z" /></svg></div>Messenger</label>
+            <label class="fp-chk-item"><input type="checkbox" value="instagram"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig1" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig1)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram</label>
+            <label class="fp-chk-item"><input type="checkbox" value="instagram_dm"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig2" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig2)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram DM</label>
         </div>
     </div>
-
-    <div class="fp-section">
-        <div class="fp-section-label">Date Range</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="fp-date-row">
-                <label>From</label>
-                <input type="date" class="fp-date-input" id="fp-date-from">
-            </div>
-            <div class="fp-date-row">
-                <label>To</label>
-                <input type="date" class="fp-date-input" id="fp-date-to">
-            </div>
+    <div class="fp-sec">
+        <div class="fp-sec-lbl">Date Range</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="fp-date-row"><label>From</label><input type="date" class="fp-date-in" id="fpDateFrom"></div>
+            <div class="fp-date-row"><label>To</label><input type="date" class="fp-date-in" id="fpDateTo"></div>
         </div>
     </div>
-
-    <div class="fp-section" style="border-bottom:none">
-        <div class="fp-section-label">Message Type</div>
-        <div class="fp-type-group">
-            <div class="fp-type-pill" data-type="comment" onclick="toggleTypePill(this)">Comment</div>
-            <div class="fp-type-pill" data-type="message" onclick="toggleTypePill(this)">Message</div>
-            <div class="fp-type-pill" data-type="mention" onclick="toggleTypePill(this)">Mention</div>
-            <div class="fp-type-pill" data-type="live_comment" onclick="toggleTypePill(this)">Live Comment</div>
+    <div class="fp-sec" style="border-bottom:none">
+        <div class="fp-sec-lbl">Message Type</div>
+        <div class="fp-type-grp">
+            <div class="fp-type-pill" data-type="comment" onclick="this.classList.toggle('sel')">Comment</div>
+            <div class="fp-type-pill" data-type="message" onclick="this.classList.toggle('sel')">Message</div>
+            <div class="fp-type-pill" data-type="mention" onclick="this.classList.toggle('sel')">Mention</div>
+            <div class="fp-type-pill" data-type="live_comment" onclick="this.classList.toggle('sel')">Live Comment</div>
         </div>
     </div>
-
-    <div class="fp-footer">
-        <button class="fp-clear" onclick="clearFilters()">Clear all</button>
-        <button class="fp-apply" onclick="applyFilters()">Apply Filters</button>
+    <div class="fp-footer2">
+        <button class="fp-clear2" onclick="clearFP()">Clear all</button>
+        <button class="fp-apply2" onclick="applyFP()">Apply Filters</button>
     </div>
 </div>
 
-@* ── ONE single script block — everything in correct order ── *@
 <script>
-    /* ── Data from server ─────────────────────── */
-    var ALL_ITEMS = @Html.Raw(ViewBag.InboxJson ?? "[]");
-    var COMPLETED = new Set();
-    var SAVED     = new Set();
-
-    /* ── State ────────────────────────────────── */
+    var ALL_ITEMS     = @Html.Raw(ViewBag.InboxJson ?? "[]");
+    var COMPLETED     = new Set();
+    var SAVED         = new Set();
     var currentTab    = 'all';
     var currentSearch = '';
     var currentSort   = 'newest';
-    var replyItem     = null;
+    var activeFilters = { platforms:[], dateFrom:'', dateTo:'', types:[] };
+    var activeItemId  = null;   // currently open detail
+    var tReplies      = {};     // id → [{sender,text,time,own,saved,failed,error}]
 
-    /* Active filter state */
-    var activeFilters = {
-        platforms : [],   // e.g. ['facebook','instagram']
-        dateFrom  : '',   // 'YYYY-MM-DD' or ''
-        dateTo    : '',
-        types     : []    // e.g. ['comment','message']
-    };
-
-    /* ── Init ─────────────────────────────────── */
-    document.addEventListener('DOMContentLoaded', function () {
-        updateNavBadges();
+    /* ── Init ── */
+    document.addEventListener('DOMContentLoaded', function(){
+        updateBadges();
         renderFeed();
+        initResizer();
     });
 
-    /* ── Nav badges ───────────────────────────── */
-    function updateNavBadges() {
-        var total = ALL_ITEMS.length;
-        var msgs  = ALL_ITEMS.filter(function(x){ return x.itemType === 'message'; }).length;
-
-        var ab = document.getElementById('nav-badge-all');
-        var mb = document.getElementById('nav-badge-message');
-        ab.textContent = total; ab.style.display = total > 0 ? '' : 'none';
-        mb.textContent = msgs;  mb.style.display = msgs  > 0 ? '' : 'none';
-        document.getElementById('msgCount').textContent = total;
+    function updateBadges(){
+        var t=ALL_ITEMS.length;
+        var m=ALL_ITEMS.filter(function(x){ return x.itemType==='message'; }).length;
+        var ab=document.getElementById('nav-badge-all'), mb=document.getElementById('nav-badge-message');
+        ab.textContent=t; ab.style.display=t>0?'':'none';
+        mb.textContent=m; mb.style.display=m>0?'':'none';
+        document.getElementById('msgCount').textContent=t;
     }
 
-    /* ── Tab ──────────────────────────────────── */
-    function setTab(tab, el) {
-        currentTab = tab;
+    /* ── Tab / search / sort ── */
+    function setTab(tab,el){
+        currentTab=tab;
         document.querySelectorAll('.inbox-nav-item').forEach(function(a){ a.classList.remove('active'); });
-        if (el) el.classList.add('active');
-        var titles = { all:'All Messages', message:'Private Messages', completed:'Completed', saved:'Saved Messages', approvals:'Reply Approvals' };
-        document.getElementById('inboxTitle').textContent = titles[tab] || 'All Messages';
+        if(el) el.classList.add('active');
+        var titles={all:'All Messages',message:'Private Messages',completed:'Completed',saved:'Saved Messages',approvals:'Reply Approvals'};
+        document.getElementById('inboxTitle').textContent=titles[tab]||'All Messages';
+        closeDetail();
         renderFeed();
     }
+    function applySearch(){ currentSearch=document.getElementById('searchInput').value.toLowerCase(); renderFeed(); }
+    function applySort(v){ currentSort=v; renderFeed(); }
 
-    function applySearch() { currentSearch = document.getElementById('searchInput').value.toLowerCase(); renderFeed(); }
-    function applySort(v)  { currentSort = v; renderFeed(); }
-
-    /* ══ CORE FILTER FUNCTION ══════════════════
-       All filtering lives here — tab, search, sort
-       AND the popup filters (platform / date / type).
-       No patching, no overriding.
-    ════════════════════════════════════════════ */
-    function getFiltered() {
-        var items = ALL_ITEMS.slice();
-
-        /* 1. Tab filter */
-        if (currentTab === 'message')        items = items.filter(function(x){ return x.itemType === 'message'; });
-        else if (currentTab === 'completed') items = items.filter(function(x){ return COMPLETED.has(x.id); });
-        else if (currentTab === 'saved')     items = items.filter(function(x){ return SAVED.has(x.id); });
-
-        /* 2. Search filter */
-        if (currentSearch) {
-            items = items.filter(function(x){
-                return (x.senderName + ' ' + x.message).toLowerCase().indexOf(currentSearch) !== -1;
-            });
+    /* ── Filter ── */
+    function getFiltered(){
+        var items=ALL_ITEMS.slice();
+        if(currentTab==='message')        items=items.filter(function(x){ return x.itemType==='message'; });
+        else if(currentTab==='completed') items=items.filter(function(x){ return COMPLETED.has(x.id); });
+        else if(currentTab==='saved')     items=items.filter(function(x){ return SAVED.has(x.id); });
+        if(currentSearch)
+            items=items.filter(function(x){ return (x.senderName+' '+x.message).toLowerCase().indexOf(currentSearch)!==-1; });
+        if(activeFilters.platforms.length>0)
+            items=items.filter(function(x){ return activeFilters.platforms.indexOf((x.platform||'').toLowerCase())!==-1; });
+        if(activeFilters.dateFrom){
+            var fd=new Date(activeFilters.dateFrom); fd.setHours(0,0,0,0);
+            items=items.filter(function(x){ return new Date(x.time)>=fd; });
         }
-
-        /* 3. Platform filter (from popup) */
-        if (activeFilters.platforms.length > 0) {
-            items = items.filter(function(x){
-                return activeFilters.platforms.indexOf((x.platform || '').toLowerCase()) !== -1;
-            });
+        if(activeFilters.dateTo){
+            var td=new Date(activeFilters.dateTo); td.setHours(23,59,59,999);
+            items=items.filter(function(x){ return new Date(x.time)<=td; });
         }
-
-        /* 4. Date range filter (from popup) */
-        if (activeFilters.dateFrom) {
-            var fromDate = new Date(activeFilters.dateFrom);
-            fromDate.setHours(0, 0, 0, 0);
-            items = items.filter(function(x){ return new Date(x.time) >= fromDate; });
-        }
-        if (activeFilters.dateTo) {
-            var toDate = new Date(activeFilters.dateTo);
-            toDate.setHours(23, 59, 59, 999);
-            items = items.filter(function(x){ return new Date(x.time) <= toDate; });
-        }
-
-        /* 5. Message type filter (from popup) */
-        if (activeFilters.types.length > 0) {
-            items = items.filter(function(x){
-                /* "message" type pill → itemType === 'message' */
-                if (activeFilters.types.indexOf('message') !== -1 && x.itemType === 'message') return true;
-                /* "mention" pill → commentType === 'mention' */
-                if (activeFilters.types.indexOf('mention') !== -1 && x.commentType === 'mention') return true;
-                /* "live_comment" pill → commentType === 'live_comment' */
-                if (activeFilters.types.indexOf('live_comment') !== -1 && x.commentType === 'live_comment') return true;
-                /* "comment" pill → everything else (regular comment) */
-                if (activeFilters.types.indexOf('comment') !== -1
-                    && x.itemType !== 'message'
-                    && x.commentType !== 'mention'
-                    && x.commentType !== 'live_comment') return true;
+        if(activeFilters.types.length>0){
+            items=items.filter(function(x){
+                if(activeFilters.types.indexOf('message')!==-1&&x.itemType==='message') return true;
+                if(activeFilters.types.indexOf('mention')!==-1&&x.commentType==='mention') return true;
+                if(activeFilters.types.indexOf('live_comment')!==-1&&x.commentType==='live_comment') return true;
+                if(activeFilters.types.indexOf('comment')!==-1&&x.itemType!=='message'&&x.commentType!=='mention'&&x.commentType!=='live_comment') return true;
                 return false;
             });
         }
-
-        /* 6. Sort */
-        items.sort(function(a, b){
-            if (currentSort === 'name')   return (a.senderName || '').localeCompare(b.senderName || '');
-            if (currentSort === 'oldest') return new Date(a.time) - new Date(b.time);
-            return new Date(b.time) - new Date(a.time);
+        items.sort(function(a,b){
+            if(currentSort==='name')   return (a.senderName||'').localeCompare(b.senderName||'');
+            if(currentSort==='oldest') return new Date(a.time)-new Date(b.time);
+            return new Date(b.time)-new Date(a.time);
         });
-
         return items;
     }
 
-    /* ── Render ───────────────────────────────── */
-    function renderFeed() {
-        var items = getFiltered();
-        var feed  = document.getElementById('inboxFeed');
-
-        if (items.length === 0) {
-            feed.innerHTML =
-                '<div class="inbox-empty">' +
-                '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-                '<h4>No messages here</h4>' +
-                '<p>New comments and messages from your connected<br>social platforms will appear here.</p>' +
-                '</div>';
+    /* ── Render feed ── */
+    function renderFeed(){
+        var items=getFiltered();
+        var feed=document.getElementById('inboxFeed');
+        if(items.length===0){
+            feed.innerHTML='<div class="inbox-empty"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><h4>No messages here</h4><p>New comments and messages will appear here.</p></div>';
             return;
         }
-
-        feed.innerHTML = items.map(buildCard).join('');
+        feed.innerHTML=items.map(buildCard).join('');
     }
 
-    function buildCard(item) {
-        var displayName = (item.senderName && item.senderName !== 'Unknown' && item.senderName.trim())
-            ? item.senderName
-            : (item.senderId ? 'User ' + item.senderId.slice(-6) : 'Unknown User');
+    /* ── Build card ── */
+    function buildCard(item){
+        var name=(item.senderName&&item.senderName!=='Unknown'&&item.senderName.trim())
+            ?item.senderName:(item.senderId?'User '+item.senderId.slice(-6):'Unknown User');
+        var initials=name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'?';
+        var bg=avatarColor(name);
+        var ago=fmtTime(item.time);
+        var isDone=COMPLETED.has(item.id);
+        var isSaved=SAVED.has(item.id);
+        var isActive=activeItemId===item.id;
 
-        var initials = displayName.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0, 2) || '?';
-        var timeAgo  = formatTime(item.time);
-        var isDone   = COMPLETED.has(item.id);
-        var isSaved  = SAVED.has(item.id);
-
-        var platSvg = '';
-        if (item.platform === 'facebook' || item.platform === 'messenger') {
-            platSvg = '<svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
-        } else if (item.platform === 'instagram' || item.platform === 'instagram_dm') {
-            platSvg = '<svg viewBox="0 0 24 24" fill="none" width="11" height="11"><defs><linearGradient id="ig' + item.id + '" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig' + item.id + ')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        var platSvg='';
+        if(item.platform==='facebook'||item.platform==='messenger'){
+            platSvg='<svg viewBox="0 0 24 24" fill="#1877F2" width="9" height="9"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+        } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
+            platSvg='<svg viewBox="0 0 24 24" fill="none" width="9" height="9"><defs><linearGradient id="igc'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igc'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
         }
 
-        var typeLabel = 'Comment', typeCls = 'type-comment';
-        if (item.itemType === 'message')             { typeLabel = 'Message';      typeCls = 'type-message'; }
-        else if (item.commentType === 'mention')     { typeLabel = 'Mention';      typeCls = 'type-mention'; }
-        else if (item.commentType === 'live_comment'){ typeLabel = 'Live Comment'; typeCls = 'type-comment'; }
+        var tLabel='Comment',tCls='tbadge-comment';
+        if(item.itemType==='message')              {tLabel='Message';      tCls='tbadge-message';}
+        else if(item.commentType==='mention')      {tLabel='Mention';      tCls='tbadge-mention';}
+        else if(item.commentType==='live_comment') {tLabel='Live Comment'; tCls='tbadge-live';}
 
-        var subLine = '';
-        if (item.itemType === 'message') {
-            subLine = 'Direct message via <strong>' + escHtml(item.platform) + '</strong>';
-        } else if (item.postId && item.postId.length > 0) {
-            var shortPost = item.postId.length > 20 ? '…' + item.postId.slice(-12) : item.postId;
-            subLine = 'Commented on post <strong>' + escHtml(shortPost) + '</strong>';
+        var profileUrl=buildProfileUrl(item);
+        var ctx='';
+        if(item.platform==='facebook'||item.platform==='messenger'){
+            ctx='<svg viewBox="0 0 24 24" fill="#1877F2" width="10" height="10"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+        } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
+            ctx='<svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="igctx'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igctx'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        }
+        if(item.itemType==='message'){
+            ctx+=' Direct message via <strong>'+capFirst(item.platform||'')+'</strong>';
+        } else if(item.postName&&item.postName.trim()){
+            ctx+=' On post: <a href="'+esc(buildPostUrl(item))+'" target="_blank">'+esc(item.postName.slice(0,40))+'</a>';
+        } else if(item.postId&&item.postId.length>0){
+            ctx+=' On post <a href="'+esc(buildPostUrl(item))+'" target="_blank">…'+esc(item.postId.slice(-10))+'</a>';
+        } else if(item.pageId&&item.pageId.length>0){
+            ctx+=' Wall of <strong>'+esc(item.pageId)+'</strong>';
+        }
+
+        var extra='';
+        if(item.isReplied) extra+='<span class="msg-replied-badge">↩ Replied</span>';
+        if(isDone)         extra+='<span class="msg-done-badge">✓ Done</span>';
+
+        var bodyTxt=(item.message||'').trim();
+        var bodyHtml=bodyTxt?esc(bodyTxt):'<span class="msg-body-empty">(no message text)</span>';
+
+        var footer=item.commentType==='mention'?'<div class="msg-in-response">In response to a mention</div>':'';
+
+        return '<div class="msg-card'+(isActive?' active-card':'')+'" id="card-'+item.id+'">'
+            +'<div class="msg-card-top">'
+                +'<div class="msg-ava-wrap">'
+                    +'<div class="msg-ava" style="background:'+bg+'">'+initials+'</div>'
+                    +(platSvg?'<div class="msg-plat-dot">'+platSvg+'</div>':'')
+                +'</div>'
+                +'<div class="msg-meta">'
+                    +'<div class="msg-name-row">'
+                        +'<a class="msg-profile-link" href="'+esc(profileUrl)+'" target="_blank" onclick="event.stopPropagation()">'
+                            +esc(name)
+                            +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
+                        +'</a>'
+                        +'<span class="msg-type-badge '+tCls+'">'+tLabel+'</span>'
+                        +extra
+                    +'</div>'
+                    +'<div class="msg-ctx">'+ctx+'</div>'
+                +'</div>'
+                +'<div class="msg-top-right">'
+                    +'<span class="msg-time">'+ago+'</span>'
+                    +'<input type="checkbox" class="msg-checkbox" title="Select" onclick="event.stopPropagation()">'
+                +'</div>'
+            +'</div>'
+            +'<div class="msg-body-text">'+bodyHtml+'</div>'
+            +'<div class="msg-actions-bar">'
+                +'<div class="msg-act-l">'
+                    +'<button class="btn-thread'+(isActive?' active':'')+'" onclick="event.stopPropagation();openDetail('+item.id+')">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
+                        +'View Thread & Reply'
+                    +'</button>'
+                +'</div>'
+                +'<div class="msg-act-r">'
+                    +'<div class="act-ico" title="Like" onclick="event.stopPropagation();this.classList.toggle(\'liked\')">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'
+                    +'</div>'
+                    +'<div class="act-ico" title="Label" onclick="event.stopPropagation()">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>'
+                    +'</div>'
+                    +'<div class="act-ico'+(isDone?' is-done':'')+'" title="Mark done" onclick="event.stopPropagation();markDone('+item.id+',this)">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
+                    +'</div>'
+                    +'<div class="act-ico'+(isSaved?' is-saved':'')+'" title="Save" onclick="event.stopPropagation();toggleSave('+item.id+',this)">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+                    +'</div>'
+                    +'<div class="act-ico" title="Assign" onclick="event.stopPropagation()">'
+                        +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                    +'</div>'
+                +'</div>'
+            +'</div>'
+            +footer
+        +'</div>';
+    }
+
+    /* ══ DETAIL PANEL ══════════════════════════════════════════════ */
+    function openDetail(id){
+        var item=ALL_ITEMS.find(function(x){ return x.id===id; });
+        if(!item) return;
+
+        /* Highlight active card */
+        activeItemId=id;
+        document.querySelectorAll('.msg-card').forEach(function(c){ c.classList.remove('active-card'); });
+        var card=document.getElementById('card-'+id);
+        if(card) card.classList.add('active-card');
+        document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
+        var cardBtn=card?card.querySelector('.btn-thread'):null;
+        if(cardBtn) cardBtn.classList.add('active');
+
+        /* Open panel */
+        document.getElementById('inboxShell').classList.add('detail-open');
+
+        /* Header */
+        var name=(item.senderName&&item.senderName!=='Unknown'&&item.senderName.trim())
+            ?item.senderName:(item.senderId?'User '+item.senderId.slice(-6):'Unknown User');
+        document.getElementById('detailHeadName').textContent=
+            (item.itemType==='message'?'Direct Message':'Comment Thread')+' — '+name;
+        document.getElementById('detailHeadSub').textContent=fmtTime(item.time);
+
+        /* Platform badge */
+        var platIcon='';
+        if(item.platform==='facebook'||item.platform==='messenger'){
+            platIcon='<svg viewBox="0 0 24 24" fill="#1877F2" width="11" height="11"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+        } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
+            platIcon='<svg viewBox="0 0 24 24" fill="none" width="11" height="11"><defs><linearGradient id="ighdr" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ighdr)"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        }
+        document.getElementById('detailPlatBadge').innerHTML=platIcon+'&nbsp;'+capFirst(item.platform||'');
+
+        /* Post preview — only for comments with a postId */
+        var postPreview=document.getElementById('detailPostPreview');
+        if(item.itemType==='comment'&&item.postId&&item.postId.length>0){
+            postPreview.style.display='block';
+            loadPostPreview(item);
         } else {
-            subLine = 'Page comment · <strong>' + escHtml(item.platform) + '</strong>';
+            postPreview.style.display='none';
         }
 
-        var bodyHtml = (item.message || '').trim()
-            ? escHtml(item.message)
-            : '<em style="color:var(--muted);font-size:12px;">(no message text)</em>';
+        /* Original comment/message */
+        var ini=name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'?';
+        var profileUrl=buildProfileUrl(item);
+        document.getElementById('detailOrigComment').innerHTML=
+            '<div class="doc-label">'+(item.itemType==='message'?'Message':'Comment')+'</div>'
+            +'<div class="doc-row">'
+                +'<div class="doc-ava" style="background:'+avatarColor(name)+'">'+ini+'</div>'
+                +'<div class="doc-body">'
+                    +'<div class="doc-name"><a href="'+esc(profileUrl)+'" target="_blank">'+esc(name)+'</a></div>'
+                    +'<div class="doc-text">'+esc(item.message||'(no message text)')+'</div>'
+                    +'<div class="doc-time">'+fmtTime(item.time)+'</div>'
+                +'</div>'
+            +'</div>';
 
-        var repliedTag = item.isReplied
-            ? '<span style="font-size:10px;background:rgba(29,161,161,.1);color:#1DA1A1;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">↩ Replied</span>'
-            : '';
+        /* Reset composer */
+        document.getElementById('dReplyTxt').value='';
+        document.getElementById('dSendBtn').disabled=true;
 
-        var doneTag = isDone
-            ? '<span style="font-size:10px;background:rgba(75,181,67,.1);color:var(--green);padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px;">✓ Done</span>'
-            : '';
+        /* Load replies */
+        loadDetailReplies(id, item.itemType);
 
-        return '<div class="msg-card" id="card-' + item.id + '">' +
-            '<div class="msg-card-header">' +
-                '<div class="msg-avatar" style="background:' + avatarColor(displayName) + '">' +
-                    initials +
-                    (platSvg ? '<div class="msg-platform-badge">' + platSvg + '</div>' : '') +
-                '</div>' +
-                '<div class="msg-avatar-info">' +
-                    '<div class="msg-sender-name">' + escHtml(displayName) +
-                        '&nbsp;<span class="msg-type-badge ' + typeCls + '">' + typeLabel + '</span>' +
-                        repliedTag + doneTag +
-                    '</div>' +
-                    '<div class="msg-sender-sub">' + subLine + '</div>' +
-                '</div>' +
-                '<div class="msg-header-right"><span class="msg-time">' + timeAgo + '</span></div>' +
-            '</div>' +
-            '<div class="msg-body">' + bodyHtml + '</div>' +
-            '<div class="msg-actions">' +
-                '<div class="msg-action-left">' +
-                    '<button class="ma-btn" onclick="openReply(' + item.id + ')">Reply</button>' +
-                    '<a class="ma-btn" href="#" onclick="return false">View Thread</a>' +
-                '</div>' +
-                '<div class="msg-action-right">' +
-                    '<div class="ma-icon" title="Like" onclick="toggleLike(this)">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
-                    '</div>' +
-                    '<div class="ma-icon" title="Add label">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
-                    '</div>' +
-                    '<div class="ma-icon ' + (isDone ? 'done' : '') + '" title="Mark complete" onclick="markDone(' + item.id + ',this)">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>' +
-                    '</div>' +
-                    '<div class="ma-icon ' + (isSaved ? 'done' : '') + '" title="Save message" onclick="toggleSave(' + item.id + ',this)">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>' +
-                    '</div>' +
-                    '<div class="ma-icon" title="Assign">' +
-                        '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
-                    '</div>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
+        /* Scroll active card into view */
+        if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+        setTimeout(function(){ document.getElementById('dReplyTxt').focus(); },200);
     }
 
-    /* ── Card actions ─────────────────────────── */
-    function markDone(id, el) {
-        if (COMPLETED.has(id)) { COMPLETED.delete(id); el.classList.remove('done'); }
-        else                   { COMPLETED.add(id);    el.classList.add('done'); }
-        renderFeed();
-    }
-    function toggleSave(id, el) {
-        if (SAVED.has(id)) { SAVED.delete(id); el.classList.remove('done'); }
-        else               { SAVED.add(id);    el.classList.add('done'); }
-    }
-    function toggleLike(el) { el.classList.toggle('liked'); }
+    /* ── Load post preview from Facebook Graph API ── */
+    function loadPostPreview(item){
+        var card=document.getElementById('dppCard');
+        card.innerHTML='<div class="dpp-loading">Loading post…</div>';
 
-    /* ── Reply modal ──────────────────────────── */
-    function openReply(id) {
-        replyItem = ALL_ITEMS.find(function(x){ return x.id === id; });
-        if (!replyItem) return;
-        document.getElementById('replyTitle').textContent    = 'Reply to ' + (replyItem.senderName || '');
-        document.getElementById('replyToName').textContent   = replyItem.senderName || '';
-        document.getElementById('replyOriginal').textContent = '"' + (replyItem.message || '').slice(0, 120) + (replyItem.message && replyItem.message.length > 120 ? '…' : '') + '"';
-        document.getElementById('replyText').value           = '';
-        document.getElementById('replySendBtn').disabled     = true;
-        document.getElementById('replyBackdrop').classList.add('open');
-        setTimeout(function(){ document.getElementById('replyText').focus(); }, 100);
-    }
-    function closeReply() {
-        document.getElementById('replyBackdrop').classList.remove('open');
-        replyItem = null;
-    }
-    function sendReply() {
-        var text = document.getElementById('replyText').value.trim();
-        if (!text || !replyItem) return;
-        /* TODO: wire to your API */
-        alert('Reply sent to ' + replyItem.senderName + ': ' + text);
-        closeReply();
-    }
-
-    /* ── Reload ───────────────────────────────── */
-    function reloadInbox() {
-        var btn = document.getElementById('reloadBtn');
-        btn.classList.add('spinning'); btn.disabled = true;
-        fetch('/Inbox/GetAll', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        /* Fetch post details via your controller */
+        fetch('/Inbox/GetPostPreview?postId='+encodeURIComponent(item.postId)+'&pageId='+encodeURIComponent(item.pageId||'')+'&platform='+encodeURIComponent(item.platform||''))
             .then(function(r){ return r.json(); })
-            .then(function(data){ ALL_ITEMS = data; updateNavBadges(); renderFeed(); })
-            .catch(function(){ alert('Reload failed.'); })
-            .finally(function(){ btn.classList.remove('spinning'); btn.disabled = false; });
+            .then(function(data){
+                if(data.error){
+                    card.innerHTML='<div class="dpp-content"><div class="dpp-post-body" style="color:#aaa;font-style:italic;">Post preview unavailable.</div></div>';
+                    return;
+                }
+                var imgHtml='';
+                if(data.fullPicture||data.picture){
+                    imgHtml='<img class="dpp-img" src="'+esc(data.fullPicture||data.picture)+'" alt="Post image" onerror="this.style.display=\'none\'">';
+                } else {
+                    imgHtml='<div class="dpp-img-placeholder"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+                }
+                var postUrl=buildPostUrl(item);
+                card.innerHTML=imgHtml
+                    +'<div class="dpp-content">'
+                        +(data.name?'<div class="dpp-post-title">'+esc(data.name)+'</div>':'')
+                        +'<div class="dpp-post-body">'+esc((data.message||data.story||data.description||'').slice(0,200))+(((data.message||data.story||'').length>200)?'…':'')+'</div>'
+                        +'<div class="dpp-post-meta">'
+                            +(data.createdTime?fmtTime(data.createdTime):'')
+                            +'&nbsp;·&nbsp;<a href="'+esc(postUrl)+'" target="_blank">View on '+capFirst(item.platform)+'</a>'
+                        +'</div>'
+                    +'</div>';
+            })
+            .catch(function(){
+                card.innerHTML='<div class="dpp-content"><div class="dpp-post-body" style="color:#aaa;font-style:italic;">Could not load post preview.</div></div>';
+            });
     }
 
-    /* ══ FILTER POPUP ══════════════════════════ */
-    function toggleFilterPopup() {
-        var popup    = document.getElementById('filterPopup');
-        var backdrop = document.getElementById('filterBackdrop');
-        var isOpen   = popup.style.display === 'block';
-        if (isOpen) {
-            closeFilterPopup();
-        } else {
-            /* Position anchored to button */
-            var btn  = document.getElementById('filterBtn');
-            var rect = btn.getBoundingClientRect();
-            popup.style.top   = (rect.bottom + 8) + 'px';
-            popup.style.right = (window.innerWidth - rect.right) + 'px';
-            popup.style.left  = 'auto';
-            popup.style.display = 'block';
-            backdrop.classList.add('open');
-        }
+    /* ── Load replies ── */
+    function loadDetailReplies(id, itemType){
+        var c=document.getElementById('detailReplies');
+        c.innerHTML='<div class="no-replies-msg">Loading replies…</div>';
+
+        fetch('/Inbox/GetReplies?itemId='+id+'&itemType='+(itemType||'comment'))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                var local=tReplies[id]||[];
+                var server=data.map(function(r){
+                    return {sender:'You (Page)',text:r.replyText,time:fmtTime(r.createdAt),own:true,saved:true,failed:!r.isSuccess,error:r.errorMessage};
+                });
+                tReplies[id]=server.concat(local.filter(function(l){ return !l.saved; }));
+                renderDetailReplies(id);
+            })
+            .catch(function(){ renderDetailReplies(id); });
     }
 
-    function closeFilterPopup() {
-        document.getElementById('filterPopup').style.display = 'none';
-        document.getElementById('filterBackdrop').classList.remove('open');
+    function renderDetailReplies(id){
+        var replies=tReplies[id]||[];
+        var c=document.getElementById('detailReplies');
+        if(replies.length===0){ c.innerHTML='<div class="no-replies-msg">No replies yet. Be the first!</div>'; return; }
+        c.innerHTML=replies.map(function(r){
+            var ri=(r.sender||'Me').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+            var failTag=r.failed?'<div class="reply-fail-tag">⚠ '+esc(r.error||'Failed')+'</div>':'';
+            return '<div class="reply-row'+(r.own?' own':'')+'">'
+                +'<div class="reply-ava" style="background:'+(r.own?(r.failed?'#e74c3c':'var(--green)'):'#6c5ce7')+'">'+ri+'</div>'
+                +'<div class="reply-bubble'+(r.failed?' failed':'')+'">'
+                    +'<div class="reply-name">'+esc(r.sender)+'</div>'
+                    +'<div class="reply-text">'+esc(r.text)+'</div>'
+                    +failTag
+                    +'<div class="reply-time">'+r.time+'</div>'
+                +'</div>'
+            +'</div>';
+        }).join('');
+        c.scrollTop=c.scrollHeight;
     }
 
-    function toggleTypePill(el) {
-        el.classList.toggle('selected');
-    }
+    /* ── Send reply ── */
+    function sendDetailReply(){
+        var txt=document.getElementById('dReplyTxt').value.trim();
+        var item=ALL_ITEMS.find(function(x){ return x.id===activeItemId; });
+        if(!txt||!item) return;
 
-    function applyFilters() {
-        /* Read platforms */
-        activeFilters.platforms = [];
-        document.querySelectorAll('#filterPopup .fp-check-item input[type=checkbox]').forEach(function(cb){
-            if (cb.checked) activeFilters.platforms.push(cb.value);
+        var btn=document.getElementById('dSendBtn');
+        var ta=document.getElementById('dReplyTxt');
+
+        if(!tReplies[item.id]) tReplies[item.id]=[];
+        var optimistic={sender:'You (Page)',text:txt,time:'Sending…',own:true,saved:false,failed:false};
+        tReplies[item.id].push(optimistic);
+        renderDetailReplies(item.id);
+
+        btn.disabled=true; btn.innerHTML='<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Sending…';
+        ta.disabled=true; ta.value='';
+
+        fetch('/Inbox/Reply',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Requested-With':'XMLHttpRequest'},
+            body:JSON.stringify({
+                itemId   :item.id,
+                itemType :item.itemType,
+                platform :item.platform,
+                commentId:item.commentId||'',
+                message  :txt
+            })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var idx=tReplies[item.id].indexOf(optimistic);
+            if(idx!==-1){
+                tReplies[item.id][idx]={sender:'You (Page)',text:txt,time:'Just now',own:true,saved:true,failed:!data.success,error:data.success?null:(data.error||'Failed')};
+            }
+            if(data.success){
+                var ai=ALL_ITEMS.findIndex(function(x){ return x.id===item.id; });
+                if(ai!==-1) ALL_ITEMS[ai].isReplied=true;
+                renderFeed();
+            }
+        })
+        .catch(function(){
+            var idx=tReplies[item.id].indexOf(optimistic);
+            if(idx!==-1){ tReplies[item.id][idx].failed=true; tReplies[item.id][idx].error='Network error'; tReplies[item.id][idx].time='Failed'; }
+        })
+        .finally(function(){
+            renderDetailReplies(item.id);
+            btn.innerHTML='<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send';
+            btn.disabled=false; ta.disabled=false; ta.focus();
         });
-
-        /* Read dates */
-        activeFilters.dateFrom = document.getElementById('fp-date-from').value;
-        activeFilters.dateTo   = document.getElementById('fp-date-to').value;
-
-        /* Read types */
-        activeFilters.types = [];
-        document.querySelectorAll('#filterPopup .fp-type-pill.selected').forEach(function(p){
-            activeFilters.types.push(p.dataset.type);
-        });
-
-        updateFilterBadge();
-        closeFilterPopup();
-        renderFeed();   /* <-- triggers getFiltered() which now includes all filter logic */
     }
 
-    function clearFilters() {
-        document.querySelectorAll('#filterPopup .fp-check-item input[type=checkbox]').forEach(function(cb){ cb.checked = false; });
-        document.getElementById('fp-date-from').value = '';
-        document.getElementById('fp-date-to').value   = '';
-        document.querySelectorAll('#filterPopup .fp-type-pill').forEach(function(p){ p.classList.remove('selected'); });
+    function closeDetail(){
+        document.getElementById('inboxShell').classList.remove('detail-open');
+        activeItemId=null;
+        document.querySelectorAll('.msg-card').forEach(function(c){ c.classList.remove('active-card'); });
+        document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
+    }
 
-        activeFilters = { platforms: [], dateFrom: '', dateTo: '', types: [] };
-        updateFilterBadge();
-        closeFilterPopup();
+    /* ── Resizer (drag to adjust split) ── */
+    function initResizer(){
+        var resizer=document.getElementById('inboxResizer');
+        var shell=document.getElementById('inboxShell');
+        var center=document.getElementById('inboxCenter');
+        var isDown=false, startX=0, startW=0;
+
+        resizer.addEventListener('mousedown',function(e){
+            isDown=true; startX=e.clientX; startW=center.offsetWidth;
+            document.body.style.cursor='col-resize'; document.body.style.userSelect='none';
+        });
+        document.addEventListener('mousemove',function(e){
+            if(!isDown) return;
+            var diff=e.clientX-startX;
+            var newW=Math.max(300,Math.min(startW+diff, shell.offsetWidth-400));
+            center.style.width=newW+'px';
+        });
+        document.addEventListener('mouseup',function(){ isDown=false; document.body.style.cursor=''; document.body.style.userSelect=''; });
+    }
+
+    /* ── URL helpers ── */
+    function buildProfileUrl(item){
+        if(!item.senderId) return '#';
+        if(item.platform==='facebook'||item.platform==='messenger') return 'https://www.facebook.com/'+item.senderId;
+        if(item.platform==='instagram'||item.platform==='instagram_dm') return 'https://www.instagram.com/'+item.senderId;
+        return '#';
+    }
+    function buildPostUrl(item){
+        if(item.platform==='facebook'||item.platform==='messenger') return 'https://www.facebook.com/'+(item.postId||'');
+        return '#';
+    }
+
+    /* ── Card actions ── */
+    function markDone(id,el){
+        if(COMPLETED.has(id)){ COMPLETED.delete(id); el.classList.remove('is-done'); }
+        else                 { COMPLETED.add(id);    el.classList.add('is-done'); }
         renderFeed();
     }
-
-    function updateFilterBadge() {
-        var count = activeFilters.platforms.length
-                  + (activeFilters.dateFrom || activeFilters.dateTo ? 1 : 0)
-                  + activeFilters.types.length;
-        var dot = document.getElementById('filterDot');
-        dot.textContent = count;
-        if (count > 0) dot.classList.add('show');
-        else           dot.classList.remove('show');
+    function toggleSave(id,el){
+        if(SAVED.has(id)){ SAVED.delete(id); el.classList.remove('is-saved'); }
+        else             { SAVED.add(id);    el.classList.add('is-saved'); }
     }
 
-    /* ── Helpers ──────────────────────────────── */
-    var AVATAR_COLORS = ['#6c5ce7','#e17055','#00b894','#0984e3','#e84393','#fdcb6e','#d63031'];
-    function avatarColor(name) {
-        var h = 0;
-        for (var i = 0; i < (name || '').length; i++) h = (h * 31 + (name || '').charCodeAt(i)) & 0xffffffff;
-        return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+    /* ── Reload ── */
+    function reloadInbox(){
+        var btn=document.getElementById('reloadBtn');
+        btn.classList.add('spinning'); btn.disabled=true;
+        fetch('/Inbox/GetAll',{headers:{'X-Requested-With':'XMLHttpRequest'}})
+            .then(function(r){ return r.json(); })
+            .then(function(data){ ALL_ITEMS=data; updateBadges(); renderFeed(); })
+            .catch(function(){ alert('Reload failed.'); })
+            .finally(function(){ btn.classList.remove('spinning'); btn.disabled=false; });
     }
-    function formatTime(t) {
-        if (!t) return '';
-        var d    = new Date(t);
-        var now  = new Date();
-        var diff = Math.floor((now - d) / 1000);
-        if (diff < 60)    return diff + 's ago';
-        if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
-        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    /* ── Filter popup ── */
+    function toggleFP(){
+        var p=document.getElementById('fpPopup'),b=document.getElementById('fpBackdrop');
+        if(p.style.display==='block'){ closeFP(); return; }
+        var btn=document.getElementById('filterBtn'),r=btn.getBoundingClientRect();
+        p.style.top=(r.bottom+8)+'px'; p.style.right=(window.innerWidth-r.right)+'px'; p.style.left='auto';
+        p.style.display='block'; b.classList.add('open');
     }
-    function escHtml(s) {
-        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    function closeFP(){ document.getElementById('fpPopup').style.display='none'; document.getElementById('fpBackdrop').classList.remove('open'); }
+    function applyFP(){
+        activeFilters.platforms=[];
+        document.querySelectorAll('#fpPopup .fp-chk-item input[type=checkbox]').forEach(function(cb){ if(cb.checked) activeFilters.platforms.push(cb.value); });
+        activeFilters.dateFrom=document.getElementById('fpDateFrom').value;
+        activeFilters.dateTo=document.getElementById('fpDateTo').value;
+        activeFilters.types=[];
+        document.querySelectorAll('#fpPopup .fp-type-pill.sel').forEach(function(p){ activeFilters.types.push(p.dataset.type); });
+        updateFPBadge(); closeFP(); renderFeed();
     }
+    function clearFP(){
+        document.querySelectorAll('#fpPopup .fp-chk-item input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
+        document.getElementById('fpDateFrom').value=''; document.getElementById('fpDateTo').value='';
+        document.querySelectorAll('#fpPopup .fp-type-pill').forEach(function(p){ p.classList.remove('sel'); });
+        activeFilters={platforms:[],dateFrom:'',dateTo:'',types:[]};
+        updateFPBadge(); closeFP(); renderFeed();
+    }
+    function updateFPBadge(){
+        var n=activeFilters.platforms.length+(activeFilters.dateFrom||activeFilters.dateTo?1:0)+activeFilters.types.length;
+        var d=document.getElementById('filterDot'); d.textContent=n;
+        if(n>0) d.classList.add('show'); else d.classList.remove('show');
+    }
+
+    /* ── Helpers ── */
+    var AC=['#6c5ce7','#e17055','#00b894','#0984e3','#e84393','#fdcb6e','#d63031','#00cec9','#a29bfe'];
+    function avatarColor(n){ var h=0; for(var i=0;i<(n||'').length;i++) h=(h*31+(n||'').charCodeAt(i))&0xffffffff; return AC[Math.abs(h)%AC.length]; }
+    function fmtTime(t){
+        if(!t) return '';
+        var d=new Date(t),now=new Date(),diff=Math.floor((now-d)/1000);
+        if(diff<60) return diff+'s ago';
+        if(diff<3600) return Math.floor(diff/60)+'m ago';
+        if(diff<86400) return Math.floor(diff/3600)+'h ago';
+        if(diff<604800) return Math.floor(diff/86400)+'d ago';
+        return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    }
+    function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function capFirst(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):''; }
+    function autoGrow(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 </script>

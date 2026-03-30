@@ -16,17 +16,19 @@ namespace SocialMediaPanel.Controllers
         private readonly GmailService _gmail;
         private readonly IDataProtector _protector;
         private readonly AppDbContext _context;
-
+        private readonly InstagramService _instagram;
 
         public IntegrationsController(
              FacebookService facebook,
              GmailService gmail,
              AppDbContext context,
+             InstagramService instagramService,
              IDataProtectionProvider dataProtection)
         {
             _context = context;
             _gmail = gmail;
             _facebook = facebook;
+            _instagram = instagramService;
             _protector = dataProtection.CreateProtector("Integrations.Facebook.OAuthState");
         }
 
@@ -39,9 +41,131 @@ namespace SocialMediaPanel.Controllers
             {
                 case "facebook": return _FacebookModal();
                 case "gmail": return _GmailModal();
+                case "instagram": return _InstagramModal();
                 default: return NotFound($"No modal for: {platform}");
             }
         }
+
+        private IActionResult _InstagramModal()
+        {
+            string oauthUrl = "#";
+            string? oauthErr = null;
+
+            try
+            {
+                //var state = Guid.NewGuid().ToString("N");
+                //try { HttpContext.Session.SetString("fb_oauth_state", state); } catch { }
+                var userId = User.Identity?.Name ?? "anonymous";
+                var raw = $"{userId}|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+                var state = _protector.Protect(raw);
+
+                oauthUrl = _instagram.BuildOAuthUrl(state);
+            }
+            catch
+            {
+                oauthErr = "Facebook App ID / Secret not configured in appsettings.json";
+            }
+
+            ViewData["OAuthUrl"] = oauthUrl;
+            ViewData["OAuthError"] = oauthErr;
+            ViewData["IsReconnecting"] = false;
+            ViewData["ConnectedPageName"] = null;
+
+            return PartialView("~/Views/Shared/Integrations/_Instagram.cshtml");
+        }
+
+        [HttpGet]
+        [Route("Integrations/Callback/instagram")]
+        public async Task<IActionResult> InstagramCallback(
+     string? code,
+     string? state,
+     string? error,
+     string? error_description, int? userid)
+        {
+            // ── Handle OAuth errors ─────────────────────────────
+            if (error != null)
+            {
+                TempData["IntegrationError"] = $"Instagram access denied: {error_description}";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            // ── Validate state ──────────────────────────────────
+            if (string.IsNullOrEmpty(state))
+            {
+                TempData["IntegrationError"] = "Missing state parameter. Please try again.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            try
+            {
+                var raw = _protector.Unprotect(state);
+                var parts = raw.Split('|');
+
+                if (parts.Length == 2 && long.TryParse(parts[1], out var ts))
+                {
+                    var age = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - ts;
+                    if (age > 600)
+                    {
+                        TempData["IntegrationError"] = "OAuth session expired. Please try again.";
+                        return RedirectToAction("Index", "Dashboard");
+                    }
+                }
+            }
+            catch
+            {
+                TempData["IntegrationError"] = "Invalid state parameter. Please try again.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            // ── Check code ──────────────────────────────────────
+            if (string.IsNullOrEmpty(code))
+            {
+                TempData["IntegrationError"] = "No authorisation code received from Instagram.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            try
+            {
+                // Step 1: Exchange token
+                var userToken = await _instagram.ExchangeCodeAsync(code);
+
+                // Step 2: Get Instagram accounts via pages
+                var accounts = await _instagram.GetInstagramAccountsAsync(userToken);
+
+                if (accounts.Count == 0)
+                {
+                    TempData["IntegrationError"] = "No Instagram Business account found. Please connect your Instagram to a Facebook Page.";
+                    return RedirectToAction("Index", "Dashboard");
+                }
+
+                var account = accounts.First();
+
+                var Userid = HttpContext.Session.GetInt32("UserId");
+                var username = HttpContext.Session.GetString("UserEmail");
+
+                // Step 3: Save token
+                var token = new UserToken
+                {
+                    userId = (int)userid,
+                    username = username.ToString(),
+                    instagramtoken = account.PageAccessToken,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.UserTokens.Add(token);
+                await _context.SaveChangesAsync();
+
+                TempData["IntegrationSuccess"] = "instagram";
+                TempData["InstagramName"] = account.Username;
+            }
+            catch (Exception ex)
+            {
+                TempData["IntegrationError"] = "Instagram connection failed: " + ex.Message;
+            }
+
+            return RedirectToAction("Index", "Dashboard");
+        }
+
 
         private IActionResult _GmailModal()
         {
@@ -183,9 +307,37 @@ namespace SocialMediaPanel.Controllers
                 var tokenResult = await _facebook.ExchangeCodeAsync(code);
                 var pages = await _facebook.GetManagedPagesAsync(tokenResult.LongLivedToken);
 
-                // TODO: save tokenResult + pages to your database
-                // await _db.SaveFacebookIntegrationAsync(User.GetUserId(), tokenResult, pages);
+                var userid = HttpContext.Session.GetInt32("UserId");
+                var username = HttpContext.Session.GetInt32("UserEmail");
 
+
+                var token = new UserToken
+                {
+                    userId = (int)userid,
+                    username = username.ToString(),
+                    facebooktoken = tokenResult.LongLivedToken,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.UserTokens.Add(token);
+
+                foreach (var p in pages)
+                {
+                    var page = new FacebookPageEntity
+                    {
+                        user_id = userid,
+                        user_name = username.ToString(), 
+                        page_id = p.PageId,
+                        page_name = p.Name,
+                        page_access_token = p.AccessToken,
+                        created_at = DateTime.UtcNow
+                    };
+
+                    _context.FacebookPages.Add(page);
+                }
+
+                await _context.SaveChangesAsync();
+                var res = await _context.SaveChangesAsync();
                 TempData["IntegrationSuccess"] = "facebook";
                 TempData["FacebookPageName"] = pages.FirstOrDefault()?.Name ?? "your page";
             }
@@ -204,5 +356,16 @@ namespace SocialMediaPanel.Controllers
         {
             return Json(new { success = true });
         }
+    }
+
+    public class FacebookPageEntity
+    {
+        public int id { get; set; }
+        public int? user_id { get; set; }
+        public string user_name { get; set; }
+        public string page_id { get; set; }
+        public string page_name { get; set; }
+        public string page_access_token { get; set; }
+        public DateTime created_at { get; set; }
     }
 }

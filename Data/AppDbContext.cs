@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SocialMediaPanel.Controllers;
 using SocialMediaPanel.Models;
 using SocialMediaPanel.ViewModels;
 
@@ -146,5 +147,13 @@ namespace SocialMediaPanel.Data
         public DbSet<GmailIntegration> GmailIntegrations { get; set; }
         public DbSet<TwitterAccount> TwitterAccounts { get; set; }
         public DbSet<TweetPosted> TweetsPosted { get; set; }
+
+        public DbSet<PageReply> PageReplies { get; set; }
+
+        public DbSet<UserToken> UserTokens { get; set; }
+
+        public DbSet<FacebookPageEntity> FacebookPages { get; set; }
+
+        public DbSet<SocialPost> SocialPosts { get; set; }
     }
 }

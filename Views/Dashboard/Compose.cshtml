@@ -1537,6 +1537,51 @@
             background: #d0d7de;
             border-radius: 3px;
         }
+
+
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast {
+            min-width: 250px;
+            margin-bottom: 10px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast-success {
+            background: #28a745;
+        }
+
+        .toast-error {
+            background: #dc3545;
+        }
+
+        .compose-btn {
+            padding: 9px 20px;
+            background: var(--text);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+            margin:15px 0;
+        }
+
+            .compose-btn:hover {
+                background: #2d3a4a;
+            }
     </style>
 </head>
 <body>
@@ -1649,6 +1694,7 @@
                         </label>
                     </div>
                 </div>
+                <button class="compose-btn" onclick="publishFacebookPost()">Publish Post</button>
 
                 <!-- ACCORDION SECTIONS -->
                 <div class="accordion">
@@ -1918,8 +1964,67 @@
             </div>
         </div>
     </div>
-
+    <div id="toast-container"></div>
     <script>
+
+                     function publishFacebookPost() {
+            var text = document.getElementById("post-text").value;
+            var file = document.getElementById("media-input").files[0];
+
+            var formData = new FormData();
+            formData.append("message", text);
+
+            if (file) {
+                formData.append("image", file);
+            }
+
+            fetch('/Dashboard/PublishPost', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())   // ✅ IMPORTANT
+            .then(data => {
+                       if (data.success) {
+            showToast(data.message, "success");
+        } else {
+            showToast(data.message || "Something failed", "error");
+        }
+
+        if (data.postId) {
+            console.log("Post ID:", data.postId);
+        }
+            })
+            .catch(() => {
+                alert("Something went wrong");
+            });
+        }
+
+
+        // ✅ Separate function (NOT inside publish)
+        function updatePreview() {
+            var text = document.getElementById("post-text").value;
+
+            var preview = document.getElementById("post-preview-text");
+            if (preview) {
+                preview.innerText = text;
+            }
+        }
+
+                function showToast(message, type = "success") {
+            const container = document.getElementById("toast-container");
+
+            const toast = document.createElement("div");
+            toast.className = "toast " + (type === "success" ? "toast-success" : "toast-error");
+            toast.innerText = message;
+
+            container.appendChild(toast);
+
+            // Auto remove after 3 sec
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
         const activeNetworks = new Set(['fb']);
 
         function toggleNetwork(tab, net) {

@@ -13,7 +13,7 @@
         background: var(--bg);
     }
 
-    /* ── Top bar: platform icons + view toggles ── */
+    /* ── Top bar ── */
     .posts-top-bar {
         display: flex;
         align-items: center;
@@ -261,7 +261,6 @@
             object-fit: cover;
         }
 
-    /* image icon badge top-left */
     .p-thumb-icon {
         position: absolute;
         top: 3px;
@@ -359,7 +358,7 @@
         position: fixed;
         top: 0;
         right: 0;
-        width: 50%;
+        width: 40%;
         height: 100vh;
         background: #fff;
         box-shadow: -4px 0 28px rgba(0,0,0,.14);
@@ -517,7 +516,7 @@
 
 <div class="posts-page">
 
-    <!-- Platform icon tabs + view toggles -->
+    <!-- Platform icon tabs -->
     <div class="posts-top-bar">
         <div class="plat-icon-tabs">
             <a href="/Posts?platform=facebook&tab=@Model.ActiveTab"
@@ -582,7 +581,7 @@
         </div>
     </div>
 
-    <!-- Sub nav tabs -->
+    <!-- Sub nav -->
     <div class="posts-subnav">
         <a href="/Posts?platform=@Model.ActivePlatform&tab=published"
            class="@(Model.ActiveTab == "published" ? "active" : "")">
@@ -640,7 +639,7 @@
         <a href="#">Social Library</a>
     </div>
 
-    <!-- Posts Table -->
+    <!-- Table -->
     <div class="posts-table-wrap">
         <table class="posts-tbl">
             <thead>
@@ -649,7 +648,8 @@
                     <th>POST CONTENT</th>
                     <th style="width:130px;text-align:center">
                         INTERACTION
-                        <svg viewBox="0 0 24 24" width="11" height="11" style="stroke:var(--muted);fill:none;stroke-width:2;vertical-align:middle;margin-left:2px">
+                        <svg viewBox="0 0 24 24" width="11" height="11"
+                             style="stroke:var(--muted);fill:none;stroke-width:2;vertical-align:middle;margin-left:2px">
                             <circle cx="12" cy="12" r="10" />
                             <line x1="12" y1="8" x2="12" y2="12" />
                             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -680,12 +680,12 @@
                 {
                     @foreach (var post in Model.Posts)
                     {
-                        // Date: CreatedTime (Graph API) > UpdatedAt (DB)
+                        // Date: Graph API se CreatedTime > DB se UpdatedAt
                         var postDate = post.CreatedTime.HasValue
                         ? post.CreatedTime.Value.ToLocalTime()
                         : post.UpdatedAt.ToLocalTime();
 
-                        <tr class="post-tr" onclick="openPM('@post.PostId', '@post.PageId')">
+                        <tr class="post-tr" onclick="openPM('@post.PostId')">
                             <td>
                                 <div class="p-date">@postDate.ToString("dd MMM yyyy")</div>
                                 <div class="p-time">@postDate.ToString("hh:mm tt")</div>
@@ -739,10 +739,8 @@
     </div>
 </div>
 
-<!-- Modal Overlay -->
+<!-- Modal -->
 <div class="pm-overlay" id="pmOverlay" onclick="if(event.target===this)closePM()"></div>
-
-<!-- Modal Panel -->
 <div class="pm-panel" id="pmPanel">
     <button class="pm-close" onclick="closePM()">
         <svg viewBox="0 0 24 24" stroke-width="2.5">
@@ -772,37 +770,31 @@
 
 @section Scripts {
     <script>
-        function openPM(postId, pageId) {
+        // Sirf postId pass karo — pageId controller DB se nikaalta hai
+        function openPM(postId) {
             document.getElementById('pmOverlay').classList.add('open');
             document.getElementById('pmPanel').classList.add('open');
             document.getElementById('pmBody').innerHTML =
                 '<div class="pm-loading"><div class="pm-spinner"></div><span>Loading...</span></div>';
 
-            // Tab reset
             document.querySelectorAll('.pm-tab').forEach(t => t.classList.remove('active'));
             document.querySelector('.pm-tab[data-tab="pm-details"]').classList.add('active');
 
-            // pageId null/undefined guard
-            pageId = pageId || '';
-
-            fetch('/Posts/Details?postId=' + encodeURIComponent(postId)
-                             + '&pageId=' + encodeURIComponent(pageId),
-                {
-                    credentials: 'same-origin',  // session cookie bhejta hai
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(r => {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.text();
-                })
-                .then(html => {
-                    document.getElementById('pmBody').innerHTML = html;
-                    initPMTabs();
-                })
-                .catch(err => {
-                    document.getElementById('pmBody').innerHTML =
-                        '<p style="padding:30px;color:#dc3545;text-align:center">Failed to load post. (' + err.message + ')</p>';
-                });
+            fetch('/Posts/Details?postId=' + encodeURIComponent(postId), {
+                credentials: 'same-origin'
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.text();
+            })
+            .then(html => {
+                document.getElementById('pmBody').innerHTML = html;
+                initPMTabs();
+            })
+            .catch(err => {
+                document.getElementById('pmBody').innerHTML =
+                    '<p style="padding:30px;color:#dc3545;text-align:center">Failed to load. (' + err.message + ')</p>';
+            });
         }
 
         function closePM() {
@@ -823,5 +815,98 @@
         }
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closePM(); });
+
+        // ── Like ─────────────────────────────────────────────────────
+        function likePost(postId) {
+            var btn = document.getElementById('likeBtn');
+            if (btn) btn.disabled = true;
+            fetch('/Posts/Like?postId=' + encodeURIComponent(postId), {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                showPMToast(d.message, d.success ? 'ok' : 'err');
+                if (btn) { btn.disabled = false; if (d.success) btn.classList.add('active-like'); }
+            })
+            .catch(() => { showPMToast('Network error','err'); if(btn) btn.disabled=false; });
+        }
+
+        // ── Comment ───────────────────────────────────────────────────
+        function submitComment(postId) {
+            var input = document.getElementById('mainCommentInput');
+            var msg = input ? input.value.trim() : '';
+            if (!msg) return;
+            fetch('/Posts/Comment?postId=' + encodeURIComponent(postId) + '&message=' + encodeURIComponent(msg), {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) { input.value=''; showPMToast(d.message,'ok'); appendComment('commentsList','You',msg); }
+                else showPMToast(d.message,'err');
+            })
+            .catch(() => showPMToast('Network error','err'));
+        }
+
+        // ── Toggle Reply Box ──────────────────────────────────────────
+        function toggleReply(commentId) {
+            var box = document.getElementById('reply-' + commentId);
+            if (!box) return;
+            box.classList.toggle('open');
+            if (box.classList.contains('open')) {
+                var inp = document.getElementById('replyInput-' + commentId);
+                if (inp) inp.focus();
+            }
+        }
+
+        // ── Submit Reply ──────────────────────────────────────────────
+        function submitReply(commentId) {
+            var input = document.getElementById('replyInput-' + commentId);
+            var msg = input ? input.value.trim() : '';
+            if (!msg) return;
+            fetch('/Posts/Reply?commentId=' + encodeURIComponent(commentId) + '&message=' + encodeURIComponent(msg), {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    input.value = '';
+                    var box = document.getElementById('reply-' + commentId);
+                    if (box) box.classList.remove('open');
+                    showPMToast(d.message, 'ok');
+                    var cmtItem = document.getElementById('cmt-' + commentId);
+                    if (cmtItem) {
+                        var rd = cmtItem.querySelector('.pm-replies');
+                        if (!rd) { rd = document.createElement('div'); rd.className='pm-replies'; var h=cmtItem.querySelector('.pm-cmt-header'); if(h) h.after(rd); }
+                        rd.insertAdjacentHTML('beforeend','<div class="pm-reply-item"><div class="pm-cmt-header"><div class="pm-cmt-av" style="width:24px;height:24px;font-size:9px;flex-shrink:0">Y</div><div class="pm-cmt-body"><div class="pm-cmt-name" style="font-size:12px">You</div><div class="pm-cmt-msg" style="font-size:12px">'+escHtml(msg)+'</div><div class="pm-cmt-time">Just now</div></div></div></div>');
+                    }
+                } else showPMToast(d.message,'err');
+            })
+            .catch(() => showPMToast('Network error','err'));
+        }
+
+        function focusMainComment() {
+            var inp = document.getElementById('mainCommentInput');
+            if (inp) { inp.focus(); inp.scrollIntoView({behavior:'smooth'}); }
+        }
+
+        function appendComment(listId, name, msg) {
+            var list = document.getElementById(listId);
+            if (!list) return;
+            list.insertAdjacentHTML('beforeend','<div class="pm-comment-item"><div class="pm-cmt-header"><div class="pm-cmt-av">'+name[0].toUpperCase()+'</div><div class="pm-cmt-body"><div class="pm-cmt-name">'+escHtml(name)+'</div><div class="pm-cmt-msg">'+escHtml(msg)+'</div><div class="pm-cmt-footer"><span class="pm-cmt-time">Just now</span></div></div></div></div>');
+        }
+
+        function showPMToast(msg, type) {
+            var t = document.getElementById('pmToast');
+            if (!t) return;
+            t.textContent = msg; t.className = 'pm-toast ' + type; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
     </script>
 }

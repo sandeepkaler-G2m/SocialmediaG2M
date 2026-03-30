@@ -702,6 +702,244 @@
         .report-btn:hover {
             background: #f4f5f7;
         }
+
+
+    .tb-btn-filter-wrap {
+        position: relative;
+        display: inline-flex;
+    }
+
+    .tb-btn-filter {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        background: #fff;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: border-color .15s;
+    }
+
+        .tb-btn-filter:hover {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        .tb-btn-filter svg {
+            width: 12px;
+            height: 12px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .filter-active-dot {
+        display: none;
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 16px;
+        height: 16px;
+        background: var(--green);
+        color: #fff;
+        border-radius: 50%;
+        font-size: 9px;
+        font-weight: 700;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #fff;
+    }
+
+        .filter-active-dot.show {
+            display: flex;
+        }
+
+
+    /* ══ FILTER POPUP ══ */
+    .fp-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 400;
+    }
+
+        .fp-backdrop.open {
+            display: block;
+        }
+
+    .fp-popup {
+        position: fixed;
+        width: 290px;
+        background: #fff;
+        border: 1px solid #e2e4e9;
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(0,0,0,.13);
+        z-index: 401;
+        display: none;
+        overflow: hidden;
+    }
+
+    .fp-head2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+    }
+
+        .fp-head2 h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin: 0;
+        }
+
+    .fp-close2 {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: #aaa;
+        padding: 0;
+    }
+
+    .fp-sec {
+        padding: 10px 16px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .fp-sec-lbl {
+        font-size: 10px;
+        font-weight: 700;
+        color: #aaa;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .fp-chk-grp {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .fp-chk-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #333;
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .fp-chk-item input {
+            width: 13px;
+            height: 13px;
+            accent-color: var(--green);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+    .fp-plat-ico {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .fp-date-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .fp-date-row label {
+            font-size: 11px;
+            color: #aaa;
+            min-width: 26px;
+        }
+
+    .fp-date-in {
+        flex: 1;
+        padding: 5px 7px;
+        border: 1px solid #e2e4e9;
+        border-radius: 7px;
+        font-size: 11px;
+        font-family: 'DM Sans', sans-serif;
+        color: #333;
+        outline: none;
+    }
+
+        .fp-date-in:focus {
+            border-color: var(--green);
+        }
+
+    .fp-type-grp {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+    .fp-type-pill {
+        padding: 4px 10px;
+        border: 1.5px solid #e2e4e9;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #aaa;
+        cursor: pointer;
+        transition: all .14s;
+        user-select: none;
+    }
+
+        .fp-type-pill.sel {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(75,181,67,.07);
+        }
+
+    .fp-footer2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+    }
+
+    .fp-clear2 {
+        background: none;
+        border: none;
+        font-size: 12px;
+        font-weight: 600;
+        color: #aaa;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        padding: 0;
+    }
+
+        .fp-clear2:hover {
+            color: #333;
+        }
+
+    .fp-apply2 {
+        padding: 6px 16px;
+        background: var(--green);
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+    }
+
 </style>
 
 <!-- ══ INTEGRATIONS SECTION ══════════════════════════════════════════ -->
@@ -772,48 +1010,29 @@
             </div>
         </div>
 
-        <div class="todo-card">
-            <div class="todo-header">To Do</div>
-            <div class="todo-item">
-                <div class="todo-left">
-                    <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>
-                    </div>
-                    <div class="todo-count">0</div>
-                </div>
-                <a class="todo-link" href="#">Go to Cases</a>
-            </div>
-            <div class="todo-item">
-                <div class="todo-left">
-                    <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    </div>
-                    <div class="todo-count">0</div>
-                </div>
-                <a class="todo-link" href="#">Open Approvals</a>
-            </div>
-            <div class="todo-item">
-                <div class="todo-left">
-                    <div class="todo-icon">
-                        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                    </div>
-                    <div class="todo-count">0</div>
-                </div>
-                <a class="todo-link" href="#">Open Inbox Tasks</a>
-            </div>
-        </div>
+       
     </div>
 
     <!-- Right -->
     <div class="db-right">
         <div class="recent-card">
+
             <div class="recent-header">
                 <h3>Your Recent Posts</h3>
+                <div>
+                <div class="tb-btn-filter-wrap">
+                    <button class="tb-btn-filter" id="filterBtn" onclick="toggleFP()">
+                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
+                        Filters
+                    </button>
+                    <span class="filter-active-dot" id="filterDot">0</span>
+                </div>
                 <select class="sort-select">
                     <option>Highest Performing</option>
                     <option>Most Recent</option>
                     <option>Most Engaged</option>
                 </select>
+                </div>
             </div>
             <div class="recent-empty">
                 <div class="recent-empty-left">
@@ -952,8 +1171,59 @@
         </div><!-- /.browse-body -->
     </div><!-- /.browse-modal -->
 </div><!-- /.browse-backdrop -->
+<!-- FILTER POPUP -->
+<div class="fp-backdrop" id="fpBackdrop" onclick="closeFP()"></div>
+<div class="fp-popup" id="fpPopup">
+    <div class="fp-head2">
+        <h4>Filter Messages</h4>
+        <button class="fp-close2" onclick="closeFP()">✕</button>
+    </div>
+    <div class="fp-sec">
+        <div class="fp-sec-lbl">Platform</div>
+        <div class="fp-chk-grp">
+            <label class="fp-chk-item"><input type="checkbox" value="facebook"><div class="fp-plat-ico" style="background:#e7f0fd"><svg viewBox="0 0 24 24" fill="#1877F2" width="10" height="10"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg></div>Facebook</label>
+            <label class="fp-chk-item"><input type="checkbox" value="messenger"><div class="fp-plat-ico" style="background:#e7f0fd"><svg viewBox="0 0 24 24" fill="#0084FF" width="10" height="10"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z" /></svg></div>Messenger</label>
+            <label class="fp-chk-item"><input type="checkbox" value="instagram"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig1" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig1)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram</label>
+            <label class="fp-chk-item"><input type="checkbox" value="instagram_dm"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig2" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig2)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram DM</label>
+        </div>
+    </div>
+    <div class="fp-sec">
+        <div class="fp-sec-lbl">Date Range</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="fp-date-row"><label>From</label><input type="date" class="fp-date-in" id="fpDateFrom"></div>
+            <div class="fp-date-row"><label>To</label><input type="date" class="fp-date-in" id="fpDateTo"></div>
+        </div>
+    </div>
+
+    <div class="fp-footer2">
+        <button class="fp-clear2" onclick="clearFP()">Clear all</button>
+        <button class="fp-apply2" onclick="applyFP()">Apply Filters</button>
+    </div>
+</div>
 
 <script>
+
+    function toggleFP(){
+           var p=document.getElementById('fpPopup'),b=document.getElementById('fpBackdrop');
+           if(p.style.display==='block'){ closeFP(); return; }
+           var btn=document.getElementById('filterBtn'),r=btn.getBoundingClientRect();
+           p.style.top=(r.bottom+8)+'px'; p.style.right=(window.innerWidth-r.right)+'px'; p.style.left='auto';
+           p.style.display='block'; b.classList.add('open');
+       }
+       function closeFP(){ document.getElementById('fpPopup').style.display='none'; document.getElementById('fpBackdrop').classList.remove('open'); }
+           function clearFP(){
+        document.querySelectorAll('#fpPopup .fp-chk-item input[type=checkbox]').forEach(function(cb){ cb.checked=false; });
+        document.getElementById('fpDateFrom').value=''; document.getElementById('fpDateTo').value='';
+        document.querySelectorAll('#fpPopup .fp-type-pill').forEach(function(p){ p.classList.remove('sel'); });
+        activeFilters={platforms:[],dateFrom:'',dateTo:'',types:[]};
+        updateFPBadge(); closeFP(); renderFeed();
+    }
+       function updateFPBadge(){
+        var n=activeFilters.platforms.length+(activeFilters.dateFrom||activeFilters.dateTo?1:0)+activeFilters.types.length;
+        var d=document.getElementById('filterDot'); d.textContent=n;
+        if(n>0) d.classList.add('show'); else d.classList.remove('show');
+    }
+
     function openBrowse()  { document.getElementById('browseBackdrop').classList.add('open'); }
     function closeBrowse() { document.getElementById('browseBackdrop').classList.remove('open'); }
     document.addEventListener('keydown', function(e) {
