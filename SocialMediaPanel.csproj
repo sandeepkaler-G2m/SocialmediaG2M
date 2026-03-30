@@ -24,4 +24,11 @@
 		    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.22" />
 		    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="wwwroot\images\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Include="wwwroot\images\g2m_logo.png" />
+	  <None Include="wwwroot\images\logo_main.png" />
+	</ItemGroup>
 </Project>

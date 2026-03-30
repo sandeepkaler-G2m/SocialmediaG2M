@@ -1573,11 +1573,11 @@
 
         var profileUrl=buildProfileUrl(item);
         var ctx='';
-        if(item.platform==='facebook'||item.platform==='messenger'){
-            ctx='<svg viewBox="0 0 24 24" fill="#1877F2" width="10" height="10"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
-        } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
-            ctx='<svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="igctx'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igctx'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
-        }
+        // if(item.platform==='facebook'||item.platform==='messenger'){
+        //     ctx='<svg viewBox="0 0 24 24" fill="#1877F2" width="10" height="10"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+        // } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
+        //     ctx='<svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="igctx'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igctx'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        // }
         if(item.itemType==='message'){
             ctx+=' Direct message via <strong>'+capFirst(item.platform||'')+'</strong>';
         } else if(item.postName&&item.postName.trim()){
@@ -1605,10 +1605,7 @@
                 +'</div>'
                 +'<div class="msg-meta">'
                     +'<div class="msg-name-row">'
-                        +'<a class="msg-profile-link" href="'+esc(profileUrl)+'" target="_blank" onclick="event.stopPropagation()">'
                             +esc(name)
-                            +'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
-                        +'</a>'
                         +'<span class="msg-type-badge '+tCls+'">'+tLabel+'</span>'
                         +extra
                     +'</div>'
@@ -1616,7 +1613,6 @@
                 +'</div>'
                 +'<div class="msg-top-right">'
                     +'<span class="msg-time">'+ago+'</span>'
-                    +'<input type="checkbox" class="msg-checkbox" title="Select" onclick="event.stopPropagation()">'
                 +'</div>'
             +'</div>'
             +'<div class="msg-body-text">'+bodyHtml+'</div>'
@@ -1876,8 +1872,31 @@
         if(item.platform==='instagram'||item.platform==='instagram_dm') return 'https://www.instagram.com/'+item.senderId;
         return '#';
     }
-    function buildPostUrl(item){
-        if(item.platform==='facebook'||item.platform==='messenger') return 'https://www.facebook.com/'+(item.postId||'');
+    function buildPostUrl(item) {
+        if (item.platform === 'facebook' || item.platform === 'messenger') {
+            var postId = item.postId || '';
+            if (!postId) return '#';
+
+            // Graph API returns postId as "pageId_postId" e.g. "123456_987654"
+            var parts = postId.split('_');
+            if (parts.length === 2) {
+                return 'https://www.facebook.com/' + parts[0] + '/posts/' + parts[1];
+            }
+
+            // Fallback if postId is not in expected format
+            return 'https://www.facebook.com/' + postId;
+        }
+
+        if (item.platform === 'instagram') {
+            var mediaId = item.postId || '';
+            if (!mediaId) return '#';
+
+            // Instagram Graph API postId is "igUserId_mediaId"
+            var igParts = mediaId.split('_');
+            var shortId = igParts.length === 2 ? igParts[1] : igParts[0];
+            return 'https://www.instagram.com/p/' + shortId;
+        }
+
         return '#';
     }
 

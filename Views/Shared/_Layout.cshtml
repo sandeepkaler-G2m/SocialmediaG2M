@@ -77,18 +77,19 @@
         .th-logo {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, var(--green), var(--teal));
+            background: transparent; /* remove gradient since image has its own bg */
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            overflow: hidden;
         }
 
-            .th-logo svg {
-                width: 18px;
-                height: 18px;
-                fill: white;
+            .th-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
             }
 
         .th-app-name {
@@ -605,6 +606,8 @@
         }
 
         /* Auth modal styles */
+
+
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -616,11 +619,9 @@
         <!-- Left: Logo + workspace -->
         <div class="th-brand">
             <div class="th-logo">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-                </svg>
+                <img src="~/images/g2m_logo.png" alt="Logo" />
             </div>
-            <span class="th-app-name">SocialMediaPanel</span>
+            <span class="th-app-name">Go2Market</span>
             <div class="th-sep"></div>
             <div class="th-workspace">
                 <div class="th-ws-icon">@FirstChar(companyName)</div>

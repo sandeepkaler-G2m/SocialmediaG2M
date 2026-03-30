@@ -145,8 +145,12 @@ namespace SocialMediaPanel.Controllers
                 return Json(new { error = "No token" });
 
             var client = new HttpClient();
-            var fields = "id,message,story,name,description,full_picture,picture,created_time";
+            var fields = "id,message,story,created_time,permalink_url," +
+                 "attachments{media,title,description,url,type,subattachments}," +
+                 "likes.summary(true),comments.summary(true),shares";
+
             var url = $"https://graph.facebook.com/v19.0/{postId}?fields={fields}&access_token={token}";
+
 
             var resp = await client.GetAsync(url);
             var json = await resp.Content.ReadAsStringAsync();
@@ -299,9 +303,9 @@ namespace SocialMediaPanel.Controllers
         {
             var userid = HttpContext.Session.GetInt32("UserId");
 
-            var account = await _db.UserTokens
-                .Where(a => a.userId == userid)
-                .Select(a => a.facebooktoken)
+            var account = await _db.FacebookPages
+                .Where(a => a.user_id == userid)
+                .Select(a => a.page_access_token)
                 .FirstOrDefaultAsync();
 
             return account;
