@@ -856,19 +856,17 @@
         .toast-info {
             background: #1877F2;
         }
+
         @@keyframes slideIn {
-            from
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
 
-        {
-            transform: translateX(100px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         /* PROGRESS */
@@ -905,7 +903,7 @@
 </head>
 <body>
 
- 
+
     <!-- MAIN -->
     <main class="main">
         <div class="topbar">
@@ -925,83 +923,6 @@
             <div class="compose-panel">
                 <div class="compose-scroll">
 
-<<<<<<< HEAD
-                <!-- NETWORK TABS -->
-                <div class="network-bar">
-                    <div class="network-bar-label">Post to networks</div>
-                    <div class="network-tabs">
-                        <div class="net-tab fb active" onclick="toggleNetwork(this,'fb')" id="tab-fb">
-                            <span class="net-icon">f</span>
-                            Facebook
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-fb"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <div class="net-tab ig" onclick="toggleNetwork(this,'ig')" id="tab-ig">
-                            <span class="net-icon">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none" /></svg>
-                            </span>
-                            Instagram
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-ig" style="display:none"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <div class="net-tab li" onclick="toggleNetwork(this,'li')" id="tab-li">
-                            <span class="net-icon">in</span>
-                            LinkedIn
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-li" style="display:none"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SELECTED PROFILES -->
-                <div class="selected-profiles" id="selected-profiles">
-                    <div class="profile-chip fb" id="chip-fb">
-                        <span class="chip-icon">f</span>
-                        <span>Facebook Page</span>
-                        <button class="chip-remove" onclick="removeNetwork('fb')">✕</button>
-                    </div>
-                </div>
-
-                <!-- TEXT AREA -->
-                <div class="compose-body">
-                    <textarea class="compose-textarea" id="post-text" placeholder="Start writing your post..." oninput="updatePreview()" maxlength="5000"></textarea>
-                </div>
-
-                <!-- MEDIA UPLOAD -->
-                <div class="media-section">
-                    <div class="media-upload" onclick="document.getElementById('media-input').click()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        <span>Drag &amp; drop or <strong>browse files</strong></span>
-                        <span style="font-size:11px;color:#c4cdd6">JPG, PNG, GIF, MP4 supported</span>
-                        <input type="file" id="media-input" style="display:none" accept="image/*,video/*" onchange="handleMedia(this)" />
-                    </div>
-                </div>
-
-                <!-- TOOLBAR -->
-                <div class="compose-toolbar">
-                    <span class="char-count"><span id="char-count">0</span> / 5000</span>
-                </div>
-
-                
-                <button class="compose-btn" onclick="publishFacebookPost()">Publish Post</button>
-
-                <!-- ACCORDION SECTIONS -->
-                <div class="accordion">
-
-
-                    <!-- SPROUT TAGS -->
-                    <div class="accordion-item">
-                        <div class="accordion-head open" onclick="toggleAccordion(this)">
-                            <h3>Tags</h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                        </div>
-                        <div class="accordion-body open">
-                            <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text)">Labels</div>
-                            <p class="section-desc">Use Labels to organize, filter and report on your content.</p>
-                            <input type="text" class="label-input" placeholder="⊕ Add labels" />
-                            <div class="label-suggestions">
-                                <span>Try:</span>
-                                <span class="label-chip blue" onclick="addLabel('user generated content')">● user generated content +</span>
-                                <span class="label-chip green" onclick="addLabel('blog')">● blog +</span>
-                                <span class="label-chip purple" onclick="addLabel('video')">● video +</span>
-=======
                     <!-- NETWORK SELECTION -->
                     <div class="network-bar">
                         <div class="network-bar-label">Post to networks</div>
@@ -1010,7 +931,6 @@
                                 <span class="net-icon">f</span>
                                 Facebook
                                 <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#1877F2" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
->>>>>>> origin/sandeep
                             </div>
                             <div class="net-tab ig" onclick="toggleNet(this,'ig')" id="tab-ig">
                                 <span class="net-icon">

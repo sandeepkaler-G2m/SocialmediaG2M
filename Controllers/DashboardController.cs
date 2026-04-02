@@ -1,8 +1,6 @@
-<<<<<<< HEAD
+
 ﻿using Azure.Core;
-=======
 ﻿using Google.Apis.Gmail.v1.Data;
->>>>>>> origin/sandeep
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
@@ -16,23 +14,17 @@ namespace SocialMediaPanel.Controllers
     public class DashboardController : Controller
     {
         private readonly AppDbContext _context;
-<<<<<<< HEAD
         private readonly PostService _postService;
-
-        public DashboardController(AppDbContext context,PostService postService)
-        {
-            _context = context;
-            _postService = postService;
-=======
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
 
-        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env)
+        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env, PostService postService)
         {
             _context = context;
             _config = config;
+            _postService = postService;
+
             _env = env;
->>>>>>> origin/sandeep
         }
 
         // ── INDEX ─────────────────────────────────────────────────────
@@ -47,7 +39,7 @@ namespace SocialMediaPanel.Controllers
             ViewBag.UserName = user.Name;
             ViewBag.UserEmail = user.Email;
             ViewBag.CompanyName = user.CompanyName ?? "Your Workspace";
-<<<<<<< HEAD
+
 
             var allPosts = await GetAllPosts();
 
@@ -57,9 +49,8 @@ namespace SocialMediaPanel.Controllers
                 .ToList();
 
             return View(posts);
-=======
-            return View();
->>>>>>> origin/sandeep
+
+            //return View();
         }
 
         // ── COMPOSE ───────────────────────────────────────────────────
@@ -77,7 +68,7 @@ namespace SocialMediaPanel.Controllers
             return View();
         }
 
-<<<<<<< HEAD
+
 
         public async Task<List<SocialPost>> GetAllPosts()
         {
@@ -148,9 +139,7 @@ namespace SocialMediaPanel.Controllers
             return allPosts.OrderByDescending(x => x.created_at).ToList();
         }
 
-=======
-        // ── LEADS ─────────────────────────────────────────────────────
->>>>>>> origin/sandeep
+
         [HttpGet]
         public async Task<IActionResult> Leads()
         {
@@ -525,29 +514,21 @@ namespace SocialMediaPanel.Controllers
     {
         public int id { get; set; }
         public int? user_id { get; set; }
-<<<<<<< HEAD
         public string page_id { get; set; }
         public string account_name { get; set; }
         public string post_id { get; set; }
         public string message { get; set; }
-=======
-        public string page_id { get; set; } = "";
-        public string post_id { get; set; } = "";
-        public string? message { get; set; }
->>>>>>> origin/sandeep
+
+
         public string? media_url { get; set; }
         public string platform { get; set; } = "";
         public DateTime created_at { get; set; }
-<<<<<<< HEAD
 
         public int like_count { get; set; }
         public int comment_count { get; set; }
+        public string status { get; set; }
         public int share_count { get; set; }
     }
 
 }
-=======
-        public string status { get; set; }
-    }
-}
->>>>>>> origin/sandeep
+
