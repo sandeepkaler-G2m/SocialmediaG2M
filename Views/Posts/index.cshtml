@@ -604,6 +604,10 @@
         <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=approvals">Approvals</a>
         <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=unpublished">Unpublished</a>
         <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=draft">Drafts</a> *@
+        <a class="posts-nav-item @(Model.ActiveTab == "draft" ? "active" : "")"
+           href="/Posts?platform=@Model.ActivePlatform&tab=draft">
+            Drafts
+        </a>
     </nav>
 
     <!-- MAIN CONTENT -->
@@ -690,7 +694,8 @@
                                 ? post.CreatedTime.Value.ToLocalTime()
                                 : post.UpdatedAt.ToLocalTime();
 
-                                <tr class="post-tr" onclick="openPM('@post.PostId','@post.Platform')">
+                                <tr class="post-tr"
+                                    onclick="handlePostClick('@post.PostId','@post.Platform','@Model.ActiveTab')">
                                     <td>
                                         <div class="p-date">@postDate.ToString("dd MMM yyyy")</div>
                                         <div class="p-time">@postDate.ToString("hh:mm tt")</div>

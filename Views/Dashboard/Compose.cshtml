@@ -1,17 +1,16 @@
 ﻿@{
-    ViewData["Title"] = "Publishing – SocialMediaPanel";
+    ViewData["Title"] = "Compose Post";
     var userName = ViewBag.UserName as string ?? "User";
-    var userEmail = ViewBag.UserEmail as string ?? "";
     var companyName = ViewBag.CompanyName as string ?? "My Workspace";
-    var companyInitial = companyName.Length > 0 ? companyName[0].ToString().ToUpper() : "G";
     var userInitial = userName.Length > 0 ? userName[0].ToString().ToUpper() : "U";
+    var compInitial = companyName.Length > 0 ? companyName[0].ToString().ToUpper() : "G";
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"]</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>@ViewData["Title"] — SocialMediaPanel</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
     <style>
         *, *::before, *::after {
@@ -24,10 +23,9 @@
             --green: #4BB543;
             --green-d: #3a9e34;
             --blue: #1877F2;
-            --ig: #E1306C;
+            --ig: linear-gradient(135deg,#f09433,#dc2743,#bc1888);
             --li: #0A66C2;
             --bg: #f4f5f7;
-            --sidebar: #fff;
             --card: #fff;
             --border: #e3e6ea;
             --text: #1a2332;
@@ -36,7 +34,7 @@
         }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'DM Sans',sans-serif;
             background: var(--bg);
             color: var(--text);
             height: 100vh;
@@ -47,7 +45,7 @@
         /* ── SIDEBAR ── */
         .sidebar {
             width: 220px;
-            background: var(--sidebar);
+            background: #fff;
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
@@ -66,7 +64,7 @@
         .logo-icon {
             width: 34px;
             height: 34px;
-            background: linear-gradient(135deg, var(--green), var(--teal));
+            background: linear-gradient(135deg,var(--green),var(--teal));
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -80,46 +78,10 @@
             }
 
         .logo-text {
-            font-family: 'Sora', sans-serif;
+            font-family: 'Sora',sans-serif;
             font-size: 14px;
             font-weight: 700;
             color: var(--text);
-        }
-
-        .workspace-badge {
-            margin: 12px 12px 8px;
-            padding: 10px 12px;
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .ws-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .ws-name {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .ws-sub {
-            font-size: 10px;
-            color: var(--muted);
         }
 
         .nav {
@@ -139,7 +101,7 @@
             cursor: pointer;
             text-decoration: none;
             border-left: 3px solid transparent;
-            transition: color 0.15s, background 0.15s;
+            transition: color .15s,background .15s;
         }
 
             .nav-item svg {
@@ -156,7 +118,7 @@
 
             .nav-item.active {
                 color: var(--green);
-                background: rgba(75,181,67,0.07);
+                background: rgba(75,181,67,.07);
                 border-left-color: var(--green);
             }
 
@@ -177,7 +139,7 @@
         .user-avatar {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, var(--green), var(--teal));
+            background: linear-gradient(135deg,var(--green),var(--teal));
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -194,28 +156,19 @@
             color: var(--text);
         }
 
-        .user-email {
-            font-size: 10px;
-            color: var(--muted);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 118px;
-        }
-
         .logout-btn {
             display: flex;
             align-items: center;
             gap: 6px;
             padding: 7px 12px;
             margin-top: 8px;
-            background: rgba(220,53,69,0.07);
-            border: 1px solid rgba(220,53,69,0.18);
+            background: rgba(220,53,69,.07);
+            border: 1px solid rgba(220,53,69,.18);
             border-radius: 7px;
             color: #dc3545;
             font-size: 12px;
             font-weight: 500;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'DM Sans',sans-serif;
             cursor: pointer;
             text-decoration: none;
             width: 100%;
@@ -236,7 +189,6 @@
             overflow: hidden;
         }
 
-        /* TOPBAR */
         .topbar {
             height: 52px;
             background: #fff;
@@ -246,7 +198,7 @@
             justify-content: space-between;
             padding: 0 24px;
             flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,.05);
         }
 
         .topbar-left {
@@ -256,59 +208,16 @@
         }
 
             .topbar-left h1 {
-                font-family: 'Sora', sans-serif;
+                font-family: 'Sora',sans-serif;
                 font-size: 15px;
                 font-weight: 700;
                 color: var(--text);
             }
 
-        .draft-badge {
-            background: #fff8e6;
-            border: 1px solid #ffd666;
-            color: #b37400;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 5px;
-        }
-
         .topbar-right {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .btn-save {
-            padding: 8px 20px;
-            background: var(--blue);
-            border: none;
-            border-radius: 7px;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer;
-            transition: opacity 0.15s;
-        }
-
-            .btn-save:hover {
-                opacity: 0.88;
-            }
-
-        .btn-save-arrow {
-            width: 32px;
-            height: 34px;
-            background: var(--blue);
-            border: none;
-            border-left: 1px solid rgba(255,255,255,0.25);
-            border-radius: 0 7px 7px 0;
-            color: #fff;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: -4px;
         }
 
         .btn-outline {
@@ -319,24 +228,35 @@
             color: var(--text);
             font-size: 12px;
             font-weight: 500;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'DM Sans',sans-serif;
             cursor: pointer;
         }
 
-        /* ── CONTENT AREA ── */
+            .btn-outline:hover {
+                background: #f4f5f7;
+            }
+
+        /* ── CONTENT ── */
         .content-area {
             flex: 1;
             display: flex;
             overflow: hidden;
         }
 
-        /* ── LEFT COMPOSE PANEL ── */
+        /* ── COMPOSE PANEL ── */
         .compose-panel {
-            width: 560px;
-            overflow-y: auto;
+            width: 520px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             border-right: 1px solid var(--border);
             background: #fff;
             flex-shrink: 0;
+        }
+
+        .compose-scroll {
+            flex: 1;
+            overflow-y: auto;
         }
 
         /* NETWORK TABS */
@@ -350,7 +270,7 @@
             font-weight: 600;
             color: var(--muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: .5px;
             margin-bottom: 10px;
         }
 
@@ -370,7 +290,7 @@
             font-size: 12px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.15s;
+            transition: all .15s;
             background: #fff;
             color: var(--muted);
             user-select: none;
@@ -394,7 +314,7 @@
             }
 
             .net-tab.ig .net-icon {
-                background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+                background: linear-gradient(135deg,#f09433,#dc2743,#bc1888);
             }
 
             .net-tab.li .net-icon {
@@ -403,19 +323,19 @@
 
             .net-tab.active.fb {
                 border-color: var(--blue);
-                background: rgba(24,119,242,0.06);
+                background: rgba(24,119,242,.06);
                 color: var(--blue);
             }
 
             .net-tab.active.ig {
                 border-color: #E1306C;
-                background: rgba(225,48,108,0.06);
+                background: rgba(225,48,108,.06);
                 color: #E1306C;
             }
 
             .net-tab.active.li {
                 border-color: var(--li);
-                background: rgba(10,102,194,0.06);
+                background: rgba(10,102,194,.06);
                 color: var(--li);
             }
 
@@ -424,94 +344,17 @@
                 height: 12px;
             }
 
-        /* SELECTED PROFILES */
-        .selected-profiles {
-            padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            min-height: 50px;
-            background: #fafbfc;
+        .tick {
+            display: none;
         }
 
-        .profile-chip {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 10px 5px 6px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-            .profile-chip.fb {
-                background: rgba(24,119,242,0.1);
-                color: var(--blue);
-                border: 1px solid rgba(24,119,242,0.2);
-            }
-
-            .profile-chip.ig {
-                background: rgba(225,48,108,0.1);
-                color: #E1306C;
-                border: 1px solid rgba(225,48,108,0.2);
-            }
-
-            .profile-chip.li {
-                background: rgba(10,102,194,0.1);
-                color: var(--li);
-                border: 1px solid rgba(10,102,194,0.2);
-            }
-
-            .profile-chip .chip-icon {
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 10px;
-                font-weight: 700;
-                color: #fff;
-            }
-
-            .profile-chip.fb .chip-icon {
-                background: var(--blue);
-            }
-
-            .profile-chip.ig .chip-icon {
-                background: linear-gradient(135deg,#f09433,#dc2743,#bc1888);
-            }
-
-            .profile-chip.li .chip-icon {
-                background: var(--li);
-            }
-
-        .chip-remove {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.1);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            color: inherit;
-            margin-left: 2px;
-        }
-
-        .no-profile-msg {
-            font-size: 12px;
-            color: var(--muted);
-            font-style: italic;
+        .net-tab.active .tick {
+            display: block;
         }
 
         /* TEXT AREA */
         .compose-body {
-            padding: 16px 20px;
+            padding: 16px 20px 0;
         }
 
         .compose-textarea {
@@ -521,11 +364,11 @@
             border-radius: 10px;
             padding: 12px 14px;
             font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'DM Sans',sans-serif;
             color: var(--text);
             resize: vertical;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color .2s;
             line-height: 1.6;
         }
 
@@ -537,31 +380,38 @@
                 color: #c4cdd6;
             }
 
-        /* MEDIA */
+        .char-count {
+            font-size: 12px;
+            color: var(--muted);
+            padding: 6px 20px 0;
+            text-align: right;
+        }
+
+        /* MEDIA UPLOAD */
         .media-section {
-            padding: 0 20px 14px;
+            padding: 12px 20px;
         }
 
         .media-upload {
             border: 1.5px dashed #d0d7de;
             border-radius: 10px;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
+            transition: border-color .2s,background .2s;
         }
 
             .media-upload:hover {
                 border-color: var(--green);
-                background: rgba(75,181,67,0.03);
+                background: rgba(75,181,67,.03);
             }
 
             .media-upload svg {
-                width: 28px;
-                height: 28px;
+                width: 24px;
+                height: 24px;
                 stroke: #c4cdd6;
             }
 
@@ -576,309 +426,171 @@
                 font-weight: 600;
             }
 
-        /* TOOLBAR */
-        .compose-toolbar {
-            padding: 10px 20px 14px;
+        /* IMAGE STRIP */
+        .img-strip {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border);
+            gap: 8px;
+            padding: 0 20px 12px;
+            flex-wrap: wrap;
         }
 
-        .toolbar-icons {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .img-thumb {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
-        .tool-btn {
-            width: 30px;
-            height: 30px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            border-radius: 6px;
+            .img-thumb img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .img-thumb .remove-img {
+                position: absolute;
+                top: 3px;
+                right: 3px;
+                width: 18px;
+                height: 18px;
+                background: rgba(0,0,0,.6);
+                border: none;
+                border-radius: 50%;
+                color: #fff;
+                font-size: 10px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+        .img-add-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            border: 1.5px dashed #d0d7de;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.15s;
-            color: var(--muted);
-        }
-
-            .tool-btn:hover {
-                background: #f4f5f7;
-                color: var(--text);
-            }
-
-            .tool-btn svg {
-                width: 16px;
-                height: 16px;
-                stroke: currentColor;
-                fill: none;
-            }
-
-        .char-count {
-            font-size: 12px;
-            color: var(--muted);
-            font-weight: 500;
-        }
-
-        /* CUSTOMIZE BAR */
-        .customize-bar {
-            padding: 10px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .btn-customize {
-            padding: 6px 12px;
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            color: var(--muted);
+            font-size: 22px;
+            transition: border-color .15s;
         }
 
-            .btn-customize svg {
-                width: 13px;
-                height: 13px;
-                stroke: var(--muted);
+            .img-add-btn:hover {
+                border-color: var(--green);
+                color: var(--green);
             }
 
-        .draft-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .toggle-switch {
-            position: relative;
-            width: 36px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-            .toggle-switch input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-
-        .toggle-track {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #e3e6ea;
-            border-radius: 20px;
-            transition: background 0.2s;
-        }
-
-        .toggle-switch input:checked + .toggle-track {
-            background: var(--green);
-        }
-
-        .toggle-thumb {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background: #fff;
-            border-radius: 50%;
-            transition: transform 0.2s;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-        }
-
-        .toggle-switch input:checked ~ .toggle-thumb {
-            transform: translateX(16px);
-        }
-
-        /* ACCORDION */
-        .accordion {
+        /* PUBLISHING OPTIONS */
+        .pub-options {
+            padding: 14px 20px;
             border-top: 1px solid var(--border);
         }
 
-        .accordion-item {
-            border-bottom: 1px solid var(--border);
+        .pub-options-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 10px;
         }
 
-        .accordion-head {
-            padding: 13px 20px;
+        .pub-option {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            user-select: none;
-        }
-
-            .accordion-head h3 {
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--text);
-            }
-
-            .accordion-head svg {
-                width: 14px;
-                height: 14px;
-                stroke: var(--muted);
-                transition: transform 0.2s;
-            }
-
-            .accordion-head.open svg {
-                transform: rotate(180deg);
-            }
-
-        .accordion-body {
-            padding: 0 20px 16px;
-            display: none;
-        }
-
-            .accordion-body.open {
-                display: block;
-            }
-
-        /* FIRST COMMENT */
-        .comment-box {
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
             border: 1.5px solid var(--border);
             border-radius: 9px;
-            padding: 10px 12px;
-            min-height: 80px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color .15s;
+        }
+
+            .pub-option:hover {
+                border-color: var(--green);
+            }
+
+            .pub-option.selected {
+                border-color: var(--blue);
+                background: rgba(24,119,242,.04);
+            }
+
+            .pub-option input[type=radio] {
+                margin-top: 2px;
+                accent-color: var(--blue);
+                flex-shrink: 0;
+            }
+
+        .pub-option-text {
+            flex: 1;
+        }
+
+        .pub-option-title {
             font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            outline: none;
-            width: 100%;
-            resize: none;
+            font-weight: 600;
             color: var(--text);
         }
 
-            .comment-box:focus {
-                border-color: #93c5fd;
-            }
-
-            .comment-box::placeholder {
-                color: #c4cdd6;
-            }
-
-        .comment-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
+        .pub-option-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
         }
 
-            .comment-footer span {
-                font-size: 11px;
-                color: var(--muted);
+        .schedule-inputs {
+            display: none;
+            margin-top: 10px;
+            display: none;
+            gap: 8px;
+        }
+
+            .schedule-inputs.open {
+                display: flex;
             }
 
-        /* FORM ELEMENTS */
-        .form-select {
+            .schedule-inputs input, .schedule-inputs select {
+                padding: 8px 10px;
+                border: 1.5px solid var(--border);
+                border-radius: 8px;
+                font-size: 12px;
+                font-family: 'DM Sans',sans-serif;
+                color: var(--text);
+                outline: none;
+                background: #fff;
+            }
+
+                .schedule-inputs input:focus, .schedule-inputs select:focus {
+                    border-color: #93c5fd;
+                }
+
+        /* CAMPAIGN */
+        .campaign-section {
+            padding: 0 20px 14px;
+        }
+
+        .campaign-section-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 8px;
+        }
+
+        .campaign-input {
             width: 100%;
             padding: 9px 12px;
             border: 1.5px solid var(--border);
             border-radius: 8px;
             font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: #fff;
-            outline: none;
-            cursor: pointer;
-        }
-
-            .form-select:focus {
-                border-color: #93c5fd;
-            }
-
-        .section-desc {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 10px;
-            line-height: 1.5;
-        }
-
-        .label-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            outline: none;
-        }
-
-            .label-input:focus {
-                border-color: #93c5fd;
-            }
-
-        .label-suggestions {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
-            .label-suggestions span {
-                font-size: 11px;
-                color: var(--muted);
-            }
-
-        .label-chip {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-            .label-chip.blue {
-                background: rgba(24,119,242,0.1);
-                color: var(--blue);
-                border: 1px solid rgba(24,119,242,0.2);
-            }
-
-            .label-chip.green {
-                background: rgba(75,181,67,0.1);
-                color: var(--green);
-                border: 1px solid rgba(75,181,67,0.2);
-            }
-
-            .label-chip.purple {
-                background: rgba(108,92,231,0.1);
-                color: #6c5ce7;
-                border: 1px solid rgba(108,92,231,0.2);
-            }
-
-        /* CAMPAIGN */
-        .campaign-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .campaign-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'DM Sans',sans-serif;
             color: var(--text);
             outline: none;
         }
@@ -887,129 +599,67 @@
                 border-color: #93c5fd;
             }
 
-        .btn-add-campaign {
-            padding: 8px 14px;
+        /* PUBLISH BUTTON AREA */
+        .compose-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
             background: #fff;
-            border: 1.5px solid var(--green);
-            border-radius: 8px;
-            color: var(--green);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            font-family: 'DM Sans', sans-serif;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: background 0.15s;
+            flex-shrink: 0;
         }
 
-            .btn-add-campaign:hover {
-                background: rgba(75,181,67,0.06);
-            }
-
-            .btn-add-campaign svg {
-                width: 13px;
-                height: 13px;
-                stroke: currentColor;
-            }
-
-        /* PROMOTE */
-        .promote-box {
-            border: 1.5px dashed #d0d7de;
-            border-radius: 9px;
-            padding: 16px;
-            text-align: center;
-        }
-
-            .promote-box p {
-                font-size: 12px;
-                color: var(--muted);
-                margin-bottom: 10px;
-                line-height: 1.6;
-            }
-
-        .btn-connect-ad {
-            padding: 7px 16px;
-            background: #fff;
-            border: 1.5px solid var(--blue);
-            border-radius: 7px;
-            color: var(--blue);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        /* SCHEDULE */
-        .schedule-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-        }
-
-            .schedule-row label {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--text);
-                margin-bottom: 5px;
-                display: block;
-            }
-
-        .date-input {
-            padding: 8px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            outline: none;
-            width: 150px;
-        }
-
-        .time-select {
-            padding: 8px 10px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: #fff;
-        }
-
-        .link-btn {
-            font-size: 12px;
-            color: var(--blue);
-            text-decoration: none;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .add-time-btn {
-            font-size: 12px;
-            color: var(--green);
-            cursor: pointer;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .publish-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--blue);
             border: none;
-            background: none;
-            font-family: 'DM Sans', sans-serif;
-            margin-top: 8px;
-        }
-
-        .advanced-link {
-            font-size: 12px;
-            color: var(--blue);
+            border-radius: 9px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'DM Sans',sans-serif;
             cursor: pointer;
-            font-weight: 500;
-            display: inline-flex;
+            transition: opacity .15s;
+            display: flex;
             align-items: center;
-            gap: 4px;
-            margin-top: 10px;
+            justify-content: center;
+            gap: 8px;
         }
 
-        /* ── RIGHT PREVIEW PANEL ── */
+            .publish-btn:hover {
+                opacity: .88;
+            }
+
+            .publish-btn:disabled {
+                opacity: .55;
+                cursor: not-allowed;
+            }
+
+            .publish-btn svg {
+                width: 16px;
+                height: 16px;
+                stroke: #fff;
+                fill: none;
+            }
+
+        .save-draft-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 9px;
+            background: #fff;
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'DM Sans',sans-serif;
+            cursor: pointer;
+        }
+
+            .save-draft-btn:hover {
+                background: #f4f5f7;
+            }
+
+        /* ── PREVIEW PANEL ── */
         .preview-panel {
             flex: 1;
             display: flex;
@@ -1031,7 +681,6 @@
             color: var(--muted);
             cursor: pointer;
             border-bottom: 2px solid transparent;
-            transition: color 0.15s;
         }
 
             .preview-tab-item.active {
@@ -1045,9 +694,12 @@
             overflow-y: auto;
             padding: 24px;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
         }
 
+        /* PREVIEW CARD */
         .preview-card {
             background: #fff;
             border-radius: 12px;
@@ -1055,8 +707,7 @@
             width: 100%;
             max-width: 440px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.07);
         }
 
         .preview-card-header {
@@ -1091,6 +742,14 @@
             color: var(--muted);
         }
 
+        .preview-platform-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+
         .preview-body {
             padding: 12px 14px;
         }
@@ -1099,8 +758,9 @@
             font-size: 13px;
             color: var(--text);
             line-height: 1.6;
-            min-height: 40px;
+            min-height: 30px;
             word-break: break-word;
+            white-space: pre-wrap;
         }
 
         .preview-placeholder {
@@ -1109,18 +769,35 @@
             font-style: italic;
         }
 
-        .preview-image {
-            width: 100%;
-            height: 200px;
+        .preview-images {
+            display: flex;
+            gap: 4px;
+            padding: 0 14px 12px;
+            flex-wrap: wrap;
+        }
+
+            .preview-images img {
+                height: 140px;
+                border-radius: 8px;
+                object-fit: cover;
+                flex: 1;
+                min-width: 120px;
+                max-width: 200px;
+            }
+
+        .preview-no-img {
+            height: 80px;
             background: #f4f5f7;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 14px 12px;
+            border-radius: 8px;
         }
 
-            .preview-image svg {
-                width: 40px;
-                height: 40px;
+            .preview-no-img svg {
+                width: 32px;
+                height: 32px;
                 stroke: #d0d7de;
             }
 
@@ -1146,384 +823,71 @@
                 stroke: currentColor;
             }
 
-        /* ── CAMPAIGN MODAL ── */
-        .modal-overlay {
+        /* TOAST */
+        #toast-container {
             position: fixed;
-            inset: 0;
-            background: rgba(15,25,35,0.45);
-            z-index: 1000;
-            display: none;
-            align-items: flex-start;
-            justify-content: center;
-            padding-top: 40px;
-            backdrop-filter: blur(3px);
-        }
-
-            .modal-overlay.open {
-                display: flex;
-            }
-
-        .modal {
-            background: #fff;
-            width: 100%;
-            max-width: 740px;
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.18);
-            max-height: 90vh;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
             display: flex;
             flex-direction: column;
-            animation: modalSlideIn 0.2s ease;
+            gap: 8px;
         }
 
-        @@keyframes modalSlideIn {
-            from {
-                transform: translateY(-20px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .modal-topbar {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-            .modal-topbar h2 {
-                font-family: 'Sora', sans-serif;
-                font-size: 16px;
-                font-weight: 700;
-                color: var(--text);
-            }
-
-        .modal-topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-esc {
-            font-size: 11px;
-            color: var(--muted);
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            padding: 3px 7px;
-        }
-
-        .btn-modal-close {
-            width: 28px;
-            height: 28px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--muted);
-        }
-
-            .btn-modal-close:hover {
-                background: #f4f5f7;
-            }
-
-            .btn-modal-close svg {
-                width: 16px;
-                height: 16px;
-                stroke: currentColor;
-            }
-
-        .btn-modal-save {
-            padding: 8px 20px;
-            background: var(--blue);
-            border: none;
-            border-radius: 7px;
+        .toast {
+            min-width: 260px;
+            padding: 12px 16px;
+            border-radius: 8px;
             color: #fff;
             font-size: 13px;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer;
+            font-family: 'DM Sans',sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            animation: slideIn .3s ease;
         }
 
-        .modal-body {
-            overflow-y: auto;
-            padding: 24px;
-            flex: 1;
+        .toast-success {
+            background: #28a745;
         }
 
-        /* INFO BANNER */
-        .info-banner {
-            background: #f0f7ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 9px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin-bottom: 24px;
-            position: relative;
+        .toast-error {
+            background: #dc3545;
         }
 
-            .info-banner svg {
-                width: 16px;
-                height: 16px;
-                stroke: #3b82f6;
-                flex-shrink: 0;
-                margin-top: 1px;
-            }
+        .toast-info {
+            background: #1877F2;
+        }
+        @@keyframes slideIn {
+            from
 
-            .info-banner p {
-                font-size: 13px;
-                color: #1e40af;
-                line-height: 1.6;
-            }
-
-                .info-banner p strong {
-                    font-weight: 600;
-                }
-
-                .info-banner p a {
-                    color: #1d4ed8;
-                    text-decoration: underline;
-                    cursor: pointer;
-                }
-
-        .banner-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 20px;
-            height: 20px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #93c5fd;
-            font-size: 14px;
-            border-radius: 4px;
+        {
+            transform: translateX(100px);
+            opacity: 0;
         }
 
-        /* MODAL SECTIONS */
-        .modal-section {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
+        to {
+            transform: translateX(0);
+            opacity: 1;
         }
 
-            .modal-section h3 {
-                font-size: 15px;
-                font-weight: 700;
-                color: var(--text);
-                margin-bottom: 16px;
-            }
-
-        .modal-form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
         }
 
-        .modal-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-            .modal-form-group label {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--text);
-            }
-
-        .required {
-            color: #ef4444;
-        }
-
-        .modal-input {
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-            .modal-input:focus {
-                border-color: #93c5fd;
-            }
-
-            .modal-input::placeholder {
-                color: #c4cdd6;
-            }
-
-        .modal-select {
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: #fff;
-            outline: none;
+        /* PROGRESS */
+        .progress-bar-wrap {
             width: 100%;
-            cursor: pointer;
-        }
-
-        .date-sub {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 10px;
-        }
-
-        .date-range-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: #fff;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-            .date-range-btn svg {
-                width: 15px;
-                height: 15px;
-                stroke: var(--muted);
-            }
-
-        .date-picker-row {
-            display: none;
-            margin-top: 10px;
-            gap: 10px;
-            align-items: center;
-        }
-
-            .date-picker-row.open {
-                display: flex;
-            }
-
-        .groups-input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            outline: none;
-        }
-
-            .groups-input:focus {
-                border-color: #93c5fd;
-            }
-
-        /* CAMPAIGN BRIEF */
-        .brief-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 6px;
-        }
-
-        .brief-desc {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 12px;
-            line-height: 1.5;
-        }
-
-        .expand-btn {
-            width: 26px;
-            height: 26px;
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-            .expand-btn svg {
-                width: 13px;
-                height: 13px;
-                stroke: var(--muted);
-            }
-
-        .brief-textarea {
-            width: 100%;
-            min-height: 160px;
-            border: 1.5px solid var(--border);
-            border-radius: 9px;
-            padding: 14px;
-            font-size: 13px;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            outline: none;
-            resize: vertical;
-            line-height: 1.6;
-        }
-
-            .brief-textarea:focus {
-                border-color: #93c5fd;
-            }
-
-            .brief-textarea::placeholder {
-                color: #c4cdd6;
-            }
-
-        .brief-toolbar {
-            display: flex;
-            gap: 4px;
+            height: 4px;
+            background: #e3e6ea;
+            border-radius: 2px;
             margin-top: 8px;
-            padding: 6px 8px;
-            background: #f4f5f7;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            width: fit-content;
+            display: none;
         }
 
-        .brief-tool {
-            padding: 4px 8px;
-            background: none;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
-            transition: background 0.15s;
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--green);
+            border-radius: 2px;
+            width: 0%;
+            transition: width .3s;
         }
-
-            .brief-tool:hover {
-                background: #e3e6ea;
-                color: var(--text);
-            }
-
-            .brief-tool.active {
-                background: #fff;
-                color: var(--text);
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
 
         ::-webkit-scrollbar {
             width: 5px;
@@ -1537,665 +901,442 @@
             background: #d0d7de;
             border-radius: 3px;
         }
-
-
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
-
-        .toast {
-            min-width: 250px;
-            margin-bottom: 10px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideIn 0.3s ease;
-        }
-
-        .toast-success {
-            background: #28a745;
-        }
-
-        .toast-error {
-            background: #dc3545;
-        }
-
-        .compose-btn {
-            padding: 9px 20px;
-            background: var(--text);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
-            margin:15px 0;
-        }
-
-            .compose-btn:hover {
-                background: #2d3a4a;
-            }
     </style>
 </head>
 <body>
 
-  
-    <!-- ══ MAIN ══ -->
+ 
+    <!-- MAIN -->
     <main class="main">
-
-        <!-- TOPBAR -->
         <div class="topbar">
             <div class="topbar-left">
-                <h1>New Draft</h1>
-                <span class="draft-badge" id="draft-badge">Draft Mode ON</span>
+                <h1>New Post</h1>
             </div>
             <div class="topbar-right">
-                <button class="btn-outline" onclick="window.location.href='/Dashboard/Index'">Discard</button>
-                <button class="btn-save" onclick="savePost()">Save</button>
-                <button class="btn-save-arrow">▾</button>
+                <button class="btn-outline" onclick="window.location.href='/Dashboard/Compose'">
+                    ✕ Discard
+                </button>
             </div>
         </div>
 
-        <!-- CONTENT -->
         <div class="content-area">
 
-            <!-- ── LEFT COMPOSE ── -->
+            <!-- ══ LEFT COMPOSE PANEL ══ -->
             <div class="compose-panel">
+                <div class="compose-scroll">
 
-                <!-- NETWORK TABS -->
-                <div class="network-bar">
-                    <div class="network-bar-label">Post to networks</div>
-                    <div class="network-tabs">
-                        <div class="net-tab fb active" onclick="toggleNetwork(this,'fb')" id="tab-fb">
-                            <span class="net-icon">f</span>
-                            Facebook
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-fb"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <div class="net-tab ig" onclick="toggleNetwork(this,'ig')" id="tab-ig">
-                            <span class="net-icon">
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none" /></svg>
-                            </span>
-                            Instagram
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-ig" style="display:none"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                        <div class="net-tab li" onclick="toggleNetwork(this,'li')" id="tab-li">
-                            <span class="net-icon">in</span>
-                            LinkedIn
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tick-li" style="display:none"><polyline points="20 6 9 17 4 12" /></svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SELECTED PROFILES -->
-                <div class="selected-profiles" id="selected-profiles">
-                    <div class="profile-chip fb" id="chip-fb">
-                        <span class="chip-icon">f</span>
-                        <span>Facebook Page</span>
-                        <button class="chip-remove" onclick="removeNetwork('fb')">✕</button>
-                    </div>
-                </div>
-
-                <!-- TEXT AREA -->
-                <div class="compose-body">
-                    <textarea class="compose-textarea" id="post-text" placeholder="Start writing your post..." oninput="updatePreview()" maxlength="5000"></textarea>
-                </div>
-
-                <!-- MEDIA UPLOAD -->
-                <div class="media-section">
-                    <div class="media-upload" onclick="document.getElementById('media-input').click()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        <span>Drag &amp; drop or <strong>browse files</strong></span>
-                        <span style="font-size:11px;color:#c4cdd6">JPG, PNG, GIF, MP4 supported</span>
-                        <input type="file" id="media-input" style="display:none" accept="image/*,video/*" onchange="handleMedia(this)" />
-                    </div>
-                </div>
-
-                <!-- TOOLBAR -->
-                <div class="compose-toolbar">
-                    <div class="toolbar-icons">
-                        <button class="tool-btn" title="Emoji">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M8 13s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" /><line x1="15" y1="9" x2="15.01" y2="9" /></svg>
-                        </button>
-                        <button class="tool-btn" title="Mention">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94" /></svg>
-                        </button>
-                        <button class="tool-btn" title="Link">
-                            <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
-                        </button>
-                        <button class="tool-btn" title="Image">
-                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        </button>
-                        <button class="tool-btn" title="Tag">
-                            <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>
-                        </button>
-                    </div>
-                    <span class="char-count"><span id="char-count">0</span> / 5000</span>
-                </div>
-
-                <!-- CUSTOMIZE BAR -->
-                <div class="customize-bar">
-                    <button class="btn-customize">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                        Customize post per network
-                    </button>
-                    <div class="draft-toggle">
-                        This is a Draft
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="draft-toggle" checked onchange="toggleDraft(this)" />
-                            <span class="toggle-track"></span>
-                            <span class="toggle-thumb"></span>
-                        </label>
-                    </div>
-                </div>
-                <button class="compose-btn" onclick="publishFacebookPost()">Publish Post</button>
-
-                <!-- ACCORDION SECTIONS -->
-                <div class="accordion">
-
-                    <!-- FIRST COMMENT -->
-                    <div class="accordion-item">
-                        <div class="accordion-head open" onclick="toggleAccordion(this)">
-                            <h3>First Comment</h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                        </div>
-                        <div class="accordion-body open">
-                            <p class="section-desc">Add a first comment for selected Instagram, Facebook, and LinkedIn profiles.</p>
-                            <textarea class="comment-box" placeholder="Write your first comment..."></textarea>
-                            <div class="comment-footer"><span></span><span>8000</span></div>
-                        </div>
-                    </div>
-
-
-                    <!-- SPROUT TAGS -->
-                    <div class="accordion-item">
-                        <div class="accordion-head open" onclick="toggleAccordion(this)">
-                            <h3>Tags</h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                        </div>
-                        <div class="accordion-body open">
-                            <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text)">Labels</div>
-                            <p class="section-desc">Use Labels to organize, filter and report on your content.</p>
-                            <input type="text" class="label-input" placeholder="⊕ Add labels" />
-                            <div class="label-suggestions">
-                                <span>Try:</span>
-                                <span class="label-chip blue" onclick="addLabel('user generated content')">● user generated content +</span>
-                                <span class="label-chip green" onclick="addLabel('blog')">● blog +</span>
-                                <span class="label-chip purple" onclick="addLabel('video')">● video +</span>
+                    <!-- NETWORK SELECTION -->
+                    <div class="network-bar">
+                        <div class="network-bar-label">Post to networks</div>
+                        <div class="network-tabs">
+                            <div class="net-tab fb active" onclick="toggleNet(this,'fb')" id="tab-fb">
+                                <span class="net-icon">f</span>
+                                Facebook
+                                <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#1877F2" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                             </div>
-                            <div style="margin-top:14px;margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text)">Campaign</div>
-                            <p class="section-desc">Track and report on your social marketing campaigns.</p>
-                            <div class="campaign-input-wrap">
-                                <input type="text" class="campaign-input" placeholder="⊕ Add a campaign" id="campaign-input" />
-                                <button class="btn-add-campaign" onclick="openCampaignModal()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                                    New Campaign
-                                </button>
+                            <div class="net-tab ig" onclick="toggleNet(this,'ig')" id="tab-ig">
+                                <span class="net-icon">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none" /></svg>
+                                </span>
+                                Instagram
+                                <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#E1306C" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                            </div>
+                            <div class="net-tab li" onclick="toggleNet(this,'li')" id="tab-li">
+                                <span class="net-icon">in</span>
+                                LinkedIn
+                                <svg class="tick" viewBox="0 0 24 24" fill="none" stroke="#0A66C2" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                             </div>
                         </div>
                     </div>
 
-                    <!-- PROMOTE -->
-                    <div class="accordion-item">
-                        <div class="accordion-head" onclick="toggleAccordion(this)">
-                            <h3>Promote</h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
-                        </div>
-                        <div class="accordion-body">
-                            <div class="promote-box">
-                                <p>Promote this post to a larger audience by connecting an ad account.</p>
-                                <button class="btn-connect-ad">Connect Ad Manager</button>
-                            </div>
+                    <!-- TEXT -->
+                    <div class="compose-body">
+                        <textarea class="compose-textarea" id="postText" placeholder="Start writing your post..." oninput="onTextInput()" maxlength="5000"></textarea>
+                    </div>
+                    <div class="char-count"><span id="charCount">0</span> / 5000</div>
+
+                    <!-- MEDIA -->
+                    <div class="media-section">
+                        <div class="media-upload" onclick="document.getElementById('mediaInput').click()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                            <span>Drag &amp; drop or <strong>browse files</strong></span>
+                            <span style="font-size:11px;color:#c4cdd6">JPG, PNG, GIF, MP4 (multiple images supported)</span>
+                            <input type="file" id="mediaInput" style="display:none" accept="image/*,video/*" multiple onchange="handleMedia(this)" />
                         </div>
                     </div>
 
-                    <!-- SCHEDULE -->
-                    <div class="accordion-item">
-                        <div class="accordion-head open" onclick="toggleAccordion(this)">
-                            <h3>Show draft on calendar (optional)</h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    <!-- IMAGE STRIP -->
+                    <div class="img-strip" id="imgStrip"></div>
+
+                    <!-- CAMPAIGN -->
+                    <div class="campaign-section">
+                        <div class="campaign-section-label">Campaign (optional)</div>
+                        <input type="text" class="campaign-input" id="campaignInput" placeholder="⊕ Add a campaign name" />
+                    </div>
+
+                    <!-- PUBLISHING OPTIONS -->
+                    <div class="pub-options">
+                        <div class="pub-options-label">Publishing Options</div>
+
+                        <div class="pub-option selected" onclick="selectPubOption(this,'now')">
+                            <input type="radio" name="pubOpt" value="now" checked />
+                            <div class="pub-option-text">
+                                <div class="pub-option-title">Publish Now</div>
+                                <div class="pub-option-sub">Post immediately to selected networks</div>
+                            </div>
                         </div>
-                        <div class="accordion-body open">
-                            <div class="schedule-row">
-                                <div>
-                                    <label>Date</label>
-                                    <input type="date" class="date-input" id="schedule-date" />
-                                </div>
-                                <div>
-                                    <label>Time</label>
-                                    <select class="time-select">
+
+                        <div class="pub-option" onclick="selectPubOption(this,'schedule')">
+                            <input type="radio" name="pubOpt" value="schedule" />
+                            <div class="pub-option-text">
+                                <div class="pub-option-title">Schedule for a Specific Date</div>
+                                <div class="pub-option-sub">Choose date and time to publish</div>
+                                <div class="schedule-inputs" id="scheduleInputs">
+                                    <input type="date" id="schedDate" style="flex:1" />
+                                    <select id="schedTime">
                                         <option>09:00 AM</option>
                                         <option>10:00 AM</option>
+                                        <option>11:00 AM</option>
                                         <option>12:00 PM</option>
+                                        <option>01:00 PM</option>
                                         <option>02:00 PM</option>
+                                        <option>03:00 PM</option>
+                                        <option>04:00 PM</option>
                                         <option>05:00 PM</option>
-                                        <option>06:30 PM</option>
+                                        <option>06:00 PM</option>
+                                        <option>07:00 PM</option>
+                                        <option>08:00 PM</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <a class="link-btn">Use Optimal Times →</a>
-                                </div>
                             </div>
-                            <button class="add-time-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                                Add more scheduled times
-                            </button>
-                            <div><a class="advanced-link">Advanced Scheduling ↓</a></div>
                         </div>
+
+                        <div class="pub-option" onclick="selectPubOption(this,'draft')">
+                            <input type="radio" name="pubOpt" value="draft" />
+                            <div class="pub-option-text">
+                                <div class="pub-option-title">Save as Draft</div>
+                                <div class="pub-option-sub">Save without publishing</div>
+                            </div>
+                        </div>
+
                     </div>
 
+                </div><!-- /compose-scroll -->
+                <!-- FOOTER — PUBLISH BUTTON -->
+                <div class="compose-footer">
+                    <div class="progress-bar-wrap" id="progressWrap">
+                        <div class="progress-bar-fill" id="progressFill"></div>
+                    </div>
+                    <button class="publish-btn" id="publishBtn" onclick="handlePublish()">
+                        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
+                        <span id="publishBtnText">Publish Now</span>
+                    </button>
                 </div>
-            </div>
-
-            <!-- ── RIGHT PREVIEW ── -->
+            </div><!-- /compose-panel -->
+            <!-- ══ RIGHT PREVIEW PANEL ══ -->
             <div class="preview-panel">
                 <div class="preview-tab-bar">
                     <div class="preview-tab-item active">Network Preview</div>
                 </div>
-                <div class="preview-content">
-                    <div style="width:100%;max-width:440px">
-
-                        <!-- FACEBOOK PREVIEW -->
-                        <div id="preview-card-fb" class="preview-card">
-                            <div class="preview-card-header">
-                                <div class="preview-avatar" style="background:linear-gradient(135deg,#1877F2,#42a5f5)">f</div>
-                                <div>
-                                    <div class="preview-name">@companyName</div>
-                                    <div class="preview-meta">Facebook Page &middot; Just now</div>
-                                </div>
-                            </div>
-                            <div class="preview-body">
-                                <div class="preview-text" id="preview-text-fb">
-                                    <span class="preview-placeholder">Select a profile and start adding content in the left panel.</span>
-                                </div>
-                            </div>
-                            <div class="preview-image" id="preview-img-fb">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                            </div>
-                            <div class="preview-actions">
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" /></svg> Like</span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> Comment</span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg> Share</span>
-                            </div>
-                        </div>
-
-                        <!-- INSTAGRAM PREVIEW -->
-                        <div id="preview-card-ig" class="preview-card" style="display:none">
-                            <div class="preview-card-header">
-                                <div class="preview-avatar" style="background:linear-gradient(135deg,#f09433,#dc2743,#bc1888)">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="white" stroke="none" /></svg>
-                                </div>
-                                <div>
-                                    <div class="preview-name">@companyName</div>
-                                    <div class="preview-meta">Instagram &middot; Just now</div>
-                                </div>
-                            </div>
-                            <div class="preview-image">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                            </div>
-                            <div class="preview-body">
-                                <div class="preview-text" id="preview-text-ig">
-                                    <span class="preview-placeholder">Add content to see Instagram preview.</span>
-                                </div>
-                            </div>
-                            <div class="preview-actions">
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg></span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg></span>
-                            </div>
-                        </div>
-
-                        <!-- LINKEDIN PREVIEW -->
-                        <div id="preview-card-li" class="preview-card" style="display:none">
-                            <div class="preview-card-header">
-                                <div class="preview-avatar" style="background:var(--li)">in</div>
-                                <div>
-                                    <div class="preview-name">@companyName</div>
-                                    <div class="preview-meta">LinkedIn &middot; Just now</div>
-                                </div>
-                            </div>
-                            <div class="preview-body">
-                                <div class="preview-text" id="preview-text-li">
-                                    <span class="preview-placeholder">Add content to see LinkedIn preview.</span>
-                                </div>
-                            </div>
-                            <div class="preview-image">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                            </div>
-                            <div class="preview-actions">
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" /></svg> Like</span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> Comment</span>
-                                <span class="preview-action"><svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg> Repost</span>
-                            </div>
-                        </div>
-
-                    </div>
+                <div class="preview-content" id="previewContent">
+                    <!-- Preview cards injected by JS -->
                 </div>
             </div>
 
-        </div>
+        </div><!-- /content-area -->
     </main>
 
-    <!-- ══ CAMPAIGN MODAL ══ -->
-    <div class="modal-overlay" id="campaign-modal" onclick="closeCampaignModal(event)">
-        <div class="modal">
-            <div class="modal-topbar">
-                <h2>Create new campaign</h2>
-                <div class="modal-topbar-right">
-                    <span class="modal-esc">esc to go back</span>
-                    <button class="btn-modal-save" onclick="saveCampaign()">Save</button>
-                    <button class="btn-modal-close" onclick="closeCampaignModalDirect()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="modal-body">
-
-                <div class="info-banner" id="info-banner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                    <p><strong>Campaigns are a tag type in Sprout</strong> that provide you with extra tools to plan and manage your social media campaigns. Like other tags in Sprout, you'll see Campaigns in your tag filters and the Tag Report. <a>Learn more about Campaigns in the help center.</a></p>
-                    <button class="banner-close" onclick="document.getElementById('info-banner').style.display='none'">✕</button>
-                </div>
-
-                <div class="modal-section">
-                    <h3>General Information</h3>
-                    <div class="modal-form-row">
-                        <div class="modal-form-group">
-                            <label>Campaign Name <span class="required">*</span></label>
-                            <input type="text" class="modal-input" placeholder="Give your campaign a name" id="campaign-name" />
-                        </div>
-                        <div class="modal-form-group">
-                            <label>Calendar highlight color</label>
-                            <select class="modal-select" id="campaign-color">
-                                <option>Campaign Name</option>
-                                <option>Red</option>
-                                <option>Blue</option>
-                                <option>Green</option>
-                                <option>Purple</option>
-                                <option>Orange</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-form-group" style="margin-bottom:16px">
-                        <label>Date Range</label>
-                        <p class="date-sub">When does this campaign start, and how long does it last?</p>
-                        <button class="date-range-btn" onclick="toggleDatePicker()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                            Choose date range
-                        </button>
-                        <div class="date-picker-row" id="date-picker-row">
-                            <input type="date" class="modal-input" style="width:160px" id="camp-start" />
-                            <span style="color:var(--muted);font-size:13px">→</span>
-                            <input type="date" class="modal-input" style="width:160px" id="camp-end" />
-                        </div>
-                    </div>
-                    <div class="modal-form-group">
-                        <label>Group Visibility</label>
-                        <p class="date-sub">Choose all the groups where you want this campaign to be visible and selectable.</p>
-                        <input type="text" class="groups-input" value="All Groups" id="campaign-groups" />
-                    </div>
-                </div>
-
-                <div class="modal-section">
-                    <div class="brief-header">
-                        <h3 style="margin-bottom:0">Campaign Brief</h3>
-                        <button class="expand-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" /></svg>
-                        </button>
-                    </div>
-                    <p class="brief-desc">Provide strategic or creative direction for your team. Visible in Compose while writing posts, or on the campaign homepage.</p>
-                    <textarea class="brief-textarea" placeholder="Start typing here" id="campaign-brief"></textarea>
-                    <div class="brief-toolbar">
-                        <button class="brief-tool active">H1</button>
-                        <button class="brief-tool">H2</button>
-                        <button class="brief-tool" style="font-weight:900">B</button>
-                        <button class="brief-tool" style="font-style:italic">I</button>
-                        <button class="brief-tool">&#8801;</button>
-                        <button class="brief-tool">&#8942;&#8801;</button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
     <div id="toast-container"></div>
+
     <script>
+        // ── State ─────────────────────────────────────────────────────────────
+        var activeNets   = new Set(['fb']);
+        var selectedFiles = [];      // File objects
+        var previewURLs  = [];       // Object URLs
 
-                     function publishFacebookPost() {
-            var text = document.getElementById("post-text").value;
-            var file = document.getElementById("media-input").files[0];
-
-            var formData = new FormData();
-            formData.append("message", text);
-
-            if (file) {
-                formData.append("image", file);
-            }
-
-            fetch('/Dashboard/PublishPost', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())   // ✅ IMPORTANT
-            .then(data => {
-                       if (data.success) {
-            showToast(data.message, "success");
-        } else {
-            showToast(data.message || "Something failed", "error");
+        // ── Network toggle ────────────────────────────────────────────────────
+        function toggleNet(tab, net) {
+          if (activeNets.has(net)) {
+            if (activeNets.size === 1) return; // at least 1
+            activeNets.delete(net);
+            tab.classList.remove('active');
+          } else {
+            activeNets.add(net);
+            tab.classList.add('active');
+          }
+          renderPreview();
+          updatePublishBtn();
         }
 
-        if (data.postId) {
-            console.log("Post ID:", data.postId);
-        }
-            })
-            .catch(() => {
-                alert("Something went wrong");
-            });
+        // ── Text input ────────────────────────────────────────────────────────
+        function onTextInput() {
+          var t = document.getElementById('postText').value;
+          document.getElementById('charCount').textContent = t.length;
+          renderPreviewText();
         }
 
-
-        // ✅ Separate function (NOT inside publish)
-        function updatePreview() {
-            var text = document.getElementById("post-text").value;
-
-            var preview = document.getElementById("post-preview-text");
-            if (preview) {
-                preview.innerText = text;
-            }
-        }
-
-                function showToast(message, type = "success") {
-            const container = document.getElementById("toast-container");
-
-            const toast = document.createElement("div");
-            toast.className = "toast " + (type === "success" ? "toast-success" : "toast-error");
-            toast.innerText = message;
-
-            container.appendChild(toast);
-
-            // Auto remove after 3 sec
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        const activeNetworks = new Set(['fb']);
-
-        function toggleNetwork(tab, net) {
-            if (activeNetworks.has(net)) {
-                if (activeNetworks.size === 1) return;
-                activeNetworks.delete(net);
-                tab.classList.remove('active');
-                const tick = tab.querySelector('.tick-' + net);
-                if (tick) tick.style.display = 'none';
-            } else {
-                activeNetworks.add(net);
-                tab.classList.add('active');
-                const tick = tab.querySelector('.tick-' + net);
-                if (tick) tick.style.display = 'block';
-            }
-            updateChips();
-            updatePreviewCards();
-        }
-
-        function removeNetwork(net) {
-            if (activeNetworks.size === 1) return;
-            activeNetworks.delete(net);
-            const tab = document.getElementById('tab-' + net);
-            if (tab) {
-                tab.classList.remove('active');
-                const tick = tab.querySelector('.tick-' + net);
-                if (tick) tick.style.display = 'none';
-            }
-            updateChips();
-            updatePreviewCards();
-        }
-
-        function updateChips() {
-            const container = document.getElementById('selected-profiles');
-            container.innerHTML = '';
-            const configs = {
-                fb: { label: 'Facebook Page', cls: 'fb', icon: 'f' },
-                ig: { label: 'Instagram',     cls: 'ig', icon: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/></svg>' },
-                li: { label: 'LinkedIn',      cls: 'li', icon: 'in' }
-            };
-            if (activeNetworks.size === 0) {
-                container.innerHTML = '<span class="no-profile-msg">Select at least one network above</span>';
-                return;
-            }
-            activeNetworks.forEach(net => {
-                const c = configs[net];
-                const chip = document.createElement('div');
-                chip.className = 'profile-chip ' + c.cls;
-                chip.id = 'chip-' + net;
-                chip.innerHTML = '<span class="chip-icon">' + c.icon + '</span><span>' + c.label + '</span><button class="chip-remove" onclick="removeNetwork(\'' + net + '\')">&#x2715;</button>';
-                container.appendChild(chip);
-            });
-        }
-
-        function updatePreviewCards() {
-            ['fb', 'ig', 'li'].forEach(function(net) {
-                var card = document.getElementById('preview-card-' + net);
-                if (card) card.style.display = activeNetworks.has(net) ? 'block' : 'none';
-            });
-        }
-
-        function updatePreview() {
-            var text = document.getElementById('post-text').value;
-            document.getElementById('char-count').textContent = text.length;
-            ['fb', 'ig', 'li'].forEach(function(net) {
-                var el = document.getElementById('preview-text-' + net);
-                if (el) {
-                    el.innerHTML = text
-                        ? text.replace(/\n/g, '<br>')
-                        : '<span class="preview-placeholder">Select a profile and start adding content.</span>';
-                }
-            });
-        }
-
-        function toggleAccordion(head) {
-            head.classList.toggle('open');
-            var body = head.nextElementSibling;
-            body.classList.toggle('open');
-        }
-
-        function toggleDraft(cb) {
-            var badge = document.getElementById('draft-badge');
-            if (cb.checked) {
-                badge.textContent = 'Draft Mode ON';
-                badge.style.background = '#fff8e6';
-                badge.style.borderColor = '#ffd666';
-                badge.style.color = '#b37400';
-            } else {
-                badge.textContent = 'Ready to Publish';
-                badge.style.background = '#f0fdf4';
-                badge.style.borderColor = '#86efac';
-                badge.style.color = '#166534';
-            }
-        }
-
-        function openCampaignModal() {
-            document.getElementById('campaign-modal').classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeCampaignModal(e) {
-            if (e.target === document.getElementById('campaign-modal')) {
-                closeCampaignModalDirect();
-            }
-        }
-
-        function closeCampaignModalDirect() {
-            document.getElementById('campaign-modal').classList.remove('open');
-            document.body.style.overflow = '';
-        }
-
-        function saveCampaign() {
-            var name = document.getElementById('campaign-name').value.trim();
-            if (!name) {
-                document.getElementById('campaign-name').style.borderColor = '#ef4444';
-                document.getElementById('campaign-name').focus();
-                return;
-            }
-            document.getElementById('campaign-name').style.borderColor = '';
-            document.getElementById('campaign-input').value = name;
-            closeCampaignModalDirect();
-
-            var toast = document.createElement('div');
-            toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a2332;color:#fff;padding:12px 20px;border-radius:9px;font-size:13px;font-weight:500;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px';
-            toast.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4BB543" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Campaign "<strong>' + name + '</strong>" created!';
-            document.body.appendChild(toast);
-            setTimeout(function() { toast.remove(); }, 3000);
-        }
-
-        function toggleDatePicker() {
-            var row = document.getElementById('date-picker-row');
-            row.classList.toggle('open');
-        }
-
+        // ── Media handling ────────────────────────────────────────────────────
         function handleMedia(input) {
-            var file = input.files[0];
-            if (!file) return;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                ['fb', 'ig', 'li'].forEach(function(net) {
-                    var imgEl = document.getElementById('preview-img-' + net);
-                    if (imgEl) {
-                        imgEl.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover"/>';
-                    }
-                });
-            };
-            reader.readAsDataURL(file);
+          Array.from(input.files).forEach(function(file) {
+            selectedFiles.push(file);
+            var url = URL.createObjectURL(file);
+            previewURLs.push(url);
+          });
+          input.value = ''; // reset so same file can be added again
+          renderStrip();
+          renderPreview();
         }
 
-        function addLabel(label) {
-            var input = document.querySelector('.label-input');
-            if (!input.value.includes(label)) {
-                input.value = input.value ? input.value + ', ' + label : label;
+        function removeImage(idx) {
+          URL.revokeObjectURL(previewURLs[idx]);
+          selectedFiles.splice(idx, 1);
+          previewURLs.splice(idx, 1);
+          renderStrip();
+          renderPreview();
+        }
+
+        function renderStrip() {
+          var strip = document.getElementById('imgStrip');
+          strip.innerHTML = '';
+          previewURLs.forEach(function(url, i) {
+            var div = document.createElement('div');
+            div.className = 'img-thumb';
+            div.innerHTML = '<img src="' + url + '" alt="img"/>'
+              + '<button class="remove-img" onclick="removeImage(' + i + ')">✕</button>';
+            strip.appendChild(div);
+          });
+          if (previewURLs.length < 10) {
+            var add = document.createElement('div');
+            add.className = 'img-add-btn';
+            add.title = 'Add more images';
+            add.innerHTML = '+';
+            add.onclick = function() { document.getElementById('mediaInput').click(); };
+            strip.appendChild(add);
+          }
+        }
+
+        // ── Publishing option ─────────────────────────────────────────────────
+        function selectPubOption(el, val) {
+          document.querySelectorAll('.pub-option').forEach(function(o){ o.classList.remove('selected'); });
+          el.classList.add('selected');
+          el.querySelector('input[type=radio]').checked = true;
+
+          // schedule inputs
+          var si = document.getElementById('scheduleInputs');
+          si.classList.toggle('open', val === 'schedule');
+
+          // button text
+          var btn = document.getElementById('publishBtnText');
+          if (val === 'now')       btn.textContent = 'Publish Now';
+          else if (val === 'schedule') btn.textContent = 'Schedule Post';
+          else                     btn.textContent = 'Save Draft';
+        }
+
+        function getPubOption() {
+          var checked = document.querySelector('input[name=pubOpt]:checked');
+          return checked ? checked.value : 'now';
+        }
+
+        // ── PUBLISH ───────────────────────────────────────────────────────────
+        async function handlePublish() {
+          var text = document.getElementById('postText').value.trim();
+          if (!text && selectedFiles.length === 0) {
+            showToast('Add text or image before publishing', 'error'); return;
+          }
+          if (activeNets.size === 0) {
+            showToast('Select at least one network', 'error'); return;
+          }
+
+          var opt = getPubOption();
+
+          // if (opt === 'draft') {
+          //   showToast('Saved as draft!', 'info'); return;
+          // }
+                  if (opt === 'draft') {
+
+          var fd = new FormData();
+          fd.append('message', text);
+          fd.append('platform', Array.from(activeNets)[0]); // first selected
+          fd.append('campaign', document.getElementById('campaignInput').value);
+          fd.append('isDraft', true); // 👈 IMPORTANT
+
+          selectedFiles.forEach(function(f) {
+            fd.append('images', f);
+          });
+
+          var resp = await fetch('/Dashboard/PublishPost', {
+            method: 'POST',
+            body: fd
+          });
+
+          var data = await resp.json();
+
+          showToast('Saved as draft!', 'success');
+
+          setTimeout(() => {
+            window.location.href = '/Posts/index?tab=draft';
+          }, 1000);
+
+          return;
+        }
+
+          if (opt === 'schedule') {
+            var d = document.getElementById('schedDate').value;
+            var t = document.getElementById('schedTime').value;
+            if (!d) { showToast('Select a date to schedule', 'error'); return; }
+            showToast('Scheduled for ' + d + ' ' + t, 'info');
+            return;
+          }
+
+          // PUBLISH NOW
+          setLoading(true);
+          var nets = Array.from(activeNets);
+          var results = [];
+
+          for (var i = 0; i < nets.length; i++) {
+            var net = nets[i];
+            var pct = Math.round((i / nets.length) * 80);
+            setProgress(pct);
+
+            try {
+              var fd = new FormData();
+              fd.append('message', text);
+              fd.append('platform', net);
+              fd.append('campaign', document.getElementById('campaignInput').value);
+
+              selectedFiles.forEach(function(f, fi) {
+                fd.append('images', f);
+              });
+
+              var resp = await fetch('/Dashboard/PublishPost', {
+                method: 'POST',
+                body: fd,
+                credentials: 'same-origin'
+              });
+              var data = await resp.json();
+
+              results.push({ net: net, ok: data.success, msg: data.message });
+            } catch(e) {
+              results.push({ net: net, ok: false, msg: 'Network error' });
             }
+          }
+
+          setProgress(100);
+          setTimeout(function() { setLoading(false); setProgress(0); }, 600);
+
+          var ok  = results.filter(function(r){ return r.ok;  });
+          var err = results.filter(function(r){ return !r.ok; });
+
+          if (ok.length > 0)  showToast('Posted to: ' + ok.map(function(r){ return r.net.toUpperCase(); }).join(', '), 'success');
+          if (err.length > 0) showToast('Failed: '   + err.map(function(r){ return r.net.toUpperCase() + ' — ' + r.msg; }).join(', '), 'error');
+
+          if (ok.length > 0) {
+            setTimeout(function(){ window.location.href = '/Posts/index'; }, 1500);
+          }
         }
 
-        function savePost() {
-            var text = document.getElementById('post-text').value;
-            if (!text.trim()) {
-                document.getElementById('post-text').style.borderColor = '#ef4444';
-                document.getElementById('post-text').focus();
-                return;
+        function setLoading(on) {
+          var btn = document.getElementById('publishBtn');
+          btn.disabled = on;
+          if (on) {
+            document.getElementById('progressWrap').style.display = 'block';
+            document.getElementById('publishBtnText').textContent = 'Publishing...';
+          } else {
+            document.getElementById('progressWrap').style.display = 'none';
+            document.getElementById('publishBtnText').textContent = 'Publish Now';
+          }
+        }
+
+        function setProgress(pct) {
+          document.getElementById('progressFill').style.width = pct + '%';
+        }
+
+        function updatePublishBtn() {
+          var btn = document.getElementById('publishBtn');
+          btn.disabled = activeNets.size === 0;
+        }
+
+        // ── PREVIEW ───────────────────────────────────────────────────────────
+        var NET_CONFIG = {
+          fb: { label: 'Facebook Page', meta: 'Facebook · Just now', avatarBg: 'linear-gradient(135deg,#1877F2,#42a5f5)', avatarText: 'f', badgeColor:'#1877F2', badgeLabel:'Facebook' },
+          ig: { label: '@companyName', meta: 'Instagram · Just now',  avatarBg: 'linear-gradient(135deg,#f09433,#dc2743,#bc1888)', avatarText: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/></svg>', badgeColor:'#E1306C', badgeLabel:'Instagram' },
+          li: { label: '@companyName', meta: 'LinkedIn · Just now',  avatarBg: '#0A66C2', avatarText: 'in', badgeColor:'#0A66C2', badgeLabel:'LinkedIn' }
+        };
+        NET_CONFIG.fb.label  = '@companyName';
+        NET_CONFIG.ig.label  = '@companyName';
+        NET_CONFIG.li.label  = '@companyName';
+
+        function renderPreview() {
+          renderPreviewText();
+        }
+
+        function renderPreviewText() {
+          var text = document.getElementById('postText').value;
+          var html = '';
+
+          activeNets.forEach(function(net) {
+            var c = NET_CONFIG[net];
+            var imgHtml = '';
+            if (previewURLs.length > 0) {
+              imgHtml = '<div class="preview-images">';
+              previewURLs.slice(0,4).forEach(function(url) {
+                imgHtml += '<img src="' + url + '" alt=""/>';
+              });
+              imgHtml += '</div>';
+            } else {
+              imgHtml = '<div class="preview-no-img"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
             }
-            document.getElementById('post-text').style.borderColor = '';
-            // TODO: Backend API call yahan aayega
-            alert('Post saved as draft!');
+
+            var previewText = text
+              ? text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')
+              : '<span class="preview-placeholder">Start typing to see preview...</span>';
+
+            var actions = '';
+            if (net === 'fb') {
+              actions = '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>Like</span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comment</span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>Share</span>';
+            } else if (net === 'ig') {
+              actions = '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>';
+            } else {
+              actions = '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/></svg>Like</span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Comment</span>'
+                     + '<span class="preview-action"><svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Repost</span>';
+            }
+
+            html += '<div class="preview-card">'
+                  + '<div class="preview-card-header">'
+                  + '<div class="preview-avatar" style="background:' + c.avatarBg + '">' + c.avatarText + '</div>'
+                  + '<div><div class="preview-name">' + c.label + ' <span class="preview-platform-badge" style="background:' + c.badgeColor + ';color:#fff">' + c.badgeLabel + '</span></div>'
+                  + '<div class="preview-meta">' + c.meta + '</div></div>'
+                  + '</div>'
+                  + '<div class="preview-body"><div class="preview-text">' + previewText + '</div></div>'
+                  + imgHtml
+                  + '<div class="preview-actions">' + actions + '</div>'
+                  + '</div>';
+          });
+
+          if (!html) {
+            html = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px">Select a network to see preview</div>';
+          }
+
+          document.getElementById('previewContent').innerHTML = html;
         }
 
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeCampaignModalDirect();
-        });
+        // ── TOAST ─────────────────────────────────────────────────────────────
+        function showToast(msg, type) {
+          var c = document.getElementById('toast-container');
+          var t = document.createElement('div');
+          t.className = 'toast toast-' + (type || 'info');
+          t.textContent = msg;
+          c.appendChild(t);
+          setTimeout(function(){ t.remove(); }, 4000);
+        }
+
+        // ── INIT ──────────────────────────────────────────────────────────────
+        renderPreview();
     </script>
 </body>
 </html>
