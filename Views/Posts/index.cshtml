@@ -771,6 +771,7 @@
 @section Scripts {
     <script>
         function openPM(postId,platform) {
+             window._currentPlatform = platform || 'facebook';
             document.getElementById('pmOverlay').classList.add('open');
             document.getElementById('pmPanel').classList.add('open');
             document.getElementById('pmBody').innerHTML =
@@ -834,8 +835,8 @@
             var input = document.getElementById('mainCommentInput');
             var msg = input ? input.value.trim() : '';
             if (!msg) return;
-            fetch('/Posts/Comment?postId=' + encodeURIComponent(postId) + '&message=' + encodeURIComponent(msg), {
-                method: 'POST', credentials: 'same-origin',
+        fetch('/Posts/Comment?postId=' + encodeURIComponent(postId) + '&message=' + encodeURIComponent(msg) + '&platform=' + encodeURIComponent(window._currentPlatform || 'facebook'), {
+                        method: 'POST', credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(r => r.json())
@@ -860,8 +861,8 @@
             var input = document.getElementById('replyInput-' + commentId);
             var msg = input ? input.value.trim() : '';
             if (!msg) return;
-            fetch('/Posts/Reply?commentId=' + encodeURIComponent(commentId) + '&message=' + encodeURIComponent(msg), {
-                method: 'POST', credentials: 'same-origin',
+        fetch('/Posts/Reply?commentId=' + encodeURIComponent(commentId) + '&message=' + encodeURIComponent(msg) + '&platform=' + encodeURIComponent(window._currentPlatform || 'facebook'), {
+                        method: 'POST', credentials: 'same-origin',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(r => r.json())
