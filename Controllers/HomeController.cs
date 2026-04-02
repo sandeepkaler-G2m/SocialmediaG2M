@@ -10,7 +10,7 @@ namespace SocialMediaPanel.Controllers
         {
             return View();
         }
-        public IActionResult san()
+        public IActionResult INProgress()
         {
             return View();
         }
@@ -19,5 +19,7 @@ namespace SocialMediaPanel.Controllers
         {
             return View();
         }
+
+
     }
 }

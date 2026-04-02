@@ -1,0 +1,489 @@
+﻿@{
+    ViewData["Title"] = "Coming Soon";
+    ViewData["ActiveNav"] = "";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .ip-shell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 58px);
+        margin: -28px;
+        background: var(--bg, #f4f5f7);
+        font-family: 'DM Sans', sans-serif;
+        padding: 40px 24px;
+    }
+
+    .ip-card {
+        background: #fff;
+        border: 1px solid var(--border, #e2e6ea);
+        border-radius: 18px;
+        max-width: 580px;
+        width: 100%;
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(0,0,0,.06);
+        animation: ipFadeUp .45s ease both;
+    }
+
+
+
+    /* ── top accent strip ── */
+    .ip-top-strip {
+        height: 5px;
+        background: linear-gradient(90deg, #4bb543, #74d46d, #4bb543);
+        background-size: 200% 100%;
+        animation: stripScroll 2.4s linear infinite;
+    }
+
+    /* ── header area ── */
+    .ip-header {
+        padding: 36px 40px 28px;
+        border-bottom: 1px solid var(--border, #e2e6ea);
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .ip-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: rgba(75,181,67,.1);
+        border: 1.5px solid rgba(75,181,67,.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .ip-icon-wrap::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(75,181,67,.15), transparent);
+        }
+
+        .ip-icon-wrap svg {
+            width: 26px;
+            height: 26px;
+            stroke: #4bb543;
+            fill: none;
+            position: relative;
+            z-index: 1;
+            animation: wrenchWiggle 3s ease-in-out infinite;
+        }
+  
+    .ip-header-text {
+    }
+
+    .ip-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        background: rgba(75,181,67,.09);
+        border: 1px solid rgba(75,181,67,.22);
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #3a9e33;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .ip-badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #4bb543;
+        animation: dotPulse 1.5s ease-in-out infinite;
+    }
+
+    .ip-title {
+        font-family: 'Sora', sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #1a1a2e;
+        line-height: 1.2;
+        margin-bottom: 6px;
+        letter-spacing: -.02em;
+    }
+
+    .ip-sub {
+        font-size: 13px;
+        color: #8a8fa8;
+        line-height: 1.6;
+        font-weight: 400;
+    }
+
+    /* ── progress section ── */
+    .ip-progress-section {
+        padding: 24px 40px;
+        border-bottom: 1px solid var(--border, #e2e6ea);
+    }
+
+    .ip-progress-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .ip-progress-lbl {
+        font-size: 11px;
+        font-weight: 700;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+    }
+
+    .ip-progress-num {
+        font-family: 'Sora', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: #4bb543;
+    }
+
+    .ip-bar-track {
+        width: 100%;
+        height: 8px;
+        background: #f0f1f4;
+        border-radius: 100px;
+        overflow: hidden;
+    }
+
+    .ip-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4bb543, #74d46d);
+        border-radius: 100px;
+        width: 0%;
+        transition: width 1.6s cubic-bezier(.4,0,.2,1);
+        position: relative;
+    }
+
+        .ip-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 40px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.35));
+            animation: shimmer 1.8s ease-in-out infinite;
+        }
+   
+
+    /* ── checklist ── */
+    .ip-checklist-section {
+        padding: 24px 40px;
+        border-bottom: 1px solid var(--border, #e2e6ea);
+    }
+
+    .ip-checklist-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        margin-bottom: 14px;
+    }
+
+    .ip-checklist {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+        .ip-checklist li {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #8a8fa8;
+            animation: ipFadeUp .4s ease both;
+        }
+
+            .ip-checklist li.done {
+                color: #1a1a2e;
+            }
+
+            .ip-checklist li.active {
+                color: #1a1a2e;
+            }
+
+    .ip-check {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 11px;
+    }
+
+    .done .ip-check {
+        background: rgba(75,181,67,.12);
+        border: 1.5px solid rgba(75,181,67,.3);
+        color: #4bb543;
+    }
+
+    .active .ip-check {
+        background: rgba(251,191,36,.1);
+        border: 1.5px solid rgba(251,191,36,.35);
+        color: #f59e0b;
+    }
+
+    .todo .ip-check {
+        background: #f4f5f7;
+        border: 1.5px solid #e2e6ea;
+        color: transparent;
+    }
+
+    .ip-check-spinner {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(245,158,11,.25);
+        border-top-color: #f59e0b;
+        border-radius: 50%;
+        animation: spin .7s linear infinite;
+    }
+   
+    .ip-check-line {
+        flex: 1;
+        height: 1px;
+        background: #f0f1f4;
+        margin-left: auto;
+        max-width: 60px;
+    }
+
+    .done .ip-check-line {
+        background: rgba(75,181,67,.2);
+    }
+
+    /* ── eta row ── */
+    .ip-eta-section {
+        padding: 18px 40px;
+        border-bottom: 1px solid var(--border, #e2e6ea);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .ip-eta-section svg {
+            width: 14px;
+            height: 14px;
+            stroke: #aaa;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+    .ip-eta-text {
+        font-size: 12px;
+        color: #aaa;
+    }
+
+        .ip-eta-text strong {
+            color: #555;
+            font-weight: 600;
+        }
+
+    /* ── footer actions ── */
+    .ip-footer {
+        padding: 20px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .ip-btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        background: #f4f5f7;
+        border: 1px solid #e2e6ea;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        text-decoration: none;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: background .15s, border-color .15s;
+    }
+
+        .ip-btn-back:hover {
+            background: #eaecef;
+            border-color: #d0d4da;
+            color: #333;
+        }
+
+        .ip-btn-back svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .ip-btn-notify {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        background: #4bb543;
+        border: none;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: opacity .15s, transform .1s;
+    }
+
+        .ip-btn-notify:hover {
+            opacity: .88;
+        }
+
+        .ip-btn-notify:active {
+            transform: scale(.97);
+        }
+
+        .ip-btn-notify svg {
+            width: 14px;
+            height: 14px;
+            stroke: #fff;
+            fill: none;
+        }
+</style>
+
+<div class="ip-shell">
+    <div class="ip-card">
+
+        <!-- green animated top strip -->
+        <div class="ip-top-strip"></div>
+
+        <!-- header -->
+        <div class="ip-header">
+            <div class="ip-icon-wrap">
+                <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                </svg>
+            </div>
+            <div class="ip-header-text">
+                <div class="ip-badge">
+                    <div class="ip-badge-dot"></div>
+                    In Progress
+                </div>
+                <div class="ip-title">Feature Coming Soon</div>
+                <div class="ip-sub">Our team is actively building this. It'll be ready before you know it.</div>
+            </div>
+        </div>
+
+        <!-- progress bar -->
+        <div class="ip-progress-section">
+            <div class="ip-progress-row">
+                <span class="ip-progress-lbl">Development Progress</span>
+                <span class="ip-progress-num" id="ipPct">0%</span>
+            </div>
+            <div class="ip-bar-track">
+                <div class="ip-bar-fill" id="ipBarFill"></div>
+            </div>
+        </div>
+
+        <!-- checklist -->
+        <div class="ip-checklist-section">
+            <div class="ip-checklist-title">What's been done</div>
+            <ul class="ip-checklist">
+                <li class="done" style="animation-delay:.05s">
+                    <div class="ip-check">✓</div>
+                    UI Design &amp; Wireframes
+                    <div class="ip-check-line"></div>
+                </li>
+                <li class="done" style="animation-delay:.1s">
+                    <div class="ip-check">✓</div>
+                    Database Schema &amp; Models
+                    <div class="ip-check-line"></div>
+                </li>
+                <li class="active" style="animation-delay:.15s">
+                    <div class="ip-check"><div class="ip-check-spinner"></div></div>
+                    Backend API Integration
+                    <div class="ip-check-line"></div>
+                </li>
+                <li class="active" style="animation-delay:.2s">
+                    <div class="ip-check"><div class="ip-check-spinner"></div></div>
+                    Frontend Development
+                    <div class="ip-check-line"></div>
+                </li>
+                <li class="todo" style="animation-delay:.25s">
+                    <div class="ip-check"></div>
+                    QA Testing &amp; Review
+                    <div class="ip-check-line"></div>
+                </li>
+                <li class="todo" style="animation-delay:.3s">
+                    <div class="ip-check"></div>
+                    Production Deployment
+                    <div class="ip-check-line"></div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- eta -->
+        <div class="ip-eta-section">
+            <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span class="ip-eta-text">Estimated completion: <strong>Coming Soon</strong></span>
+        </div>
+
+        <!-- footer -->
+        <div class="ip-footer">
+            <a class="ip-btn-back" href="javascript:history.back()">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12" />
+                    <polyline points="12 19 5 12 12 5" />
+                </svg>
+                Go Back
+            </a>
+            <button class="ip-btn-notify" onclick="this.innerHTML='<svg viewBox=\'0 0 24 24\' width=\'14\' height=\'14\' stroke=\'#fff\' fill=\'none\' stroke-width=\'2\'><polyline points=\'20 6 9 17 4 12\'/></svg> Noted!';this.style.background='#3a9e33';this.disabled=true">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                Notify Me
+            </button>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                var fill   = document.getElementById('ipBarFill');
+                var pctEl  = document.getElementById('ipPct');
+                var target = 62; // ← change this to your actual progress %
+                fill.style.width = target + '%';
+
+                var count = 0;
+                var timer = setInterval(function () {
+                    count++;
+                    pctEl.textContent = count + '%';
+                    if (count >= target) clearInterval(timer);
+                }, 1600 / target);
+            }, 300);
+        });
+    </script>
+}
