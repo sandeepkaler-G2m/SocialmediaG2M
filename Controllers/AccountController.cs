@@ -53,6 +53,7 @@ namespace SocialMediaPanel.Controllers
             HttpContext.Session.SetInt32("UserId", user.Id);
             HttpContext.Session.SetString("UserName", user.Name);
             HttpContext.Session.SetString("UserEmail", user.Email);
+            HttpContext.Session.SetString("CompanyName", user.CompanyName);
 
             return RedirectToAction("Index", "Dashboard");
         }

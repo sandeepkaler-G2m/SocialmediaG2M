@@ -1,7 +1,9 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+
+@{
     var userName = ViewBag.UserName as string ?? "User";
     var userEmail = ViewBag.UserEmail as string ?? "";
-    var companyName = ViewBag.CompanyName as string ?? "Your Workspace";
+    var companyName = Context.Session.GetString("CompanyName") ?? "Your Workspace";
 
     string FirstChar(string s) => s.Length > 0 ? s[0].ToString().ToUpper() : "?";
 
@@ -21,6 +23,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] – SocialMediaPanel</title>
+    <link rel="icon" type="image/x-icon" href="https://go2market.in/assets/images/favicon.jpg" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
     <style>
         *, *::before, *::after {
@@ -626,9 +629,9 @@
             <div class="th-workspace">
                 <div class="th-ws-icon">@FirstChar(companyName)</div>
                 <span class="th-ws-name">@companyName</span>
-                <svg class="th-ws-caret" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+               @*  <svg class="th-ws-caret" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <polyline points="6 9 12 15 18 9" />
-                </svg>
+                </svg> *@
             </div>
         </div>
 

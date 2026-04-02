@@ -14,6 +14,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
 builder.Services.AddScoped<InstagramService>();
+builder.Services.AddScoped<PostService>();
 
 builder.Services.AddHttpClient<SocialMediaPanel.Services.GmailService>(c =>
     c.Timeout = TimeSpan.FromSeconds(15));

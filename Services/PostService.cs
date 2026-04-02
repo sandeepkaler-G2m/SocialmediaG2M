@@ -657,6 +657,8 @@ namespace SocialMediaPanel.Services
 {
     public interface IPostService
     {
+        Task<string?> GetTokenAsync(string userEmail);
+        Task<string?> GetInstagramTokenAsync(string userEmail);
         Task<PostListViewModel> GetPostsAsync(string userEmail, string platform = "facebook");
         Task<PostListViewModel> GetInstagramPostsAsync(string userEmail);
         Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail, string platform);
@@ -679,7 +681,7 @@ namespace SocialMediaPanel.Services
         }
 
         // ── Facebook token ────────────────────────────────────────────
-        private async Task<string?> GetTokenAsync(string userEmail)
+        public async Task<string?> GetTokenAsync(string userEmail)
         {
             var row = await _db.UserTokens
                 .Where(t => t.username == userEmail
@@ -692,7 +694,7 @@ namespace SocialMediaPanel.Services
         }
 
         // ── Instagram token ───────────────────────────────────────────
-        private async Task<string?> GetInstagramTokenAsync(string userEmail)
+        public async Task<string?> GetInstagramTokenAsync(string userEmail)
         {
             var row = await _db.UserTokens
                 .Where(t => t.username == userEmail
@@ -704,7 +706,7 @@ namespace SocialMediaPanel.Services
         }
 
         // ── Facebook page ID + page token ─────────────────────────────
-        private async Task<(string pageId, string pageToken)?> GetFirstPageAsync(string userToken)
+        public async Task<(string pageId, string pageToken)?> GetFirstPageAsync(string userToken)
         {
             try
             {

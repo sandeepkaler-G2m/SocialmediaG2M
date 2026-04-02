@@ -1318,6 +1318,49 @@
     .inbox-resizer:hover {
         background: var(--green);
     }
+
+
+
+    .msg-ava-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+/* 🔥 Bigger Platform Icon */
+.msg-plat-dot {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+
+    width: 20px;     /* 🔥 increase size */
+    height: 20px;
+
+    background: #fff;
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    box-shadow: 0 0 0 2px #fff;
+    z-index: 2;
+}
+
+/* SVG fit */
+.msg-plat-dot svg {
+    width: 14px;   /* bigger icon inside */
+    height: 14px;
+}
+
+    .msg-plat-dot {
+        width: 24px;
+        height: 24px;
+    }
+
+        .msg-plat-dot svg {
+            width: 16px;
+            height: 16px;
+        }
 </style>
 
 <div class="inbox-shell" id="inboxShell">

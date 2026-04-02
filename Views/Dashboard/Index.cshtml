@@ -6,6 +6,7 @@
     var integrationError = TempData["IntegrationError"] as string;
     var fbPageName = TempData["FacebookPageName"] as string;
 }
+@model List<SocialMediaPanel.Controllers.SocialPost>
 
 @if (integrationError != null)
 {
@@ -940,46 +941,313 @@
         cursor: pointer;
     }
 
+
+    .recent-post-list {
+    max-height: 400px;   /* fixed height */
+    overflow-y: auto;    /* scroll enable */
+    padding-right: 6px;
+}
+
+/* Scrollbar Styling (optional but sexy 😄) */
+.recent-post-list::-webkit-scrollbar {
+    width: 6px;
+}
+.recent-post-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.post-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.post-item:hover {
+    background: #f5f5f5;
+}
+
+.post-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.post-content {
+    flex: 1;
+}
+
+.post-meta {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.post-text {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+    /* Wrapper */
+    .recent-post-wrapper {
+        background: #fff;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    /* Header */
+    .recent-post-header {
+        margin-bottom: 12px;
+    }
+
+    /* Horizontal scroll */
+    .recent-post-scroll {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+        /* Scrollbar */
+        .recent-post-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .recent-post-scroll::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+    /* Each post column */
+    .post-col {
+        min-width: 260px;
+        max-width: 260px;
+        background: #fafafa;
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid #eee;
+    }
+
+    /* Header */
+    .post-top {
+        margin-bottom: 10px;
+    }
+
+    .post-user {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .post-username {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .post-meta {
+        font-size: 11px;
+        color: #888;
+    }
+
+    /* Platform icon */
+    .platform-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+    }
+
+        .platform-icon.facebook {
+            background: #1877f2;
+        }
+
+        .platform-icon.instagram {
+            background: linear-gradient(45deg,#f09433,#dc2743,#bc1888);
+        }
+
+        .platform-icon.twitter {
+            background: #000;
+        }
+
+    /* Content */
+    .post-content img {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        height: 140px;
+        object-fit: cover;
+    }
+
+    .post-content p {
+        font-size: 13px;
+        color: #333;
+    }
+
+    /* Fixed Card Height */
+    .post-col {
+        min-width: 260px;
+        max-width: 260px;
+        height: 360px; /* FIXED HEIGHT 🔥 */
+        background: #fafafa;
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid #eee;
+    }
+
+    /* Content should take available space */
+    .post-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+        /* Image full width like video */
+        .post-content img {
+            width: 100%;
+            height: 150px; /* fixed media height */
+            object-fit: cover; /* IMPORTANT 🔥 */
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Text clamp */
+        .post-content p {
+            font-size: 13px;
+            color: #333;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* max lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+    /* Footer always bottom */
+    .post-stats {
+        border-top: 1px solid #eee;
+        padding-top: 8px;
+        font-size: 13px;
+    }
+
+    .platform-icon {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Common SVG */
+    .icon {
+        width: 100%;
+        height: 100%;
+    }
+
+        /* Facebook */
+        .icon.fb {
+            fill: #1877f2;
+        }
+
+        /* Instagram already gradient */
+        .icon.ig {
+            display: block;
+        }
+
+    /* Header alignment */
+    .sec-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    /* Toggle button styling */
+    .section-toggle-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease;
+    }
+
+        .section-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: #666; /* Adjust color as needed */
+        }
+
+    /* Collapsed Logic */
+    .integ-section.collapsed .sec-body {
+        display: none;
+    }
+
+    .integ-section.collapsed .section-toggle-btn {
+        transform: rotate(180deg); /* Flips the arrow down */
+    }
+
+
+
 </style>
 
-<!-- ══ INTEGRATIONS SECTION ══════════════════════════════════════════ -->
-<div class="integ-section">
-    <div class="sec-title">SocialMediaPanel Integrations</div>
-    <div class="sec-subtitle">Unify your workflow by connecting your social platforms. Select a platform to get started.</div>
 
-    <div class="integ-strip">
-        <!-- Social platforms as icon buttons — click opens connect modal -->
-        <button class="integ-icon-btn" title="Facebook" onclick="toggleConnect(this);event.stopPropagation()" data-platform="facebook">
-            <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+<div class="integ-section" id="socialSection">
+    <div class="sec-header" onclick="toggleSection()">
+        <div class="sec-title">SocialMediaPanel Integrations</div>
+        <button class="section-toggle-btn" id="toggleIcon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
         </button>
-        <button class="integ-icon-btn" title="LinkedIn" onclick="toggleConnect(this);event.stopPropagation()" data-platform="linkedin">
-            <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-        </button>
-        <button class="integ-icon-btn" title="X (Twitter)" onclick="toggleConnect(this);event.stopPropagation()" data-platform="twitter">
-            <svg viewBox="0 0 24 24" fill="#000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-        </button>
-        <button class="integ-icon-btn" title="Instagram" onclick="toggleConnect(this);event.stopPropagation()" data-platform="instagram">
-            <svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="igDB" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igDB)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg>
-        </button>
-        <button class="integ-icon-btn" title="WhatsApp" onclick="toggleConnect(this);event.stopPropagation()" data-platform="whatsapp">
-            <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
-        </button>
-        <button class="integ-icon-btn" title="Gmail" onclick="toggleConnect(this);event.stopPropagation()" data-platform="gmail">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" /><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64V9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#4285F4" /></svg>
-        </button>
-    
     </div>
 
-    <button class="browse-btn" onclick="openBrowse()">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-        Browse all integrations
-    </button>
+    <div class="sec-body">
+        <div class="sec-subtitle">Unify your workflow by connecting your social platforms. Select a platform to get started.</div>
+
+        <div class="integ-strip">
+            <!-- Social platforms as icon buttons — click opens connect modal -->
+            <button class="integ-icon-btn" title="Facebook" onclick="toggleConnect(this);event.stopPropagation()" data-platform="facebook">
+                <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+            </button>
+            <button class="integ-icon-btn" title="LinkedIn" onclick="toggleConnect(this);event.stopPropagation()" data-platform="linkedin">
+                <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+            </button>
+            <button class="integ-icon-btn" title="X (Twitter)" onclick="toggleConnect(this);event.stopPropagation()" data-platform="twitter">
+                <svg viewBox="0 0 24 24" fill="#000"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            </button>
+            <button class="integ-icon-btn" title="Instagram" onclick="toggleConnect(this);event.stopPropagation()" data-platform="instagram">
+                <svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="igDB" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igDB)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg>
+            </button>
+            <button class="integ-icon-btn" title="WhatsApp" onclick="toggleConnect(this);event.stopPropagation()" data-platform="whatsapp">
+                <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
+            </button>
+            <button class="integ-icon-btn" title="Gmail" onclick="toggleConnect(this);event.stopPropagation()" data-platform="gmail">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" /><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64V9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#4285F4" /></svg>
+            </button>
+
+        </div>
+
+
+        <button class="browse-btn" onclick="openBrowse()">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            Browse all integrations
+        </button>
+    </div>
 </div>
+
+<!-- ══ INTEGRATIONS SECTION ══════════════════════════════════════════ -->
 
 <!-- ══ ACTIVITY SECTION ═══════════════════════════════════════════════ -->
 <div class="act-label">Your Latest Activity</div>
 
-<div class="db-grid">
+<div class="db-grid" style="display:none">
     <!-- Left -->
     <div class="db-left">
         <div class="pub-card">
@@ -1012,14 +1280,14 @@
 
        
     </div>
+</div>
+<!-- Right -->
+<div class="db-right">
+    <div class="recent-card">
 
-    <!-- Right -->
-    <div class="db-right">
-        <div class="recent-card">
-
-            <div class="recent-header">
-                <h3>Your Recent Posts</h3>
-                <div>
+        <div class="recent-header">
+            <h3>Your Recent Posts</h3>
+            <div>
                 <div class="tb-btn-filter-wrap">
                     <button class="tb-btn-filter" id="filterBtn" onclick="toggleFP()">
                         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="10" y1="18" x2="14" y2="18" /></svg>
@@ -1032,36 +1300,94 @@
                     <option>Most Recent</option>
                     <option>Most Engaged</option>
                 </select>
-                </div>
-            </div>
-            <div class="recent-empty">
-                <div class="recent-empty-left">
-                    <div class="post-preview-card">
-                        <div class="post-preview-badge">1</div>
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                            <div class="post-preview-avatar"></div>
-                            <div style="flex:1">
-                                <div class="post-preview-line medium"></div>
-                                <div class="post-preview-line short" style="margin-top:4px;height:6px;"></div>
-                            </div>
-                        </div>
-                        <div class="post-preview-line" style="height:60px;border-radius:8px;margin-bottom:10px;"></div>
-                        <div class="post-preview-stats">
-                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                            100
-                        </div>
-                    </div>
-                </div>
-                <div class="recent-empty-right">
-                    <h4>Easily compare your top performing posts once you have at least 3 posts per week.</h4>
-                    <p>Discover more ways to <a href="#">level-up your content strategy</a>.</p>
-                </div>
-            </div>
-            <div class="recent-footer">
-                <span>Published from @DateTime.Now.AddDays(-7).ToString("MM/dd/yy") - @DateTime.Now.ToString("MM/dd/yy")</span>
-                <button class="report-btn">Post Performance Report</button>
             </div>
         </div>
+        <div class="recent-post-wrapper">
+
+            <div class="recent-post-header">
+                <h3>Recent Posts</h3>
+            </div>
+
+            @functions {
+                public string TrimText(string text, int maxLength = 120)
+                {
+                    if (string.IsNullOrEmpty(text)) return "(No text)";
+                    return text.Length > maxLength ? text.Substring(0, maxLength) + "..." : text;
+                }
+            }
+
+            <div class="recent-post-scroll">
+
+                @foreach (var post in Model)
+                {
+                    <div class="post-col" data-platform="@post.platform.ToLower()"
+                         data-date="@post.created_at.ToString("yyyy-MM-dd")">
+
+                        <!-- Header -->
+                        <div class="post-top">
+                            <div class="post-user">
+                                <div class="platform-icon">
+
+                                    @if (post.platform == "facebook")
+                                    {
+                                        <svg viewBox="0 0 24 24" class="icon fb">
+                                            <path d="M24 12.073c0-6.627-5.373-12-12-12S0 5.446 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                        </svg>
+                                    }
+                                    else if (post.platform == "instagram")
+                                    {
+                                        <svg viewBox="0 0 24 24" class="icon ig">
+                                            <defs>
+                                                <linearGradient id="igGrad" x1="0" y1="24" x2="24" y2="0">
+                                                    <stop stop-color="#f09433" />
+                                                    <stop offset=".5" stop-color="#dc2743" />
+                                                    <stop offset="1" stop-color="#bc1888" />
+                                                </linearGradient>
+                                            </defs>
+                                            <rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igGrad)" />
+                                            <circle cx="12" cy="12" r="4" stroke="#fff" stroke-width="1.8" />
+                                            <circle cx="17" cy="7" r="1" fill="#fff" />
+                                        </svg>
+                                    }
+
+                                </div>
+                                <div>
+                                    <div class="post-username">@post.account_name</div>
+                                    <div class="post-meta">
+                                        @post.created_at.ToString("dd MMM 'at' hh:mm tt")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="post-content">
+                            @if (!string.IsNullOrEmpty(post.media_url))
+                            {
+                                <img src="@post.media_url" />
+                            }
+
+                            <p>@TrimText(post.message, 140)</p>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="post-stats">
+                            <div><span>Reactions</span> @post.like_count</div>
+                            <div><span>Comments</span> @post.comment_count</div>
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+        </div>
+        <div class="recent-empty-right">
+            <h4>Easily compare your top performing posts once. you have last 7 days.</h4>
+            <p>Discover more ways to <a href="#">level-up your content strategy</a>.</p>
+        </div>
+    </div>
+    <div class="recent-footer">
+        <span>Published from @DateTime.Now.AddDays(-7).ToString("MM/dd/yy") - @DateTime.Now.ToString("MM/dd/yy")</span>
     </div>
 </div>
 
@@ -1229,4 +1555,88 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeBrowse();
     });
+
+        function toggleSection() {
+        const section = document.getElementById('socialSection');
+        section.classList.toggle('collapsed');
+    }
+
+        function applyFP() {
+        // 1. Get selected platforms
+        const selectedPlatforms = Array.from(document.querySelectorAll('.fp-chk-item input:checked'))
+                                       .map(cb => cb.value.toLowerCase());
+
+        // 2. Get date range
+        const fromDate = document.getElementById('fpDateFrom').value; // format: yyyy-mm-dd
+        const toDate = document.getElementById('fpDateTo').value;
+
+        const posts = document.querySelectorAll('.post-col');
+        let visibleCount = 0;
+        let filterCount = 0;
+
+        posts.forEach(post => {
+            const postPlatform = post.getAttribute('data-platform');
+            const postDate = post.getAttribute('data-date');
+
+            let showPlatform = true;
+            let showDate = true;
+
+            // Platform Filter Logic
+            if (selectedPlatforms.length > 0) {
+                filterCount++;
+                showPlatform = selectedPlatforms.includes(postPlatform);
+            }
+
+            // Date Filter Logic
+            if (fromDate) {
+                filterCount++;
+                if (postDate < fromDate) showDate = false;
+            }
+            if (toDate) {
+                filterCount++;
+                if (postDate > toDate) showDate = false;
+            }
+
+            // Apply visibility
+            if (showPlatform && showDate) {
+                post.style.display = "block";
+                visibleCount++;
+            } else {
+                post.style.display = "none";
+            }
+        });
+
+        // Update the orange dot counter
+        document.getElementById('filterDot').innerText = selectedPlatforms.length + (fromDate ? 1 : 0) + (toDate ? 1 : 0);
+        document.getElementById('filterDot').style.display = (filterCount > 0) ? "flex" : "none";
+
+        closeFP(); // Close the popup
+    }
+
+    function clearFP() {
+        // Reset Checkboxes
+        document.querySelectorAll('.fp-chk-item input').forEach(cb => cb.checked = false);
+
+        // Reset Dates
+        document.getElementById('fpDateFrom').value = "";
+        document.getElementById('fpDateTo').value = "";
+
+        // Show all posts
+        document.querySelectorAll('.post-col').forEach(post => post.style.display = "block");
+
+        // Reset Dot
+        document.getElementById('filterDot').innerText = "0";
+        document.getElementById('filterDot').style.display = "none";
+    }
+
+    // // Ensure these functions exist to handle the UI
+    // function toggleFP() {
+    //     document.getElementById('fpPopup').classList.toggle('active');
+    //     document.getElementById('fpBackdrop').classList.toggle('active');
+    // }
+
+    // function closeFP() {
+    //     document.getElementById('fpPopup').classList.remove('active');
+    //     document.getElementById('fpBackdrop').classList.remove('active');
+    // }
 </script>

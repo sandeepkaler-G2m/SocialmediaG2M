@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
+using SocialMediaPanel.Models;
+using SocialMediaPanel.Services;
 using SocialMediaPanel.ViewModels;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -10,10 +13,12 @@ namespace SocialMediaPanel.Controllers
     public class DashboardController : Controller
     {
         private readonly AppDbContext _context;
+        private readonly PostService _postService;
 
-        public DashboardController(AppDbContext context)
+        public DashboardController(AppDbContext context,PostService postService)
         {
             _context = context;
+            _postService = postService;
         }
 
         // ==================== DASHBOARD INDEX ====================
@@ -37,7 +42,14 @@ namespace SocialMediaPanel.Controllers
             ViewBag.UserEmail = user.Email;
             ViewBag.CompanyName = user.CompanyName ?? "Your Workspace";
 
-            return View();
+            var allPosts = await GetAllPosts();
+
+            var posts = allPosts
+                .Where(x => x.created_at >= DateTime.Now.AddDays(-7)) // last 7 days
+                .OrderByDescending(x => x.created_at)
+                .ToList();
+
+            return View(posts);
         }
 
         // ==================== COMPOSE POST ====================
@@ -66,6 +78,74 @@ namespace SocialMediaPanel.Controllers
         }
 
 
+        public async Task<List<SocialPost>> GetAllPosts()
+        {
+            var username = HttpContext.Session.GetString("UserEmail");
+            var fbtoken = await _postService.GetTokenAsync(username);
+            var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
+            var (pageId, pageToken) = page.Value;
+
+            List<SocialPost> allPosts = new List<SocialPost>();
+            var httpClient = new HttpClient(); // Best practice: reuse one client
+
+            // 1. ✅ Get Facebook Page Name
+            string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
+            var fbPageResponse = await httpClient.GetStringAsync(fbPageInfoUrl);
+            dynamic fbPageData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbPageResponse);
+            string fbPageName = fbPageData.name;
+
+            // Fetch Facebook Posts
+            string fbUrl = $"https://graph.facebook.com/v19.0/{pageId}/posts"
+                             + $"?fields=message,full_picture,created_time,"
+                             + $"likes.summary(true),comments.summary(true),shares"
+                             + $"&access_token={pageToken}";
+            var fbResponse = await httpClient.GetStringAsync(fbUrl);
+            dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
+
+            foreach (var item in fbData.data)
+            {
+                allPosts.Add(new SocialPost
+                {
+                    platform = "facebook",
+                    account_name = fbPageName, // Added this
+                    message = item.message,
+                    media_url = item.full_picture,
+                    created_at = item.created_time,
+                    like_count = item.likes?.summary?.total_count ?? 0,
+                    comment_count = item.comments?.summary?.total_count ?? 0,
+                    share_count = item.shares?.count ?? 0
+                });
+            }
+
+            // 2. ✅ Get Instagram Name
+            var instatoken = await _postService.GetInstagramTokenAsync(username);
+
+            // Note: Use "username" for IG handle or "name" if available in your API scope
+            string igInfoUrl = $"https://graph.instagram.com/me?fields=username&access_token={instatoken}";
+            var igInfoResponse = await httpClient.GetStringAsync(igInfoUrl);
+            dynamic igInfoData = Newtonsoft.Json.JsonConvert.DeserializeObject(igInfoResponse);
+            string igAccountName = igInfoData.username;
+
+            // Fetch Instagram Posts
+            string igUrl = $"https://graph.instagram.com/me/media?fields=caption,media_url,timestamp,like_count,comments_count&access_token={instatoken}"; var igResponse = await httpClient.GetStringAsync(igUrl);
+            dynamic igData = Newtonsoft.Json.JsonConvert.DeserializeObject(igResponse);
+
+            foreach (var item in igData.data)
+            {
+                allPosts.Add(new SocialPost
+                {
+                    platform = "instagram",
+                    account_name = igAccountName, // Added this
+                    message = item.caption,
+                    media_url = item.media_url,
+                    created_at = item.timestamp,
+                    like_count = item.like_count ?? 0,
+                    comment_count = item.comments_count ?? 0
+                });
+            }
+
+            return allPosts.OrderByDescending(x => x.created_at).ToList();
+        }
 
         [HttpGet]
         public async Task<IActionResult> Leads()
@@ -279,10 +359,16 @@ namespace SocialMediaPanel.Controllers
         public int id { get; set; }
         public int? user_id { get; set; }
         public string page_id { get; set; }
+        public string account_name { get; set; }
         public string post_id { get; set; }
         public string message { get; set; }
         public string? media_url { get; set; }
         public string platform { get; set; }
         public DateTime created_at { get; set; }
+
+        public int like_count { get; set; }
+        public int comment_count { get; set; }
+        public int share_count { get; set; }
     }
+
 }
