@@ -14,7 +14,8 @@ namespace SocialMediaPanel.Services
     public interface IPostService
     {
         Task<PostListViewModel> GetPostsAsync(string userEmail, string platform = "facebook");
-        Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail);
+        Task<PostListViewModel> GetInstagramPostsAsync(string userEmail);
+        Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail,string platform);
         Task<bool> LikePostAsync(string postId, string userEmail);
         Task<bool> AddCommentAsync(string postId, string message, string userEmail);
         Task<bool> ReplyToCommentAsync(string commentId, string message, string userEmail); // ← NEW
@@ -45,6 +46,87 @@ namespace SocialMediaPanel.Services
 
             if (row == null) { _logger.LogWarning("No token: {e}", userEmail); return null; }
             return row.facebooktoken;
+        }
+
+        private async Task<string?> GetInstagramTokenAsync(string userEmail)
+        {
+            // Adjust table/column names to match your existing schema
+            var account = await _db.UserTokens
+                .Where(t => t.username == userEmail
+                         && t.instagramtoken != null
+                         && t.instagramtoken != "")
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            return account?.instagramtoken;
+        }
+        public async Task<PostListViewModel> GetInstagramPostsAsync(string userEmail)
+        {
+            var accessToken = await GetInstagramTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(accessToken))
+                return new PostListViewModel { ActivePlatform = "instagram" };
+
+            try
+            {
+                var client = _http.CreateClient();
+                var url = "https://graph.instagram.com/me/media"
+                        + "?fields=id,caption,media_url,permalink,timestamp"
+                        + $"&access_token={accessToken}";
+
+                var resp = await client.GetAsync(url);
+                var body = await resp.Content.ReadAsStringAsync();
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Instagram API error: {body}", body);
+                    return new PostListViewModel { ActivePlatform = "instagram" };
+                }
+
+                using var doc = JsonDocument.Parse(body);
+                var rows = new List<PostRowViewModel>();
+
+                if (doc.RootElement.TryGetProperty("data", out var data))
+                {
+                    foreach (var post in data.EnumerateArray())
+                    {
+                        var row = new PostRowViewModel
+                        {
+                            Platform = "instagram",
+                        };
+
+                        if (post.TryGetProperty("id", out var pid))
+                            row.PostId = pid.GetString() ?? "";
+
+                        if (post.TryGetProperty("caption", out var cap))
+                            row.Message = cap.GetString();
+
+                        if (post.TryGetProperty("media_url", out var mu))
+                            row.FullPicture = mu.GetString();
+
+                        if (post.TryGetProperty("permalink", out var pl))
+                            row.PermalinkUrl = pl.GetString();
+
+                        if (post.TryGetProperty("timestamp", out var ts) &&
+                            DateTime.TryParse(ts.GetString(), out var dt))
+                            row.CreatedTime = dt;
+
+                        row.UpdatedAt = row.CreatedTime?.ToUniversalTime() ?? DateTime.UtcNow;
+                        rows.Add(row);
+                    }
+                }
+
+                return new PostListViewModel
+                {
+                    Posts = rows,
+                    ActivePlatform = "instagram",
+                    ActiveTab = "published"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetInstagramPosts ex: {m}", ex.Message);
+                return new PostListViewModel { ActivePlatform = "instagram" };
+            }
         }
 
         // ── Page ID + Page Token ──────────────────────────────────────
@@ -156,7 +238,7 @@ namespace SocialMediaPanel.Services
         // ════════════════════════════════════════════════════════════
         // 2. POST DETAIL — message, image, likes, comments with replies
         // ════════════════════════════════════════════════════════════
-        public async Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail)
+        public async Task<PostDetailViewModel?> GetPostDetailAsync(string postId, string userEmail,string platform)
         {
             var userToken = await GetTokenAsync(userEmail);
             if (string.IsNullOrEmpty(userToken)) return null;
@@ -165,6 +247,12 @@ namespace SocialMediaPanel.Services
             if (page == null) return null;
 
             var (pageId, pageToken) = page.Value;
+
+            if (platform.ToLower() == "instagram")
+            {
+                return await GetInstagramPostDetailAsync(postId, userEmail);
+            }
+
 
             try
             {
@@ -314,6 +402,134 @@ namespace SocialMediaPanel.Services
             }
         }
 
+        // ── Instagram detail ─────────────────────────────────────────────
+        private async Task<PostDetailViewModel?> GetInstagramPostDetailAsync(string postId, string userEmail)
+        {
+            var accessToken = await GetInstagramTokenAsync(userEmail);
+            if (string.IsNullOrEmpty(accessToken)) return null;
+            try
+            {
+                var client = _http.CreateClient();
+                var url = $"https://graph.instagram.com/{postId}"
+                        + $"?fields=id,caption,media_url,permalink,timestamp,media_type,thumbnail_url"
+                        + $"&access_token={accessToken}";
+                var resp = await client.GetAsync(url);
+                var body = await resp.Content.ReadAsStringAsync();
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Instagram detail error: {b}", body);
+                    return null;
+                }
+                using var doc = JsonDocument.Parse(body);
+                var root = doc.RootElement;
+                var vm = new PostDetailViewModel { Platform = "instagram" };
+                if (root.TryGetProperty("id", out var id)) vm.PostId = id.GetString() ?? "";
+                if (root.TryGetProperty("caption", out var cap)) vm.Message = cap.GetString();
+                if (root.TryGetProperty("media_url", out var mu)) vm.FullPicture = mu.GetString();
+                if (root.TryGetProperty("thumbnail_url", out var thu)) vm.FullPicture ??= thu.GetString();
+                if (root.TryGetProperty("permalink", out var pl)) vm.PermalinkUrl = pl.GetString();
+                if (root.TryGetProperty("media_type", out var mt)) vm.MediaType = mt.GetString();
+                if (root.TryGetProperty("timestamp", out var ts) &&
+                    DateTime.TryParse(ts.GetString(), out var dt)) vm.CreatedTime = dt;
+                vm.UpdatedAt = vm.CreatedTime?.ToUniversalTime() ?? DateTime.UtcNow;
+
+                // Carousel → fetch children
+                if (vm.MediaType == "CAROUSEL_ALBUM")
+                {
+                    var childResp = await client.GetAsync(
+                        $"https://graph.instagram.com/{postId}/children"
+                        + $"?fields=id,media_url,thumbnail_url,media_type"
+                        + $"&access_token={accessToken}");
+                    if (childResp.IsSuccessStatusCode)
+                    {
+                        var childBody = await childResp.Content.ReadAsStringAsync();
+                        using var childDoc = JsonDocument.Parse(childBody);
+                        if (childDoc.RootElement.TryGetProperty("data", out var children))
+                        {
+                            vm.CarouselChildren = new List<InstagramChildMedia>();
+                            foreach (var child in children.EnumerateArray())
+                            {
+                                var item = new InstagramChildMedia();
+                                if (child.TryGetProperty("id", out var cid)) item.Id = cid.GetString() ?? "";
+                                if (child.TryGetProperty("media_url", out var cmu)) item.MediaUrl = cmu.GetString();
+                                if (child.TryGetProperty("thumbnail_url", out var ct)) item.MediaUrl ??= ct.GetString();
+                                if (child.TryGetProperty("media_type", out var cmt)) item.MediaType = cmt.GetString();
+                                vm.CarouselChildren.Add(item);
+                            }
+                        }
+                    }
+                }
+
+                // ── Insights ──────────────────────────────────────────────
+                try
+                {
+                    var insResp = await client.GetAsync(
+                        $"https://graph.instagram.com/v25.0/{postId}/insights"
+                        + $"?metric=likes,comments,reach,shares,saved"
+                        + $"&access_token={accessToken}");
+
+                    if (insResp.IsSuccessStatusCode)
+                    {
+                        var insBody = await insResp.Content.ReadAsStringAsync();
+                        using var insDoc = JsonDocument.Parse(insBody);
+
+                        if (insDoc.RootElement.TryGetProperty("data", out var insData))
+                        {
+                            foreach (var metric in insData.EnumerateArray())
+                            {
+                                var mName = metric.TryGetProperty("name", out var mn) ? mn.GetString() : "";
+
+                                // Instagram insights return "values" array like Facebook
+                                if (metric.TryGetProperty("values", out var mVals))
+                                {
+                                    var first = mVals.EnumerateArray().FirstOrDefault();
+                                    if (first.ValueKind == JsonValueKind.Object &&
+                                        first.TryGetProperty("value", out var val) &&
+                                        val.ValueKind == JsonValueKind.Number)
+                                    {
+                                        switch (mName)
+                                        {
+                                            case "likes": vm.LikesCount = val.GetInt32(); break;
+                                            case "comments": vm.CommentsCount = val.GetInt32(); break;
+                                            case "reach": vm.Reach = val.GetInt32(); break;
+                                            case "shares": vm.SharesCount = val.GetInt32(); break;
+                                            //case "saved": vm.SavedCount = val.GetInt32(); break;
+                                        }
+                                    }
+                                }
+                                // Some versions return "total_value" instead of "values"
+                                else if (metric.TryGetProperty("total_value", out var tv) &&
+                                         tv.TryGetProperty("value", out var tvVal) &&
+                                         tvVal.ValueKind == JsonValueKind.Number)
+                                {
+                                    switch (mName)
+                                    {
+                                        case "likes": vm.LikesCount = tvVal.GetInt32(); break;
+                                        case "comments": vm.CommentsCount = tvVal.GetInt32(); break;
+                                        case "reach": vm.Reach = tvVal.GetInt32(); break;
+                                        case "shares": vm.SharesCount = tvVal.GetInt32(); break;
+                                        //case "saved": vm.SavedCount = tvVal.GetInt32(); break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var errBody = await insResp.Content.ReadAsStringAsync();
+                        _logger.LogWarning("Instagram insights failed: {b}", errBody);
+                    }
+                }
+                catch { /* insights optional — detail still loads */ }
+
+                return vm;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetInstagramPostDetail ex: {m}", ex.Message);
+                return null;
+            }
+        }
         // ── 3. LIKE POST ──────────────────────────────────────────────
         public async Task<bool> LikePostAsync(string postId, string userEmail)
         {

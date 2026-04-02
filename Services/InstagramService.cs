@@ -17,7 +17,8 @@ namespace SocialMediaPanel.Services
 
         private string AppId => _config["Instagram:AppId"]!;
         private string AppSecret => _config["Instagram:AppSecret"]!;
-        private string RedirectUri => "https://localhost:7276/Integrations/Callback/instagram";
+        //private string RedirectUri => "https://localhost:7276/Integrations/Callback/instagram";
+        private string RedirectUri => "https://social.go2market.in:8084/Integrations/Callback/instagram";
 
         // ✅ Instagram scopes (IMPORTANT)
         private string Scope =

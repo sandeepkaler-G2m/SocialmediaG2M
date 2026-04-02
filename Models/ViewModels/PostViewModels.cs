@@ -43,7 +43,10 @@ namespace SocialMediaPanel.ViewModels
         public int SavesCount { get; set; }
         public DateTime UpdatedAt { get; set; }
 
+        public string? MediaType { get; set; }
         public List<CommentRowViewModel> Comments { get; set; } = new();
+
+        public List<InstagramChildMedia>? CarouselChildren { get; set; }
 
         public int TotalEngagement => LikesCount + CommentsCount + SharesCount;
         public double EngagementRate =>
@@ -51,7 +54,12 @@ namespace SocialMediaPanel.ViewModels
                 ? Math.Round((double)TotalEngagement / Impressions * 100, 1)
                 : 0;
     }
-
+    public class InstagramChildMedia
+    {
+        public string Id { get; set; } = "";
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }  // IMAGE or VIDEO
+    }
     public class CommentRowViewModel
     {
         public string? CommentId { get; set; }  // Facebook comment ID (reply ke liye)

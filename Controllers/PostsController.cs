@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SocialMediaPanel.Services;
+using SocialMediaPanel.ViewModels;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -34,14 +35,22 @@ namespace SocialMediaPanel.Controllers
                 });
             }
 
-            var vm = await _postService.GetPostsAsync(email, platform);
+
+            PostListViewModel vm;
+
+            if (platform == "instagram")
+                vm = await _postService.GetInstagramPostsAsync(email);
+            else
+                vm = await _postService.GetPostsAsync(email, platform);
+
+            //var vm = await _postService.GetPostsAsync(email, platform);
             vm.ActiveTab = tab;
             return View(vm);
         }
 
         // ── GET /Posts/Details → modal partial ───────────────────────
         [HttpGet]
-        public async Task<IActionResult> Details(string postId, string pageId)
+        public async Task<IActionResult> Details(string postId, string platform)
         {
             if (GetUserId() == null) return Unauthorized();
             if (string.IsNullOrEmpty(postId)) return BadRequest("postId required");
@@ -49,7 +58,7 @@ namespace SocialMediaPanel.Controllers
             var email = GetUserEmail();
             if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-            var post = await _postService.GetPostDetailAsync(postId, email);
+            var post = await _postService.GetPostDetailAsync(postId, email,platform);
             if (post == null) return NotFound();
 
             return PartialView("_PostModal", post);

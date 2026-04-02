@@ -21,7 +21,8 @@ namespace SocialMediaPanel.Services
         private string AppId => _config["Facebook:AppId"] ?? throw new InvalidOperationException("Facebook:AppId not set in appsettings.json");
         private string AppSecret => _config["Facebook:AppSecret"] ?? throw new InvalidOperationException("Facebook:AppSecret not set in appsettings.json");
 
-        string RedirectUri = "https://localhost:7276/Integrations/Callback/facebook";
+        //string RedirectUri = "https://localhost:7276/Integrations/Callback/facebook";
+        string RedirectUri = "https://social.go2market.in:8084/Integrations/Callback/facebook";
 
         //private string RedirectUri => _config["Facebook:RedirectUri"] ?? throw new InvalidOperationException("Facebook:RedirectUri not set in appsettings.json");
 

@@ -80,7 +80,7 @@ namespace SocialMediaPanel.Controllers
      string? code,
      string? state,
      string? error,
-     string? error_description, int? userid)
+     string? error_description)
         {
             // ── Handle OAuth errors ─────────────────────────────
             if (error != null)
@@ -153,7 +153,7 @@ namespace SocialMediaPanel.Controllers
                 // Step 3: Save token
                 var token = new UserToken
                 {
-                    userId = (int)userid,
+                    userId = (int)Userid,
                     username = username.ToString(),
                     instagramtoken = longToken,
                     CreatedAt = DateTime.UtcNow

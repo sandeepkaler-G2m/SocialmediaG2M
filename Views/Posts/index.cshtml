@@ -6,6 +6,83 @@
 }
 
 <style>
+    /* ══ WRAPPER ══ */
+    .posts-shell {
+        display: flex;
+        height: calc(100vh - 58px);
+        margin: -28px;
+        overflow: hidden;
+        font-family: 'DM Sans', sans-serif;
+    }
+
+    /* ══ LEFT NAV (same as Inbox) ══ */
+    .posts-nav {
+        width: 200px;
+        min-width: 200px;
+        background: #fff;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        flex-shrink: 0;
+    }
+
+    .posts-nav-header {
+        padding: 14px 18px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .posts-nav-item {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 10px 18px !important;
+        font-size: 13px !important;
+        color: var(--muted) !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        text-decoration: none !important;
+        border-left: 3px solid transparent !important;
+        transition: background .12s, color .12s !important;
+    }
+
+        .posts-nav-item:hover {
+            background: #f4f5f7 !important;
+            color: var(--text) !important;
+        }
+
+        .posts-nav-item.active {
+            background: rgba(75,181,67,.07) !important;
+            border-left-color: var(--green) !important;
+            color: var(--green) !important;
+            font-weight: 600 !important;
+        }
+
+    .posts-nav-badge {
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--green);
+        color: #fff;
+        border-radius: 10px;
+        padding: 1px 6px;
+        min-width: 18px;
+        text-align: center;
+        line-height: 1.6;
+    }
+
+    /* ══ RIGHT CONTENT ══ */
+    .posts-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
     .posts-page {
         display: flex;
         flex-direction: column;
@@ -514,228 +591,151 @@
     }
 </style>
 
-<div class="posts-page">
+<div class="posts-shell">
 
-    <!-- Platform icon tabs -->
-    <div class="posts-top-bar">
-        <div class="plat-icon-tabs">
-            <a href="/Posts?platform=facebook&tab=@Model.ActiveTab"
-               class="plat-icon-tab @(Model.ActivePlatform == "facebook" ? "active-fb" : "")">
-                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "facebook" ? "#1877F2" : "#9CA3AF")">
-                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
-            </a>
-            <a href="/Posts?platform=twitter&tab=@Model.ActiveTab"
-               class="plat-icon-tab @(Model.ActivePlatform == "twitter" ? "active-tw" : "")">
-                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "twitter" ? "#000" : "#9CA3AF")" width="17" height="17">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-            </a>
-            <a href="/Posts?platform=linkedin&tab=@Model.ActiveTab"
-               class="plat-icon-tab @(Model.ActivePlatform == "linkedin" ? "active-li" : "")">
-                <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "linkedin" ? "#0A66C2" : "#9CA3AF")">
-                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
-                    <circle cx="4" cy="4" r="2" />
-                </svg>
-            </a>
-            <a href="/Posts?platform=instagram&tab=@Model.ActiveTab"
-               class="plat-icon-tab @(Model.ActivePlatform == "instagram" ? "active-ig" : "")">
-                <svg viewBox="0 0 24 24" fill="none"
-                     stroke="@(Model.ActivePlatform == "instagram" ? "#E1306C" : "#9CA3AF")" stroke-width="2">
-                    <rect x="2" y="2" width="20" height="20" rx="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-            </a>
-        </div>
+    <!-- LEFT NAV -->
+    <nav class="posts-nav">
+        <div class="posts-nav-header">Publishing</div>
+        <a class="posts-nav-item active" href="/Posts?platform=@Model.ActivePlatform&tab=published">
+            Published
+            <span class="posts-nav-badge">@Model.Posts.Count()</span>
+        </a>
+      @*   <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=scheduled">Scheduled</a>
+        <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=approvals">Approvals</a>
+        <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=unpublished">Unpublished</a>
+        <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=draft">Drafts</a> *@
+    </nav>
 
-        <div class="posts-bar-right">
-            <button class="view-icon-btn active" title="List view">
-                <svg viewBox="0 0 24 24" stroke-width="2">
-                    <line x1="8" y1="6" x2="21" y2="6" />
-                    <line x1="8" y1="12" x2="21" y2="12" />
-                    <line x1="8" y1="18" x2="21" y2="18" />
-                    <line x1="3" y1="6" x2="3.01" y2="6" />
-                    <line x1="3" y1="12" x2="3.01" y2="12" />
-                    <line x1="3" y1="18" x2="3.01" y2="18" />
-                </svg>
-            </button>
-            <button class="view-icon-btn" title="Grid view">
-                <svg viewBox="0 0 24 24" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7" />
-                    <rect x="14" y="3" width="7" height="7" />
-                    <rect x="14" y="14" width="7" height="7" />
-                    <rect x="3" y="14" width="7" height="7" />
-                </svg>
-            </button>
-            <button class="view-icon-btn" title="Refresh" onclick="location.reload()">
-                <svg viewBox="0 0 24 24" stroke-width="2">
-                    <polyline points="1 4 1 10 7 10" />
-                    <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
-                </svg>
-            </button>
-            <span class="sort-label">
-                Sort by: <strong>Recent Posts</strong>
-                <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
-            </span>
-        </div>
-    </div>
+    <!-- MAIN CONTENT -->
+    <div class="posts-main">
+        <div class="posts-page">
 
-    <!-- Sub nav -->
-    <div class="posts-subnav">
-        <a href="/Posts?platform=@Model.ActivePlatform&tab=published"
-           class="@(Model.ActiveTab == "published" ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-            Published Posts
-        </a>
-        <a href="/Posts?platform=@Model.ActivePlatform&tab=scheduled"
-           class="@(Model.ActiveTab == "scheduled" ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            Scheduled Posts
-        </a>
-        <a href="/Posts?platform=@Model.ActivePlatform&tab=approvals"
-           class="@(Model.ActiveTab == "approvals" ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <polyline points="9 11 12 14 22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-            </svg>
-            Approvals
-        </a>
-        <a href="/Posts?platform=@Model.ActivePlatform&tab=unpublished"
-           class="@(Model.ActiveTab == "unpublished" ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-            </svg>
-            Unpublished Posts
-        </a>
-        <a href="/Posts?platform=@Model.ActivePlatform&tab=draft"
-           class="@(Model.ActiveTab == "draft" ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-            </svg>
-            Drafts
-        </a>
-        <a href="#">
-            <svg viewBox="0 0 24 24" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            Calendar
-        </a>
-        <span class="subnav-sep">|</span>
-        <a href="#">RSS Feeds</a>
-        <a href="#">Social Library</a>
-    </div>
-
-    <!-- Table -->
-    <div class="posts-table-wrap">
-        <table class="posts-tbl">
-            <thead>
-                <tr>
-                    <th style="width:155px">PUBLISHED ON</th>
-                    <th>POST CONTENT</th>
-                    <th style="width:130px;text-align:center">
-                        INTERACTION
-                        <svg viewBox="0 0 24 24" width="11" height="11"
-                             style="stroke:var(--muted);fill:none;stroke-width:2;vertical-align:middle;margin-left:2px">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="8" x2="12" y2="12" />
-                            <line x1="12" y1="16" x2="12.01" y2="16" />
+            <!-- Platform icon tabs -->
+            <div class="posts-top-bar">
+                <div class="plat-icon-tabs">
+                    <a href="/Posts/Index?platform=facebook&tab=@Model.ActiveTab"
+                       class="plat-icon-tab @(Model.ActivePlatform == "facebook" ? "active-fb" : "")">
+                        <svg viewBox="0 0 24 24" fill="@(Model.ActivePlatform == "facebook" ? "#1877F2" : "#9CA3AF")">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
                         </svg>
-                    </th>
-                    <th style="width:160px">PUBLISHED BY</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (!Model.Posts.Any())
-                {
-                    <tr>
-                        <td colspan="4">
-                            <div class="posts-empty">
-                                <div class="posts-empty-icon">
-                                    <svg viewBox="0 0 24 24" stroke-width="1.5">
-                                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                                        <line x1="8" y1="21" x2="16" y2="21" />
-                                        <line x1="12" y1="17" x2="12" y2="21" />
-                                    </svg>
-                                </div>
-                                <p>No posts found for @Model.ActivePlatform.</p>
-                            </div>
-                        </td>
-                    </tr>
-                }
-                else
-                {
-                    @foreach (var post in Model.Posts)
-                    {
-                        // Date: Graph API se CreatedTime > DB se UpdatedAt
-                        var postDate = post.CreatedTime.HasValue
-                        ? post.CreatedTime.Value.ToLocalTime()
-                        : post.UpdatedAt.ToLocalTime();
+                    </a>
+                    <a href="/Posts/Index?platform=instagram&tab=@Model.ActiveTab"
+                       class="plat-icon-tab @(Model.ActivePlatform == "instagram" ? "active-ig" : "")">
+                        <svg viewBox="0 0 24 24" fill="none"
+                             stroke="@(Model.ActivePlatform == "instagram" ? "#E1306C" : "#9CA3AF")" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="5" />
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                        </svg>
+                    </a>
+                </div>
 
-                        <tr class="post-tr" onclick="openPM('@post.PostId')">
-                            <td>
-                                <div class="p-date">@postDate.ToString("dd MMM yyyy")</div>
-                                <div class="p-time">@postDate.ToString("hh:mm tt")</div>
-                            </td>
-                            <td>
-                                <div class="p-content-cell">
-                                    <div class="p-thumb">
-                                        <div class="p-thumb-icon">
-                                            <svg viewBox="0 0 24 24" stroke-width="2">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                                <polyline points="21 15 16 10 5 21" />
+                <div class="posts-bar-right">
+                    
+                    <button class="view-icon-btn" title="Refresh" onclick="location.reload()">
+                        <svg viewBox="0 0 24 24" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10" />
+                            <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
+                        </svg>
+                    </button>
+                    @* <span class="sort-label">
+                        Sort by: <strong>Recent Posts</strong>
+                        <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="6 9 12 15 18 9" /></svg>
+                    </span> *@
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="posts-table-wrap">
+                <table class="posts-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:155px">PUBLISHED ON</th>
+                            <th>POST CONTENT</th>
+                            <th style="width:130px;text-align:center">
+                                INTERACTION
+                                <svg viewBox="0 0 24 24" width="11" height="11"
+                                     style="stroke:var(--muted);fill:none;stroke-width:2;vertical-align:middle;margin-left:2px">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </th>
+                            <th style="width:160px">PUBLISHED BY</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Posts.Any())
+                        {
+                            <tr>
+                                <td colspan="4">
+                                    <div class="posts-empty">
+                                        <div class="posts-empty-icon">
+                                            <svg viewBox="0 0 24 24" stroke-width="1.5">
+                                                <rect x="2" y="3" width="20" height="14" rx="2" />
+                                                <line x1="8" y1="21" x2="16" y2="21" />
+                                                <line x1="12" y1="17" x2="12" y2="21" />
                                             </svg>
                                         </div>
-                                        @if (!string.IsNullOrEmpty(post.FullPicture))
+                                        <p>No posts found for @Model.ActivePlatform.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var post in Model.Posts)
+                            {
+                                var postDate = post.CreatedTime.HasValue
+                                ? post.CreatedTime.Value.ToLocalTime()
+                                : post.UpdatedAt.ToLocalTime();
+
+                                <tr class="post-tr" onclick="openPM('@post.PostId','@post.Platform')">
+                                    <td>
+                                        <div class="p-date">@postDate.ToString("dd MMM yyyy")</div>
+                                        <div class="p-time">@postDate.ToString("hh:mm tt")</div>
+                                    </td>
+                                    <td>
+                                        <div class="p-content-cell">
+                                            @if (!string.IsNullOrEmpty(post.FullPicture))
+                                            {
+                                                <div class="p-thumb">
+                                                    <div class="p-thumb-icon">
+                                                        <svg viewBox="0 0 24 24" stroke-width="2">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                                            <polyline points="21 15 16 10 5 21" />
+                                                        </svg>
+                                                    </div>
+                                                    <img src="@post.FullPicture" alt="post" />
+                                                </div>
+                                            }
+                                            <span class="p-text-preview">
+                                                @(string.IsNullOrEmpty(post.Message) ? "(No text)" : post.Message)
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align:center">
+                                        @if (post.TotalEngagement > 0)
                                         {
-                                            <img src="@post.FullPicture" alt="post" />
+                                            <span class="p-engage-num">@post.TotalEngagement</span>
                                         }
                                         else
                                         {
-                                            <svg viewBox="0 0 24 24" stroke-width="1.5">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                                <circle cx="8.5" cy="8.5" r="1.5" />
-                                                <polyline points="21 15 16 10 5 21" />
-                                            </svg>
+                                            <span class="p-engage-dash">-</span>
                                         }
-                                    </div>
-                                    <span class="p-text-preview">
-                                        @(string.IsNullOrEmpty(post.Message) ? "(No text)" : post.Message)
-                                    </span>
-                                </div>
-                            </td>
-                            <td style="text-align:center">
-                                @if (post.TotalEngagement > 0)
-                                {
-                                    <span class="p-engage-num">@post.TotalEngagement</span>
-                                }
-                                else
-                                {
-                                    <span class="p-engage-dash">-</span>
-                                }
-                            </td>
-                            <td>
-                                <span class="p-via">via @Model.ActivePlatform</span>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
+                                    </td>
+                                    <td>
+                                        <span class="p-via">via @Model.ActivePlatform</span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -770,8 +770,7 @@
 
 @section Scripts {
     <script>
-        // Sirf postId pass karo — pageId controller DB se nikaalta hai
-        function openPM(postId) {
+        function openPM(postId,platform) {
             document.getElementById('pmOverlay').classList.add('open');
             document.getElementById('pmPanel').classList.add('open');
             document.getElementById('pmBody').innerHTML =
@@ -780,8 +779,8 @@
             document.querySelectorAll('.pm-tab').forEach(t => t.classList.remove('active'));
             document.querySelector('.pm-tab[data-tab="pm-details"]').classList.add('active');
 
-            fetch('/Posts/Details?postId=' + encodeURIComponent(postId), {
-                credentials: 'same-origin'
+        fetch('/Posts/Details?postId=' + encodeURIComponent(postId) + '&platform=' + encodeURIComponent(platform || 'facebook'), {
+                        credentials: 'same-origin'
             })
             .then(r => {
                 if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -816,7 +815,6 @@
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closePM(); });
 
-        // ── Like ─────────────────────────────────────────────────────
         function likePost(postId) {
             var btn = document.getElementById('likeBtn');
             if (btn) btn.disabled = true;
@@ -832,7 +830,6 @@
             .catch(() => { showPMToast('Network error','err'); if(btn) btn.disabled=false; });
         }
 
-        // ── Comment ───────────────────────────────────────────────────
         function submitComment(postId) {
             var input = document.getElementById('mainCommentInput');
             var msg = input ? input.value.trim() : '';
@@ -849,7 +846,6 @@
             .catch(() => showPMToast('Network error','err'));
         }
 
-        // ── Toggle Reply Box ──────────────────────────────────────────
         function toggleReply(commentId) {
             var box = document.getElementById('reply-' + commentId);
             if (!box) return;
@@ -860,7 +856,6 @@
             }
         }
 
-        // ── Submit Reply ──────────────────────────────────────────────
         function submitReply(commentId) {
             var input = document.getElementById('replyInput-' + commentId);
             var msg = input ? input.value.trim() : '';
