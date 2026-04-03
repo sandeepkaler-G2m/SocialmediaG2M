@@ -642,16 +642,19 @@
 //        //}
 //    }
 //}
+
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using SocialMediaPanel.Controllers;
+using SocialMediaPanel.Data;
+using SocialMediaPanel.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using SocialMediaPanel.Data;
-using SocialMediaPanel.ViewModels;
 
 namespace SocialMediaPanel.Services
 {
@@ -665,6 +668,9 @@ namespace SocialMediaPanel.Services
         Task<bool> LikePostAsync(string postId, string userEmail);
         Task<bool> AddCommentAsync(string postId, string message, string userEmail, string platform = "facebook");
         Task<bool> ReplyToCommentAsync(string commentId, string message, string userEmail, string platform = "facebook");
+      //  Task<PostListViewModel> GetDraftPostsAsync(int userId, string platform);
+        Task<PostListViewModel> GetDraftPostsAsync(int userId, string platform);
+        Task<PostDetailViewModel?> GetDraftByIdAsync(string draftId, int userId);
     }
 
     public class PostService : IPostService
@@ -804,6 +810,59 @@ namespace SocialMediaPanel.Services
                 _logger.LogError("GetPosts ex: {m}", ex.Message);
                 return new PostListViewModel { ActivePlatform = platform };
             }
+        }
+
+
+        public async Task<PostListViewModel> GetDraftPostsAsync(int userId, string platform)
+        {
+            // SocialPosts DB table se drafts uthao
+            var drafts = await _db.SocialPosts
+                .Where(p => p.user_id == userId && p.status == "draft")
+                .OrderByDescending(p => p.created_at)
+                .ToListAsync();
+
+            var rows = drafts.Select(p => new PostRowViewModel
+            {
+                PostId = p.id.ToString(),   // draft ka id use karo
+                Platform = p.platform ?? platform,
+                Message = p.message,
+                UpdatedAt = p.created_at,
+                CreatedTime = p.created_at,
+
+            }).ToList();
+
+            return new PostListViewModel
+            {
+                Posts = rows,
+                ActivePlatform = platform,
+                ActiveTab = "draft"
+            };
+        }
+
+        public async Task<PostDetailViewModel?> GetDraftByIdAsync(string draftId, int userId)
+        {
+            // id se match karo
+            if (!int.TryParse(draftId, out var id)) return null;
+
+            var draft = await _db.SocialPosts
+                .Where(p => p.id == id
+                         && p.user_id == userId
+                         && p.status == "draft")
+                .FirstOrDefaultAsync();
+
+            if (draft == null) return null;
+
+            return new PostDetailViewModel
+            {
+                PostId = draft.id.ToString(),
+                Platform = draft.platform ?? "",
+                Message = draft.message,
+                media_url = draft.media_url, // 👈 Ye line add kar service mein!
+                UpdatedAt = draft.created_at,
+                DraftMediaUrls = !string.IsNullOrEmpty(draft.media_url)
+                         ? draft.media_url.Split(',').ToList()
+                         : new List<string>()
+            };
         }
 
         // ════════════════════════════════════════════════════════════
@@ -1188,6 +1247,32 @@ namespace SocialMediaPanel.Services
             }
             catch (Exception ex) { _logger.LogError("FB Comment ex: {m}", ex.Message); return false; }
         }
+
+
+        //public async Task<PostListViewModel> GetDraftPostsAsync(int userId, string platform)
+        //{
+        //    var drafts = await _db.Set<SocialPost>()     // ya jo bhi tera DbSet name hai
+        //        .Where(p => p.user_id == userId
+        //                 && p.status == "draft"
+        //                 && (platform == "all" || p.platform == platform))
+        //        .OrderByDescending(p => p.created_at)
+        //        .ToListAsync();
+
+        //    var rows = drafts.Select(p => new PostRowViewModel
+        //    {
+        //        PostId = p.post_id ?? p.id.ToString(),
+        //        Platform = p.platform ?? platform,
+        //        Message = p.message,
+        //        UpdatedAt = p.created_at,
+        //    }).ToList();
+
+        //    return new PostListViewModel
+        //    {
+        //        Posts = rows,
+        //        ActivePlatform = platform,
+        //        ActiveTab = "draft"
+        //    };
+        //}
 
         // ════════════════════════════════════════════════════════════
         // 6. REPLY TO COMMENT — Facebook + Instagram
