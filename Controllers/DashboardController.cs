@@ -140,6 +140,10 @@ namespace SocialMediaPanel.Controllers
         //   → ImgBB se public URL banao (localhost + production dono pe kaam karta hai)
         //   → appsettings.json mein: "ImgBB": { "ApiKey": "your_key" }
         // ════════════════════════════════════════════════════════════════
+
+
+
+
         [HttpPost]
         public async Task<IActionResult> PublishPost(
             List<IFormFile> images, string message, string platform, string campaign, bool isDraft = false)
@@ -149,8 +153,38 @@ namespace SocialMediaPanel.Controllers
                 return Json(new { success = false, message = "User not logged in" });
 
             var userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
+
+            // HttpClient ko yahan define karein taaki ye poore method mein available rahe
             using var http = new HttpClient();
 
+            // 1. IMAGE SAVING LOGIC (Common for Draft & Live)
+            string savedImagePaths = "";
+            if (images != null && images.Count > 0)
+            {
+                var uploadedPaths = new List<string>();
+                string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                foreach (var file in images)
+                {
+                    if (file.Length > 0)
+                    {
+                        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                        string filePath = Path.Combine(uploadsFolder, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+                        uploadedPaths.Add("/uploads/" + fileName);
+                    }
+                }
+                savedImagePaths = string.Join(",", uploadedPaths);
+            }
+
+            // 2. DRAFT LOGIC
             if (isDraft)
             {
                 _context.SocialPosts.Add(new SocialPost
@@ -159,15 +193,14 @@ namespace SocialMediaPanel.Controllers
                     page_id = "",
                     post_id = "",
                     message = message,
-                    media_url = "",
+                    media_url = savedImagePaths, // Local wwwroot path yahan save hoga
                     platform = platform,
-                    status = "draft",   // 👈 IMPORTANT
+                    status = "draft",
                     created_at = DateTime.UtcNow
                 });
 
                 await _context.SaveChangesAsync();
-
-                return Json(new { success = true, message = "Draft saved" });
+                return Json(new { success = true, message = "Draft saved with images in uploads folder." });
             }
             // ─────────────────────────────────────────────────────────────
             // FACEBOOK

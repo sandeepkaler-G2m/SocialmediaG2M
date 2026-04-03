@@ -605,7 +605,7 @@
         <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=unpublished">Unpublished</a>
         <a class="posts-nav-item" href="/Posts?platform=@Model.ActivePlatform&tab=draft">Drafts</a> *@
         <a class="posts-nav-item @(Model.ActiveTab == "draft" ? "active" : "")"
-           href="/Posts?platform=@Model.ActivePlatform&tab=draft">
+           href="/Posts/index?platform=@Model.ActivePlatform&tab=draft">
             Drafts
         </a>
     </nav>
@@ -836,6 +836,15 @@
             .catch(() => { showPMToast('Network error','err'); if(btn) btn.disabled=false; });
         }
 
+                function handlePostClick(postId, platform, tab) {
+            if (tab === 'draft') {
+                // Draft post → compose pe redirect, query params se prefill hoga
+                window.location.href = '/Dashboard/Compose?draftId=' + encodeURIComponent(postId);
+            } else {
+                // Published post → modal open
+                openPM(postId, platform);
+            }
+        }
         function submitComment(postId) {
             var input = document.getElementById('mainCommentInput');
             var msg = input ? input.value.trim() : '';

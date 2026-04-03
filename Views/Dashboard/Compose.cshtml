@@ -1174,8 +1174,8 @@
           showToast('Saved as draft!', 'success');
 
           setTimeout(() => {
-            window.location.href = '/Posts/index?tab=draft';
-          }, 1000);
+        window.location.href = '/Posts/index?platform=facebook&tab=draft';
+                  }, 1000);
 
           return;
         }
@@ -1334,6 +1334,45 @@
           c.appendChild(t);
           setTimeout(function(){ t.remove(); }, 4000);
         }
+
+        // ── Draft prefill — URL se draftId uthao → DB se data lo ──────────
+        (async function loadDraftIfAny() {
+            var params  = new URLSearchParams(window.location.search);
+            var draftId = params.get('draftId');
+            if (!draftId) return;
+
+            try {
+                var resp = await fetch('/Posts/GetDraft?draftId=' + encodeURIComponent(draftId), {
+                    credentials: 'same-origin'
+                });
+                if (!resp.ok) return;
+                var draft = await resp.json();
+
+                // Text prefill
+                if (draft.message) {
+                    document.getElementById('postText').value = draft.message;
+                    document.getElementById('charCount').textContent = draft.message.length;
+                }
+
+                // Platform prefill
+                if (draft.platform) {
+                    var net  = draft.platform.toLowerCase();  // 'facebook' → 'fb', 'instagram' → 'ig'
+                    var map  = { facebook: 'fb', instagram: 'ig', linkedin: 'li' };
+                    var code = map[net] || net;
+                    var tab  = document.getElementById('tab-' + code);
+                    if (tab && !tab.classList.contains('active')) {
+                        activeNets.clear();
+                        activeNets.add(code);
+                        document.querySelectorAll('.net-tab').forEach(function(t){ t.classList.remove('active'); });
+                        tab.classList.add('active');
+                    }
+                }
+
+                renderPreview();
+            } catch(e) {
+                console.log('Draft load error:', e);
+            }
+        })();
 
         // ── INIT ──────────────────────────────────────────────────────────────
         renderPreview();
