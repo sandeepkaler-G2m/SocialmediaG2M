@@ -548,7 +548,7 @@ namespace SocialMediaPanel.Controllers
         public int id { get; set; }
         public int? user_id { get; set; }
         public string page_id { get; set; }
-        public string account_name { get; set; }
+        public string? account_name { get; set; }
         public string post_id { get; set; }
         public string message { get; set; }
 
@@ -557,10 +557,10 @@ namespace SocialMediaPanel.Controllers
         public string platform { get; set; } = "";
         public DateTime created_at { get; set; }
 
-        public int like_count { get; set; }
-        public int comment_count { get; set; }
-        public string status { get; set; }
-        public int share_count { get; set; }
+        public int? like_count { get; set; }
+        public int? comment_count { get; set; }
+        public string? status { get; set; }
+        public int? share_count { get; set; }
     }
 
 }
