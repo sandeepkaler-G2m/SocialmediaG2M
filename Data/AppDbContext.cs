@@ -155,5 +155,6 @@ namespace SocialMediaPanel.Data
         public DbSet<FacebookPageEntity> FacebookPages { get; set; }
 
         public DbSet<SocialPost> SocialPosts { get; set; }
+        public DbSet<InstagramAccount> InstagramAccounts { get; set; }
     }
 }

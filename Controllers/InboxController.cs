@@ -304,7 +304,7 @@ namespace SocialMediaPanel.Controllers
             var userid = HttpContext.Session.GetInt32("UserId");
 
             var account = await _db.FacebookPages
-                .Where(a => a.user_id == userid)
+                .Where(a => a.user_id == userid.ToString())
                 .Select(a => a.page_access_token)
                 .FirstOrDefaultAsync();
 
@@ -314,7 +314,14 @@ namespace SocialMediaPanel.Controllers
         // ── Private: merge comments + messages into unified list ──────
         private async Task<List<InboxItem>> GetMergedItems()
         {
-            var comments = await _db.PageComments
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var pageIds = await _db.FacebookPages
+                .Where(o => o.user_id == userId.ToString())
+                .Select(o => o.page_id)
+                .Distinct()
+                .ToListAsync();
+
+            var comments = await _db.PageComments.Where(l => pageIds.Contains(l.PageId))
                 .OrderByDescending(c => c.CommentTime ?? c.CreatedAt)
                 .Select(c => new InboxItem
                 {
@@ -337,27 +344,33 @@ namespace SocialMediaPanel.Controllers
                 })
                 .ToListAsync();
 
-            var messages = await _db.PageMessages
-                .OrderByDescending(m => m.MessageTime ?? m.CreatedAt)
-                .Select(m => new InboxItem
-                {
-                    Id = m.Id,
-                    ItemType = "message",
-                    Platform = m.Platform,
-                    SenderId = m.SenderId ?? "",
-                    SenderName = !string.IsNullOrEmpty(m.SenderName)
-                                    ? m.SenderName
-                                    : !string.IsNullOrEmpty(m.SenderId)
-                                        ? "User " + m.SenderId.Substring(Math.Max(0, m.SenderId.Length - 6))
-                                        : "Unknown",
-                    Message = m.MessageText ?? "",
-                    PostId = "",
-                    PageId = m.PageId ?? "",
-                    CommentType = "message",
-                    IsReplied = m.IsReplied,
-                    Time = m.MessageTime ?? m.CreatedAt
-                })
+            var pageIdsig = await _db.InstagramAccounts
+                .Where(m => m.UserId == userId.ToString())
+                .Select(m => m.InstagramUserId) // 🔥 only PageId
                 .ToListAsync();
+
+            var messages = await _db.PageMessages
+    .Where(o => pageIdsig.Contains(o.PageId)) // ✅ now both string
+    .OrderByDescending(m => m.MessageTime ?? m.CreatedAt)
+    .Select(m => new InboxItem
+    {
+        Id = m.Id,
+        ItemType = "message",
+        Platform = m.Platform,
+        SenderId = m.SenderId ?? "",
+        SenderName = !string.IsNullOrEmpty(m.SenderName)
+                        ? m.SenderName
+                        : !string.IsNullOrEmpty(m.SenderId)
+                            ? "User " + m.SenderId.Substring(Math.Max(0, m.SenderId.Length - 6))
+                            : "Unknown",
+        Message = m.MessageText ?? "",
+        PostId = "",
+        PageId = m.PageId ?? "",
+        CommentType = "message",
+        IsReplied = m.IsReplied,
+        Time = m.MessageTime ?? m.CreatedAt
+    })
+    .ToListAsync();
 
             // Merge and sort newest first
             return comments

@@ -7,7 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(8080); // accessible via public IP
+    options.ListenAnyIP(8080);
+    options.Limits.MaxRequestBodySize = 104857600;
+});
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(104857600)); // ? ADD: 100MB
 });
 
 builder.Services.AddControllersWithViews();

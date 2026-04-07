@@ -162,6 +162,26 @@ namespace SocialMediaPanel.Controllers
                 _context.UserTokens.Add(token);
                 var res = await _context.SaveChangesAsync();
 
+                var existingAccount = await _context.InstagramAccounts
+    .FirstOrDefaultAsync(x => x.InstagramUserId == account.InstagramId
+                              && x.UserId == Userid.ToString());
+
+
+                    var igAccount = new InstagramAccount
+                    {
+                        UserId = Userid.ToString(),
+                        Username = username.ToString(),
+                        InstagramUserId = account.InstagramId,
+                        Name = account.Username,
+                        ProfilePictureUrl = account.ProfilePicture,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    _context.InstagramAccounts.Add(igAccount);
+
+                var resig = await _context.SaveChangesAsync();
+
+
                 TempData["IntegrationSuccess"] = "instagram";
                 TempData["InstagramName"] = account.Username;
             }
@@ -332,7 +352,7 @@ namespace SocialMediaPanel.Controllers
                 {
                     var page = new FacebookPageEntity
                     {
-                        user_id = userid,
+                        user_id = userid.ToString(),
                         user_name = username.ToString(), 
                         page_id = p.PageId,
                         page_name = p.Name,
@@ -368,11 +388,25 @@ namespace SocialMediaPanel.Controllers
     public class FacebookPageEntity
     {
         public int id { get; set; }
-        public int? user_id { get; set; }
+        public string? user_id { get; set; }
         public string user_name { get; set; }
         public string page_id { get; set; }
         public string page_name { get; set; }
         public string page_access_token { get; set; }
         public DateTime created_at { get; set; }
+    }
+
+    public class InstagramAccount
+    {
+        public int Id { get; set; }
+
+        public string UserId { get; set; } // your app user
+
+        public string InstagramUserId { get; set; }
+        public string Username { get; set; }
+        public string Name { get; set; }
+        public string ProfilePictureUrl { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

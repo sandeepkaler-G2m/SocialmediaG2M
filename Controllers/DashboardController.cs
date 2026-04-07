@@ -72,13 +72,19 @@ namespace SocialMediaPanel.Controllers
 
         public async Task<List<SocialPost>> GetAllPosts()
         {
+            List<SocialPost> allPosts = new List<SocialPost>();
             var username = HttpContext.Session.GetString("UserEmail");
             var fbtoken = await _postService.GetTokenAsync(username);
+
+            var httpClient = new HttpClient(); // Best practice: reuse one client
+            if (!string.IsNullOrEmpty(fbtoken))
+            {
+
+           
+
             var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
             var (pageId, pageToken) = page.Value;
 
-            List<SocialPost> allPosts = new List<SocialPost>();
-            var httpClient = new HttpClient(); // Best practice: reuse one client
 
             // 1. ✅ Get Facebook Page Name
             string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
@@ -108,34 +114,40 @@ namespace SocialMediaPanel.Controllers
                     share_count = item.shares?.count ?? 0
                 });
             }
+            }
+
 
             // 2. ✅ Get Instagram Name
             var instatoken = await _postService.GetInstagramTokenAsync(username);
 
-            // Note: Use "username" for IG handle or "name" if available in your API scope
-            string igInfoUrl = $"https://graph.instagram.com/me?fields=username&access_token={instatoken}";
-            var igInfoResponse = await httpClient.GetStringAsync(igInfoUrl);
-            dynamic igInfoData = Newtonsoft.Json.JsonConvert.DeserializeObject(igInfoResponse);
-            string igAccountName = igInfoData.username;
 
-            // Fetch Instagram Posts
-            string igUrl = $"https://graph.instagram.com/me/media?fields=caption,media_url,timestamp,like_count,comments_count&access_token={instatoken}"; var igResponse = await httpClient.GetStringAsync(igUrl);
-            dynamic igData = Newtonsoft.Json.JsonConvert.DeserializeObject(igResponse);
-
-            foreach (var item in igData.data)
+            if (!string.IsNullOrEmpty(instatoken))
             {
-                allPosts.Add(new SocialPost
-                {
-                    platform = "instagram",
-                    account_name = igAccountName, // Added this
-                    message = item.caption,
-                    media_url = item.media_url,
-                    created_at = item.timestamp,
-                    like_count = item.like_count ?? 0,
-                    comment_count = item.comments_count ?? 0
-                });
-            }
 
+                // Note: Use "username" for IG handle or "name" if available in your API scope
+                string igInfoUrl = $"https://graph.instagram.com/me?fields=username&access_token={instatoken}";
+                var igInfoResponse = await httpClient.GetStringAsync(igInfoUrl);
+                dynamic igInfoData = Newtonsoft.Json.JsonConvert.DeserializeObject(igInfoResponse);
+                string igAccountName = igInfoData.username;
+
+                // Fetch Instagram Posts
+                string igUrl = $"https://graph.instagram.com/me/media?fields=caption,media_url,timestamp,like_count,comments_count&access_token={instatoken}"; var igResponse = await httpClient.GetStringAsync(igUrl);
+                dynamic igData = Newtonsoft.Json.JsonConvert.DeserializeObject(igResponse);
+
+                foreach (var item in igData.data)
+                {
+                    allPosts.Add(new SocialPost
+                    {
+                        platform = "instagram",
+                        account_name = igAccountName, // Added this
+                        message = item.caption,
+                        media_url = item.media_url,
+                        created_at = item.timestamp,
+                        like_count = item.like_count ?? 0,
+                        comment_count = item.comments_count ?? 0
+                    });
+                }
+            }
             return allPosts.OrderByDescending(x => x.created_at).ToList();
         }
 
@@ -143,22 +155,35 @@ namespace SocialMediaPanel.Controllers
         [HttpGet]
         public async Task<IActionResult> Leads()
         {
+
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            var pageIds = await _context.FacebookPages
+    .Where(o => o.user_id == userId.ToString())
+    .Select(o => o.page_id)
+    .Distinct()
+    .ToListAsync();
+
+
             var leads = await _context.Leads
-                .OrderByDescending(l => l.CreatedAt)
-                .Select(l => new LeadViewModel
-                {
-                    Id = l.Id,
-                    LeadId = l.LeadId,
-                    PageId = l.PageId,
-                    FormId = l.FormId,
-                    FullName = l.FullName,
-                    Email = l.Email,
-                    Phone = l.Phone,
-                    Platform = l.Platform,
-                    RawData = l.RawData,
-                    Status = l.Status ?? "open",
-                    CreatedAt = l.CreatedAt
-                }).ToListAsync();
+    .Where(l => pageIds.Contains(l.PageId)) // 🔥 FILTER HERE
+    .OrderByDescending(l => l.CreatedAt)
+    .Select(l => new LeadViewModel
+    {
+        Id = l.Id,
+        LeadId = l.LeadId,
+        PageId = l.PageId,
+        FormId = l.FormId,
+        FullName = l.FullName,
+        Email = l.Email,
+        Phone = l.Phone,
+        Platform = l.Platform,
+        RawData = l.RawData,
+        Status = l.Status ?? "open",
+        CreatedAt = l.CreatedAt
+    })
+    .ToListAsync();
+
             return View(leads);
         }
 
@@ -232,8 +257,12 @@ namespace SocialMediaPanel.Controllers
 
 
 
-
+        // ════════════════════════════════════════════════════════════════
+        // PUBLISH POST
+        // ════════════════════════════════════════════════════════════════
         [HttpPost]
+        [RequestSizeLimit(104857600)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 104857600)]
         public async Task<IActionResult> PublishPost(
             List<IFormFile> images, string message, string platform, string campaign, bool isDraft = false)
         {
@@ -243,37 +272,58 @@ namespace SocialMediaPanel.Controllers
 
             var userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
 
-            // HttpClient ko yahan define karein taaki ye poore method mein available rahe
-            using var http = new HttpClient();
-
-            // 1. IMAGE SAVING LOGIC (Common for Draft & Live)
-            string savedImagePaths = "";
+            // ── STEP 1: Images → bytes mein load ─────────────────────
+            var imageDataList = new List<(byte[] bytes, string contentType, string fileName)>();
             if (images != null && images.Count > 0)
             {
-                var uploadedPaths = new List<string>();
-                string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                foreach (var file in images)
+                foreach (var img in images)
                 {
-                    if (file.Length > 0)
+                    if (img.Length > 0)
                     {
-                        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                        string filePath = Path.Combine(uploadsFolder, fileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await file.CopyToAsync(stream);
-                        }
-                        uploadedPaths.Add("/uploads/" + fileName);
+                        using var ms = new System.IO.MemoryStream();
+                        await img.CopyToAsync(ms);
+                        imageDataList.Add((ms.ToArray(), img.ContentType, img.FileName));
                     }
                 }
-                savedImagePaths = string.Join(",", uploadedPaths);
             }
 
-            // 2. DRAFT LOGIC
+            // ── STEP 2: wwwroot/uploads mein save ────────────────────
+            var uploadsDir = System.IO.Path.Combine(_env.WebRootPath, "uploads");
+            System.IO.Directory.CreateDirectory(uploadsDir);
+
+            var savedPaths = new List<string>();
+            var savedFullUrls = new List<string>();
+
+            var baseUrl = _config["AppBaseUrl"]?.TrimEnd('/');
+            if (string.IsNullOrEmpty(baseUrl))
+                baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            foreach (var (bytes, contentType, fileName) in imageDataList)
+            {
+                // fileName blob ho sakta hai — contentType se extension lo
+                var ext = contentType.ToLower() switch
+                {
+                    "image/jpeg" => ".jpg",
+                    "image/jpg" => ".jpg",
+                    "image/png" => ".png",
+                    "image/gif" => ".gif",
+                    "image/webp" => ".webp",
+                    "video/mp4" => ".mp4",
+                    "video/mov" => ".mov",
+                    _ => System.IO.Path.GetExtension(fileName).ToLower()  // fallback
+                };
+
+                // Agar ext empty hai toh .jpg default
+                if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+
+                var newName = Guid.NewGuid().ToString("N") + ext;
+                var savePath = System.IO.Path.Combine(uploadsDir, newName);
+                await System.IO.File.WriteAllBytesAsync(savePath, bytes);
+                savedPaths.Add("/uploads/" + newName);
+                savedFullUrls.Add($"{baseUrl}/uploads/{newName}");
+            }
+
+            // ── STEP 3: DRAFT ─────────────────────────────────────────
             if (isDraft)
             {
                 _context.SocialPosts.Add(new SocialPost
@@ -282,22 +332,26 @@ namespace SocialMediaPanel.Controllers
                     page_id = "",
                     post_id = "",
                     message = message,
-                    media_url = savedImagePaths, // Local wwwroot path yahan save hoga
+                    media_url = string.Join(",", savedPaths),
                     platform = platform,
                     status = "draft",
                     created_at = DateTime.UtcNow
                 });
-
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Draft saved with images in uploads folder." });
+                return Json(new { success = true, message = "Draft saved!" });
             }
-            // ─────────────────────────────────────────────────────────────
+
+            using var http = new HttpClient();
+            http.Timeout = TimeSpan.FromSeconds(120); // timeout badhao
+
+            // ─────────────────────────────────────────────────────────
             // FACEBOOK
-            // ─────────────────────────────────────────────────────────────
+            // FIX: ByteArrayContent sahi tarike se banao
+            // ─────────────────────────────────────────────────────────
             if (platform?.ToLower() == "fb" || platform?.ToLower() == "facebook")
             {
                 var page = await _context.FacebookPages
-                    .Where(x => x.user_id == userId)
+                    .Where(x => x.user_id == userId.ToString())
                     .OrderByDescending(x => x.id)
                     .FirstOrDefaultAsync();
 
@@ -308,13 +362,18 @@ namespace SocialMediaPanel.Controllers
                 string pageToken = page.page_access_token;
                 string? fbPostId = null;
 
-                if (images != null && images.Count == 1)
+                if (imageDataList.Count == 1)
                 {
                     // Single image
+                    var (bytes, contentType, fileName) = imageDataList[0];
+
+                    // FIX: ByteArrayContent alag banao, phir header set karo
+                    var imageContent = new ByteArrayContent(bytes);
+                    imageContent.Headers.ContentType =
+                        System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+
                     var mc = new MultipartFormDataContent();
-                    var sc = new StreamContent(images[0].OpenReadStream());
-                    sc.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(images[0].ContentType);
-                    mc.Add(sc, "source", images[0].FileName);
+                    mc.Add(imageContent, "source", fileName);
                     mc.Add(new StringContent(message ?? ""), "caption");
 
                     var r = await http.PostAsync(
@@ -325,16 +384,19 @@ namespace SocialMediaPanel.Controllers
 
                     fbPostId = JsonDocument.Parse(b).RootElement.GetProperty("id").GetString();
                 }
-                else if (images != null && images.Count > 1)
+                else if (imageDataList.Count > 1)
                 {
-                    // Multiple images → unpublished photos → one feed post
+                    // Multiple images → unpublished → one feed post
                     var photoIds = new List<string>();
-                    foreach (var img in images.Take(10))
+                    foreach (var (bytes, contentType, fileName) in imageDataList.Take(10))
                     {
+                        // FIX: ByteArrayContent alag banao
+                        var imageContent = new ByteArrayContent(bytes);
+                        imageContent.Headers.ContentType =
+                            System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
+
                         var mc = new MultipartFormDataContent();
-                        var sc = new StreamContent(img.OpenReadStream());
-                        sc.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(img.ContentType);
-                        mc.Add(sc, "source", img.FileName);
+                        mc.Add(imageContent, "source", fileName);
                         mc.Add(new StringContent("false"), "published");
 
                         var r = await http.PostAsync(
@@ -346,7 +408,7 @@ namespace SocialMediaPanel.Controllers
                         photoIds.Add(JsonDocument.Parse(b).RootElement.GetProperty("id").GetString() ?? "");
                     }
 
-                    // One feed post with all photos attached
+                    // One post with all photos
                     var feed = new MultipartFormDataContent();
                     feed.Add(new StringContent(message ?? ""), "message");
                     feed.Add(new StringContent(pageToken), "access_token");
@@ -381,29 +443,26 @@ namespace SocialMediaPanel.Controllers
                     page_id = pageId,
                     post_id = fbPostId ?? "",
                     message = message,
-                    media_url = "",
+                    media_url = string.Join(",", savedPaths),
                     platform = "facebook",
+                    status = "published",
                     created_at = DateTime.UtcNow
                 });
                 await _context.SaveChangesAsync();
                 return Json(new { success = true, message = "Posted to Facebook!", postId = fbPostId });
             }
 
-            // ─────────────────────────────────────────────────────────────
+            // ─────────────────────────────────────────────────────────
             // INSTAGRAM
-            // ImgBB se public URL → localhost + production dono pe kaam karta hai
-            // ─────────────────────────────────────────────────────────────
+            // FIX: imageDataList.Count check — savedFullUrls pe depend karo
+            // ─────────────────────────────────────────────────────────
             if (platform?.ToLower() == "ig" || platform?.ToLower() == "instagram")
             {
-                if (images == null || !images.Any())
+                // FIX: imageDataList check karo — savedFullUrls nahi
+                if (imageDataList.Count == 0)
                     return Json(new { success = false, message = "Instagram requires at least one image." });
 
-                // ImgBB API key check
-                var imgbbKey = _config["ImgBB:ApiKey"] ?? "";
-                if (string.IsNullOrEmpty(imgbbKey))
-                    return Json(new { success = false, message = "ImgBB:ApiKey missing in appsettings.json. Free key: https://api.imgbb.com" });
-
-                // Instagram token — UserTokens table → username=email → instagramtoken
+                // Instagram token
                 var igRow = await _context.UserTokens
                     .Where(t => t.username == userEmail
                              && t.instagramtoken != null
@@ -416,7 +475,7 @@ namespace SocialMediaPanel.Controllers
 
                 var igToken = igRow.instagramtoken!;
 
-                // Instagram User ID — /me se fetch karo
+                // Instagram User ID
                 var meR = await http.GetAsync(
                     $"https://graph.instagram.com/me?fields=id,username&access_token={igToken}");
                 var meB = await meR.Content.ReadAsStringAsync();
@@ -425,45 +484,41 @@ namespace SocialMediaPanel.Controllers
 
                 var igUserId = JsonDocument.Parse(meB).RootElement.GetProperty("id").GetString() ?? "";
 
-                // Images → ImgBB pe upload → public HTTPS URLs
-                var publicUrls = new List<string>();
-                foreach (var img in images.Take(10))
+                // FIX: Localhost pe savedFullUrls localhost URL hoga — override with ImgBB
+                if (baseUrl.Contains("localhost") || baseUrl.Contains("127.0.0.1"))
                 {
-                    // Image to Base64
-                    using var ms = new System.IO.MemoryStream();
-                    await img.CopyToAsync(ms);
-                    var base64 = Convert.ToBase64String(ms.ToArray());
+                    var imgbbKey = _config["ImgBB:ApiKey"] ?? "";
+                    if (string.IsNullOrEmpty(imgbbKey))
+                        return Json(new { success = false, message = "Localhost pe Instagram test ke liye ImgBB:ApiKey set karo appsettings.json mein." });
 
-                    // ImgBB upload
-                    var imgbbResp = await http.PostAsync(
-                        "https://api.imgbb.com/1/upload",
-                        new FormUrlEncodedContent(new[] {
-                            new KeyValuePair<string,string>("key",   imgbbKey),
-                            new KeyValuePair<string,string>("image", base64)
-                        }));
+                    savedFullUrls.Clear();
+                    foreach (var (bytes, _, _) in imageDataList)
+                    {
+                        var base64 = Convert.ToBase64String(bytes);
+                        var imgbbResp = await http.PostAsync(
+                            "https://api.imgbb.com/1/upload",
+                            new FormUrlEncodedContent(new[] {
+                                new KeyValuePair<string,string>("key",   imgbbKey),
+                                new KeyValuePair<string,string>("image", base64)
+                            }));
+                        var imgbbBody = await imgbbResp.Content.ReadAsStringAsync();
+                        if (!imgbbResp.IsSuccessStatusCode)
+                            return Json(new { success = false, message = "ImgBB upload failed: " + imgbbBody });
 
-                    var imgbbBody = await imgbbResp.Content.ReadAsStringAsync();
-                    if (!imgbbResp.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "ImgBB upload failed: " + imgbbBody });
-
-                    var imgUrl = JsonDocument.Parse(imgbbBody)
-                        .RootElement.GetProperty("data").GetProperty("url").GetString() ?? "";
-
-                    if (string.IsNullOrEmpty(imgUrl))
-                        return Json(new { success = false, message = "ImgBB returned empty URL" });
-
-                    publicUrls.Add(imgUrl);
+                        var imgUrl = JsonDocument.Parse(imgbbBody)
+                            .RootElement.GetProperty("data").GetProperty("url").GetString() ?? "";
+                        savedFullUrls.Add(imgUrl);
+                    }
                 }
 
                 string? igPostId = null;
 
-                if (publicUrls.Count == 1)
+                if (savedFullUrls.Count == 1)
                 {
-                    // Single image post
-                    // Step 1: Media container
+                    // Single image
                     var cr = await http.PostAsync(
                         $"https://graph.instagram.com/v19.0/{igUserId}/media"
-                        + $"?image_url={Uri.EscapeDataString(publicUrls[0])}"
+                        + $"?image_url={Uri.EscapeDataString(savedFullUrls[0])}"
                         + $"&caption={Uri.EscapeDataString(message ?? "")}"
                         + $"&access_token={igToken}", null);
                     var cb = await cr.Content.ReadAsStringAsync();
@@ -472,7 +527,6 @@ namespace SocialMediaPanel.Controllers
 
                     var cid = JsonDocument.Parse(cb).RootElement.GetProperty("id").GetString() ?? "";
 
-                    // Step 2: Publish
                     var pr = await http.PostAsync(
                         $"https://graph.instagram.com/v19.0/{igUserId}/media_publish"
                         + $"?creation_id={cid}&access_token={igToken}", null);
@@ -484,10 +538,9 @@ namespace SocialMediaPanel.Controllers
                 }
                 else
                 {
-                    // Carousel post (multiple images)
-                    // Step 1: Child container for each image
+                    // Carousel
                     var childIds = new List<string>();
-                    foreach (var url in publicUrls)
+                    foreach (var url in savedFullUrls)
                     {
                         var cr = await http.PostAsync(
                             $"https://graph.instagram.com/v19.0/{igUserId}/media"
@@ -496,12 +549,10 @@ namespace SocialMediaPanel.Controllers
                             + $"&access_token={igToken}", null);
                         var cb = await cr.Content.ReadAsStringAsync();
                         if (!cr.IsSuccessStatusCode)
-                            return Json(new { success = false, message = "IG child container failed: " + cb });
-
+                            return Json(new { success = false, message = "IG child failed: " + cb });
                         childIds.Add(JsonDocument.Parse(cb).RootElement.GetProperty("id").GetString() ?? "");
                     }
 
-                    // Step 2: Carousel container
                     var car = await http.PostAsync(
                         $"https://graph.instagram.com/v19.0/{igUserId}/media"
                         + $"?media_type=CAROUSEL"
@@ -510,11 +561,10 @@ namespace SocialMediaPanel.Controllers
                         + $"&access_token={igToken}", null);
                     var carB = await car.Content.ReadAsStringAsync();
                     if (!car.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "IG carousel container failed: " + carB });
+                        return Json(new { success = false, message = "IG carousel failed: " + carB });
 
                     var carId = JsonDocument.Parse(carB).RootElement.GetProperty("id").GetString() ?? "";
 
-                    // Step 3: Publish carousel
                     var pr = await http.PostAsync(
                         $"https://graph.instagram.com/v19.0/{igUserId}/media_publish"
                         + $"?creation_id={carId}&access_token={igToken}", null);
@@ -531,8 +581,9 @@ namespace SocialMediaPanel.Controllers
                     page_id = igUserId,
                     post_id = igPostId ?? "",
                     message = message,
-                    media_url = "",
+                    media_url = string.Join(",", savedPaths),
                     platform = "instagram",
+                    status = "published",
                     created_at = DateTime.UtcNow
                 });
                 await _context.SaveChangesAsync();
@@ -542,6 +593,8 @@ namespace SocialMediaPanel.Controllers
             return Json(new { success = false, message = "Unknown platform: " + platform });
         }
     }
+
+
 
     public class SocialPost
     {
