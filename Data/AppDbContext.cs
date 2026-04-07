@@ -156,5 +156,7 @@ namespace SocialMediaPanel.Data
 
         public DbSet<SocialPost> SocialPosts { get; set; }
         public DbSet<InstagramAccount> InstagramAccounts { get; set; }
+        public DbSet<LinkedInIntegration> LinkedInIntegrations { get; set; }
+        public DbSet<LinkedinPosts> LinkedInPosts { get; set; }
     }
 }
