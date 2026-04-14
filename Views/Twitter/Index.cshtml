@@ -788,7 +788,17 @@
                             </div>
                         </div>
                     </div>
+                    <form asp-action="GetMyTweets" asp-controller="Twitter" method="get">
+                                                <button type="submit" class="btn-disconnect">GetMyTweets</button>
+                    </form>
 
+                    <form asp-action="CreateTweet" asp-controller="Twitter" method="post">
+                        <div class="form-group">
+                            <label for="postContent">What's happening?</label>
+                            <textarea name="postContent" class="form-control" rows="3" placeholder="Type your tweet here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn-disconnect">Post to X (Twitter)</button>
+                    </form>
                     <!-- RIGHT — Compose + History -->
                     <div class="right-col">
 

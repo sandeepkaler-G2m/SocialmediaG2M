@@ -249,9 +249,11 @@ namespace SocialMediaPanel.Controllers
         [Route("LinkedIn/Disconnect")]
         public async Task<IActionResult> Disconnect()
         {
-            var userId = UserId;
+            //var userId = UserId;
+            var userId = HttpContext.Session.GetInt32("UserId");
+
             var integrations = await _db.LinkedInIntegrations
-                .Where(l => l.UserId == userId && l.IsActive)
+                .Where(l => l.UserId == userId.ToString() && l.IsActive)
                 .ToListAsync();
 
             foreach (var l in integrations)
@@ -273,9 +275,11 @@ namespace SocialMediaPanel.Controllers
         [Route("LinkedIn/PostHistory")]
         public async Task<IActionResult> PostHistory()
         {
-            var userId = UserId;
+            //var userId = UserId;
+            var userId = HttpContext.Session.GetInt32("UserId");
+
             var posts = await _db.LinkedInPosts
-                .Where(p => p.UserId == userId)
+                .Where(p => p.UserId == userId.ToString())
                 .OrderByDescending(p => p.CreatedAt)
                 .Take(30)
                 .Select(p => new {

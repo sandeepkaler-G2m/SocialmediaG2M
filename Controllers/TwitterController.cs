@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
+using NuGet.Protocol;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -74,74 +76,57 @@ namespace SocialMediaPanel.Controllers
         }
 
         // ══════════════════════════════════════════════════════
-        // GET /Twitter/Connect
-        // Twitter OAuth 2.0 PKCE flow start
+        // Step 1: Redirect user to Twitter login
         // ══════════════════════════════════════════════════════
         public IActionResult Connect()
         {
-            var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return RedirectToAction("Login", "Account");
-
-            var clientId = _config["TwitterAuth:ClientId"];
-            var redirectUri = _config["TwitterAuth:RedirectUri"];
-            var scope = "tweet.read tweet.write users.read offline.access";
-
-            // PKCE generate karo
             var codeVerifier = GenerateCodeVerifier();
             var codeChallenge = GenerateCodeChallenge(codeVerifier);
-            var state = Guid.NewGuid().ToString();
 
-            // Session mein save karo
-            HttpContext.Session.SetString("TwitterCodeVerifier", codeVerifier);
-            HttpContext.Session.SetString("TwitterState", state);
+            HttpContext.Session.SetString("tw_verifier", codeVerifier);
 
-            var query = new Dictionary<string, string?>
-            {
-                { "response_type",         "code"      },
-                { "client_id",             clientId    },
-                { "redirect_uri",          redirectUri },
-                { "scope",                 scope       },
-                { "state",                 state       },
-                { "code_challenge",        codeChallenge },
-                { "code_challenge_method", "S256"      }
-            };
+            string clientId = _config["TwitterAuth:ClientId"];
+            string redirectUri = _config["TwitterAuth:RedirectUri"];
+            string scope = _config["TwitterAuth:Scope"];
 
-            var url = QueryHelpers.AddQueryString(
-                "https://x.com/i/oauth2/authorize", query);
+            var query = new Dictionary<string, string>
+        {
+            { "response_type", "code" },
+            { "client_id", clientId },
+            { "redirect_uri", redirectUri },
+            { "scope", scope },
+            { "state", Guid.NewGuid().ToString() },
+            { "code_challenge", codeChallenge },
+            { "code_challenge_method", "S256" }
+        };
 
+            string url = QueryHelpers.AddQueryString("https://twitter.com/i/oauth2/authorize", query);
             return Redirect(url);
+
         }
 
         // ══════════════════════════════════════════════════════
-        // GET /Twitter/Callback
-        // Twitter OAuth callback
+        // Step 2: Twitter redirects back here with ?code=...
         // ══════════════════════════════════════════════════════
-        public async Task<IActionResult> Callback(
-            string? code, string? state, string? error)
+        [HttpGet]
+        public async Task<IActionResult> Callback(string? code, string? state, string? error)
         {
+
             var userId = HttpContext.Session.GetInt32("UserId");
-            if (userId == null)
-                return RedirectToAction("Login", "Account");
+            if (userId == null) return RedirectToAction("Login", "Account");
 
-            if (!string.IsNullOrEmpty(error))
+            // 1. Check for Twitter Errors
+            if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(code))
             {
-                TempData["TwitterError"] = "Twitter error.";
+                TempData["TwitterError"] = "Twitter authentication failed.";
                 return RedirectToAction("Index");
             }
 
-            if (string.IsNullOrEmpty(code))
-            {
-                TempData["TwitterError"] = "Twitter error.";
-                return RedirectToAction("Index");
-            }
-
-            var savedState = HttpContext.Session.GetString("TwitterState");
-            var codeVerifier = HttpContext.Session.GetString("TwitterCodeVerifier");
-
+            // 2. Retrieve PKCE Verifier from Session
+            var codeVerifier = HttpContext.Session.GetString("tw_verifier");
             if (string.IsNullOrEmpty(codeVerifier))
             {
-                TempData["TwitterError"] = "Session expired.";
+                TempData["TwitterError"] = "Session expired or PKCE verifier missing.";
                 return RedirectToAction("Index");
             }
 
@@ -149,77 +134,96 @@ namespace SocialMediaPanel.Controllers
             var clientSecret = _config["TwitterAuth:ClientSecret"];
             var redirectUri = _config["TwitterAuth:RedirectUri"];
 
-            // Token exchange karo
             var client = _httpClientFactory.CreateClient();
 
-            var tokenRequest = new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                { "client_id",     clientId!    },
-                { "grant_type",    "authorization_code" },
-                { "code",          code         },
-                { "redirect_uri",  redirectUri! },
-                { "code_verifier", codeVerifier }
-            });
+            // 3. Prepare the Token Request (Matching Python's oauth.fetch_token)
+            var tokenRequestParameters = new Dictionary<string, string>
+    {
+        { "grant_type", "authorization_code" },
+        { "code", code },
+        { "redirect_uri", redirectUri! },
+        { "code_verifier", codeVerifier },
+        { "client_id", clientId! } // V2 often requires this in the body
+    };
 
-            // Basic auth header
-            var credentials = Convert.ToBase64String(
-                Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
-            client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Basic", credentials);
+            var requestContent = new FormUrlEncodedContent(tokenRequestParameters);
 
-            var tokenResponse = await client.PostAsync(
-                "https://api.twitter.com/2/oauth2/token", tokenRequest);
+            // 4. Set Basic Auth Header (Matching Python's HTTPBasicAuth)
+            var authValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authValue);
 
+            // 5. Exchange Code for Token
+            var tokenResponse = await client.PostAsync("https://api.x.com/2/oauth2/token", requestContent);
             var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("Twitter token response: {Json}",
-                tokenJson[..Math.Min(200, tokenJson.Length)]);
 
             if (!tokenResponse.IsSuccessStatusCode)
             {
-                TempData["TwitterError"] = "Token exchange failed.";
+                TempData["Error"] = "Token exchange failed: " + tokenJson;
                 return RedirectToAction("Index");
             }
 
-            using var tokenDoc = JsonDocument.Parse(tokenJson);
-            var tokenRoot = tokenDoc.RootElement;
-            var accessToken = tokenRoot.TryGetProperty("access_token", out var at) ? at.GetString() : null;
-            var refreshToken = tokenRoot.TryGetProperty("refresh_token", out var rt) ? rt.GetString() : null;
-            var expiresIn = tokenRoot.TryGetProperty("expires_in", out var ei) ? ei.GetInt32() : 7200;
+            var json = JObject.Parse(tokenJson);
+
+            string accessToken = json["access_token"]?.ToString();
+            string refreshToken = json["refresh_token"]?.ToString();
+            int expiresIn = json["expires_in"] != null ? (int)json["expires_in"] : 7200;
 
             if (string.IsNullOrEmpty(accessToken))
             {
-                TempData["TwitterError"] = "Access token not found.";
+                TempData["Error"] = "Access token missing.";
                 return RedirectToAction("Index");
             }
 
-            // Twitter user info lo
+            // 🔹 STEP 2: FETCH USER INFO
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var userHttpResponse = await client.GetAsync(
-            "https://api.twitter.com/2/users/me?user.fields=name,username,profile_image_url");
-            var userResponse = await userHttpResponse.Content.ReadAsStringAsync();
+            var userRes = await client.GetAsync(
+                "https://api.twitter.com/2/users/me?user.fields=name,username,profile_image_url");
 
-            using var userDoc = JsonDocument.Parse(userResponse);
-            var userData = userDoc.RootElement.TryGetProperty("data", out var d) ? d : (JsonElement?)null;
+            var userJson = await userRes.Content.ReadAsStringAsync();
 
-            var twitterUserId = userData?.TryGetProperty("id", out var tid) == true ? tid.GetString() : null;
-            var twitterName = userData?.TryGetProperty("name", out var tn) == true ? tn.GetString() : null;
-            var twitterHandle = userData?.TryGetProperty("username", out var th) == true ? th.GetString() : null;
-            var profileImg = userData?.TryGetProperty("profile_image_url", out var pi) == true ? pi.GetString() : null;
+            // Default values (important)
+            string twitterUserId = "";
+            string twitterName = "";
+            string twitterHandle = "";
+            string profileImg = "";
 
-            // DB mein save/update karo
+            // ✅ SAFE PARSE (no crash)
+            try
+            {
+                using var userDoc = JsonDocument.Parse(userJson);
+
+                if (userDoc.RootElement.TryGetProperty("data", out var data))
+                {
+                    twitterUserId = data.TryGetProperty("id", out var tid) ? tid.GetString() : "";
+                    twitterName = data.TryGetProperty("name", out var tn) ? tn.GetString() : "";
+                    twitterHandle = data.TryGetProperty("username", out var th) ? th.GetString() : "";
+                    profileImg = data.TryGetProperty("profile_image_url", out var pi) ? pi.GetString() : "";
+                }
+                else
+                {
+                    // 🔥 API returned error instead of data
+                    Console.WriteLine("Twitter user API error: " + userJson);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 🔥 JSON parse error
+                Console.WriteLine("User parse error: " + ex.Message);
+            }
+
+            // 🔹 STEP 3: SAVE TO DB
             var existing = await _context.TwitterAccounts
-                .Where(t => t.UserId == userId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(t => t.UserId == userId.Value);
 
             if (existing != null)
             {
-                existing.TwitterUserId = twitterUserId!;
+                existing.TwitterUserId = twitterUserId ?? "";
                 existing.TwitterUsername = twitterHandle ?? "";
                 existing.TwitterName = twitterName ?? "";
-                existing.ProfileImageUrl = profileImg;
+                existing.ProfileImageUrl = profileImg ?? "";
                 existing.AccessToken = accessToken;
                 existing.RefreshToken = refreshToken;
                 existing.TokenExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
@@ -230,7 +234,7 @@ namespace SocialMediaPanel.Controllers
                 _context.TwitterAccounts.Add(new TwitterAccount
                 {
                     UserId = userId.Value,
-                    TwitterUserId = twitterUserId!,
+                    TwitterUserId = twitterUserId,
                     TwitterUsername = twitterHandle ?? "",
                     TwitterName = twitterName ?? "",
                     ProfileImageUrl = profileImg,
@@ -243,11 +247,113 @@ namespace SocialMediaPanel.Controllers
             }
 
             await _context.SaveChangesAsync();
-             
-            TempData["TwitterSuccess"] = $"Twitter connected! @{twitterHandle}";
+
+            TempData["Success"] = $"Twitter connected! @{twitterHandle}";
             return RedirectToAction("Index");
         }
 
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTweet(string postContent)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Unauthorized(new { success = false, message = "User not logged in" });
+
+                // 1. Get the stored Twitter account details
+                var twitterAccount = await _context.TwitterAccounts
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+
+                if (twitterAccount == null)
+                    return BadRequest(new { success = false, message = "Twitter not connected" });
+
+                // 2. Token Refresh Logic (Crucial for X API)
+                // If your token is expired, you would call your refresh method here
+                // similar to your Python self.xauth.get_access_token() logic.
+
+                var accessToken = twitterAccount.AccessToken;
+
+                // 3. Prepare the HTTP Client
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                // 4. Prepare the JSON Payload (Matching json={"text": post})
+                var tweetData = new { text = postContent };
+
+                // 5. Send POST request to https://api.x.com/2/tweets
+                var response = await client.PostAsJsonAsync("https://api.x.com/2/tweets", tweetData);
+                var result = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // If this fails with 401/403, check if it's the "CreditsDepleted" issue
+                    return BadRequest(new { success = false, message = "Failed to post tweet", detail = result });
+                }
+
+                return Ok(new { success = true, message = "Tweet posted successfully!", data = result });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> GetMyTweets()
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UserId");
+                if (userId == null)
+                    return Unauthorized(new { success = false, message = "User not logged in" });
+
+                var twitterAccount = await _context.TwitterAccounts
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+
+                if (twitterAccount == null)
+                    return BadRequest(new { success = false, message = "Twitter not connected" });
+
+                var accessToken = twitterAccount.AccessToken;
+                var twitterUserId = twitterAccount.TwitterUserId;
+
+                var client = _httpClientFactory.CreateClient();
+
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", accessToken);
+
+                client.DefaultRequestHeaders.Add("User-Agent", "MyApp");
+
+                string url = $"https://api.twitter.com/2/users/{twitterUserId}/tweets" +
+                             "?max_results=5&tweet.fields=created_at";
+
+                var response = await client.GetAsync(url);
+                var result = await response.Content.ReadAsStringAsync();
+
+                // 🔥 Debug log
+                Console.WriteLine("Status: " + response.StatusCode);
+                Console.WriteLine("Response: " + result);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        status = response.StatusCode,
+                        error = result
+                    });
+                }
+
+                return Content(result, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
         // ══════════════════════════════════════════════════════
         // POST /Twitter/PostTweet
         // Tweet post karo

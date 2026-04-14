@@ -17,13 +17,15 @@ namespace SocialMediaPanel.Controllers
         private readonly PostService _postService;
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
+        private readonly LinkedInService _linkedin;
 
-        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env, PostService postService)
+
+        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env, LinkedInService linkedInService, PostService postService)
         {
             _context = context;
             _config = config;
             _postService = postService;
-
+            _linkedin = linkedInService;
             _env = env;
         }
 
@@ -80,40 +82,40 @@ namespace SocialMediaPanel.Controllers
             if (!string.IsNullOrEmpty(fbtoken))
             {
 
-           
-
-            var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
-            var (pageId, pageToken) = page.Value;
 
 
-            // 1. ✅ Get Facebook Page Name
-            string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
-            var fbPageResponse = await httpClient.GetStringAsync(fbPageInfoUrl);
-            dynamic fbPageData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbPageResponse);
-            string fbPageName = fbPageData.name;
+                var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
+                var (pageId, pageToken) = page.Value;
 
-            // Fetch Facebook Posts
-            string fbUrl = $"https://graph.facebook.com/v19.0/{pageId}/posts"
-                             + $"?fields=message,full_picture,created_time,"
-                             + $"likes.summary(true),comments.summary(true),shares"
-                             + $"&access_token={pageToken}";
-            var fbResponse = await httpClient.GetStringAsync(fbUrl);
-            dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
 
-            foreach (var item in fbData.data)
-            {
-                allPosts.Add(new SocialPost
+                // 1. ✅ Get Facebook Page Name
+                string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
+                var fbPageResponse = await httpClient.GetStringAsync(fbPageInfoUrl);
+                dynamic fbPageData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbPageResponse);
+                string fbPageName = fbPageData.name;
+
+                // Fetch Facebook Posts
+                string fbUrl = $"https://graph.facebook.com/v19.0/{pageId}/posts"
+                                 + $"?fields=message,full_picture,created_time,"
+                                 + $"likes.summary(true),comments.summary(true),shares"
+                                 + $"&access_token={pageToken}";
+                var fbResponse = await httpClient.GetStringAsync(fbUrl);
+                dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
+
+                foreach (var item in fbData.data)
                 {
-                    platform = "facebook",
-                    account_name = fbPageName, // Added this
-                    message = item.message,
-                    media_url = item.full_picture,
-                    created_at = item.created_time,
-                    like_count = item.likes?.summary?.total_count ?? 0,
-                    comment_count = item.comments?.summary?.total_count ?? 0,
-                    share_count = item.shares?.count ?? 0
-                });
-            }
+                    allPosts.Add(new SocialPost
+                    {
+                        platform = "facebook",
+                        account_name = fbPageName, // Added this
+                        message = item.message,
+                        media_url = item.full_picture,
+                        created_at = item.created_time,
+                        like_count = item.likes?.summary?.total_count ?? 0,
+                        comment_count = item.comments?.summary?.total_count ?? 0,
+                        share_count = item.shares?.count ?? 0
+                    });
+                }
             }
 
 
@@ -195,7 +197,8 @@ namespace SocialMediaPanel.Controllers
             if (!string.IsNullOrEmpty(status) && status != "all")
                 query = query.Where(l => l.Status == status);
 
-            var leads = await query.OrderByDescending(l => l.CreatedAt).Select(l => new {
+            var leads = await query.OrderByDescending(l => l.CreatedAt).Select(l => new
+            {
                 id = l.Id,
                 leadId = l.LeadId,
                 name = l.FullName ?? "(No name)",
@@ -590,12 +593,128 @@ namespace SocialMediaPanel.Controllers
                 return Json(new { success = true, message = "Posted to Instagram!", postId = igPostId });
             }
 
+
+         
+
+                if (platform?.ToLower() == "li" || platform?.ToLower() == "linkedin")
+                {
+                    if (string.IsNullOrWhiteSpace(message))
+                        return Json(new { success = false, message = "Post text is required." });
+
+                    if (message.Length > 3000)
+                        return Json(new { success = false, message = "Post exceeds 3000 character limit." });
+
+                    var integration = await _context.LinkedInIntegrations
+                        .FirstOrDefaultAsync(l => l.UserId == userId.ToString() && l.IsActive);
+
+                    if (integration == null)
+                        return Json(new { success = false, message = "LinkedIn not connected." });
+
+                    // Refresh token
+                    var token = await _EnsureFreshTokenAsync(integration);
+                    if (string.IsNullOrEmpty(token))
+                        return Json(new { success = false, message = "LinkedIn token expired — reconnect required." });
+
+                    // Image handling (take first image only — LinkedIn supports single image in simple API)
+                    string? imageBase64 = null;
+                    string? imageMime = null;
+
+                    if (imageDataList.Count > 0)
+                    {
+                        var (bytes, contentType, _) = imageDataList[0];
+                        imageBase64 = Convert.ToBase64String(bytes);
+                        imageMime = contentType;
+                    }
+
+                    var record = new LinkedinPosts
+                    {
+                        UserId = userId.ToString(),
+                        PostText = message,
+                        ArticleUrl = null,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    try
+                    {
+                        var postId = await _linkedin.PostAsync(
+                            token,
+                            integration.LinkedInUserId,
+                            message,
+                            null,
+                            imageBase64,
+                            imageMime
+                        );
+
+                        record.PostId = postId;
+                        record.Status = "posted";
+                        record.PostedAt = DateTime.UtcNow;
+
+                        _context.LinkedInPosts.Add(record);
+
+                        // ALSO SAVE IN SocialPosts (same as FB & IG)
+                        _context.SocialPosts.Add(new SocialPost
+                        {
+                            user_id = userId,
+                            page_id = integration.LinkedInUserId,
+                            post_id = postId,
+                            message = message,
+                            media_url = string.Join(",", savedPaths),
+                            platform = "linkedin",
+                            status = "published",
+                            created_at = DateTime.UtcNow
+                        });
+
+                        await _context.SaveChangesAsync();
+                        await _context.SaveChangesAsync();
+
+                        return Json(new
+                        {
+                            success = true,
+                            message = "Posted to LinkedIn!",
+                            postId = postId
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        record.Status = "failed";
+                        record.ErrorMessage = ex.Message;
+
+                        _context.LinkedInPosts.Add(record);
+                        await _context.SaveChangesAsync();
+
+                        return Json(new
+                        {
+                            success = false,
+                            message = "LinkedIn post failed: " + ex.Message
+                        });
+                    }
+                }
+            
+
             return Json(new { success = false, message = "Unknown platform: " + platform });
         }
+
+        private async Task<string?> _EnsureFreshTokenAsync(LinkedInIntegration integration)
+        {
+            if (integration.TokenExpiresAt.HasValue &&
+                integration.TokenExpiresAt.Value > DateTime.UtcNow.AddMinutes(5))
+                return integration.AccessToken;
+
+            if (string.IsNullOrEmpty(integration.RefreshToken))
+                return null;
+
+            try
+            {
+                var (newToken, expiresIn) = await _linkedin.RefreshTokenAsync(integration.RefreshToken);
+                integration.AccessToken = newToken;
+                integration.TokenExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+                await _context.SaveChangesAsync();
+                return newToken;
+            }
+            catch { return null; }
+        }
+
     }
-
-
-
     public class SocialPost
     {
         public int id { get; set; }
