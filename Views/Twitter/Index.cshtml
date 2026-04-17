@@ -1,4 +1,5 @@
-﻿@{
+﻿@using SocialMediaPanel.Controllers
+@{
     ViewData["Title"] = "Twitter – SocialMediaPanel";
     var userName = ViewBag.UserName as string ?? "User";
     var userEmail = ViewBag.UserEmail as string ?? "";
@@ -8,6 +9,9 @@
     var twitterConnected = ViewBag.TwitterConnected as bool? ?? false;
     var twitterAccount = ViewBag.TwitterAccount as SocialMediaPanel.Models.TwitterAccount;
     var tweets = ViewBag.Tweets as List<SocialMediaPanel.Models.TweetPosted> ?? new();
+}
+@{
+    var myTweets = ViewBag.MyTweets as List<TwitterTweetItem>;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -695,6 +699,172 @@
             background: #d0d7de;
             border-radius: 3px;
         }
+
+        /* Container for the thumbnail */
+        .tweet-media-container {
+            margin-top: 8px;
+            width: 60px; /* Adjust this size to be as small as you want */
+            height: 60px;
+            border-radius: 6px;
+            overflow: hidden; /* Clips the image to the border-radius */
+            border: 1px solid #ddd;
+            display: inline-block; /* Allows it to sit next to other things if needed */
+        }
+
+        /* The actual image styling */
+        .tweet-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* This is the secret: it crops rather than stretches */
+            display: block;
+        }
+
+        /* Optional: Layout for the whole item to look like your screenshot */
+        .tweet-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+
+        .tw-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 9998;
+            display: none;
+        }
+
+            .tw-overlay.open {
+                display: block;
+            }
+
+        /* Sidebar */
+        .tw-sidebar {
+            position: fixed;
+            top: 0;
+            right: -480px;
+            width: 460px;
+            max-width: 100%;
+            height: 100vh;
+            background: #fff;
+            z-index: 9999;
+            box-shadow: -8px 0 30px rgba(0,0,0,.15);
+            transition: right .28s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+            .tw-sidebar.open {
+                right: 0;
+            }
+
+        /* Header */
+        .tw-head {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tw-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .tw-close {
+            border: none;
+            background: #f3f4f6;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        /* Body */
+        .tw-body {
+            padding: 18px;
+            overflow: auto;
+            flex: 1;
+        }
+
+        .tw-user {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .tw-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #1d9bf0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .tw-name {
+            font-weight: 700;
+        }
+
+        .tw-handle {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .tw-text {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+
+        .tw-meta {
+            font-size: 13px;
+            color: #6b7280;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 14px;
+            margin-bottom: 14px;
+        }
+
+        .tw-stats {
+            display: flex;
+            gap: 18px;
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+            .tw-stats strong {
+                color: #111827;
+            }
+
+        .tw-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tw-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            background: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+            .tw-btn:hover {
+                background: #f9fafb;
+            }
     </style>
 </head>
 <body>
@@ -781,27 +951,22 @@
                                 </div>
                             </div>
                             <div style="padding: 0 16px 16px">
+                                <button type="button" class="btn-disconnect" onclick="loadTweets()">
+                                    Get My Tweets
+                                </button>
                                 <form asp-action="Disconnect" asp-controller="Twitter" method="post">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn-disconnect">Disconnect Twitter</button>
                                 </form>
                             </div>
                         </div>
-                    </div>
-                    <form asp-action="GetMyTweets" asp-controller="Twitter" method="get">
-                                                <button type="submit" class="btn-disconnect">GetMyTweets</button>
-                    </form>
 
-                    <form asp-action="CreateTweet" asp-controller="Twitter" method="post">
-                        <div class="form-group">
-                            <label for="postContent">What's happening?</label>
-                            <textarea name="postContent" class="form-control" rows="3" placeholder="Type your tweet here..."></textarea>
-                        </div>
-                        <button type="submit" class="btn-disconnect">Post to X (Twitter)</button>
-                    </form>
+                       
+                    </div>
+               
                     <!-- RIGHT — Compose + History -->
                     <div class="right-col">
-
+                       
                         <!-- COMPOSE -->
                         <div class="compose-card">
                             <h3>
@@ -813,6 +978,8 @@
                                   placeholder="Kya chal raha hai? Tweet likho..."
                                   maxlength="280"
                                   oninput="updateCharCount(this)"></textarea>
+                            <input type="file" id="tweet-media" accept="image/*" />
+
                             <div class="compose-footer">
                                 <span class="char-count" id="char-count">0 / 280</span>
                                 <button class="btn-tweet" id="tweet-btn" onclick="postTweet()">
@@ -839,7 +1006,7 @@
                             {
                                 @foreach (var tweet in tweets)
                                 {
-                                    <div class="tweet-item">
+                                    <div class="tweet-item" onclick="openTwitterPopup('@tweet.TweetId', '@Html.Raw(tweet.TweetText.Replace("'", "\\'"))')">
                                         <div class="tweet-status-icon @tweet.Status">
                                             @if (tweet.Status == "posted")
                                             {
@@ -875,6 +1042,22 @@
             }
 
         </div>
+
+        <div class="tw-overlay" id="twOverlay" onclick="closeTwitterPopup()"></div>
+
+        <!-- Sidebar -->
+        <div class="tw-sidebar" id="twSidebar">
+            <div class="tw-head">
+                <div class="tw-title">Tweet Details</div>
+                <button class="tw-close" onclick="closeTwitterPopup()">×</button>
+            </div>
+
+            <div class="tw-body" id="twPopupBody">
+
+                <!-- Dynamic content here -->
+
+            </div>
+        </div>
     </main>
 
     <script>
@@ -887,56 +1070,53 @@
             else if (len > 240) counter.className = 'char-count warning';
         }
 
-        async function postTweet() {
+                async function postTweet() {
+
             var text = document.getElementById('tweet-text').value.trim();
-            var btn  = document.getElementById('tweet-btn');
+            var file = document.getElementById('tweet-media').files[0];
 
             if (!text) {
                 showToast('Tweet text empty hai!', 'error');
                 return;
             }
 
-            if (text.length > 280) {
-                showToast('Tweet 280 characters se zyada nahi ho sakta!', 'error');
-                return;
-            }
-
-            btn.disabled     = true;
-            btn.textContent  = 'Posting...';
+            var btn = document.getElementById('tweet-btn');
+            btn.disabled = true;
+            btn.textContent = 'Posting...';
 
             try {
-                var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                var token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                var formData = new FormData();
+                formData.append("tweetText", text);
+                formData.append("__RequestVerificationToken", token);
+
+                if (file) {
+                    formData.append("media", file);
+                }
 
                 var response = await fetch('/Twitter/PostTweet', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'RequestVerificationToken': token ?? ''
-                    },
-                    body: 'tweetText=' + encodeURIComponent(text)
-                        + '&__RequestVerificationToken=' + encodeURIComponent(token ?? '')
+                    body: formData
                 });
 
                 var data = await response.json();
 
                 if (data.success) {
-                    showToast('Tweet post ho gaya! ✅', 'success');
-                    document.getElementById('tweet-text').value = '';
-                    document.getElementById('char-count').textContent = '0 / 280';
-
-                    // Page reload karo history update ke liye
-                    setTimeout(function() { location.reload(); }, 1500);
+                    showToast('Tweet posted with media! ✅', 'success');
+                    location.reload();
                 } else {
-                    showToast(data.message || 'Tweet failed', 'error');
+                    showToast(data.message, 'error');
                 }
+
             } catch (err) {
-                showToast('Network error — dobara try karo', 'error');
+                showToast('Network error', 'error');
             }
 
-            btn.disabled    = false;
-            btn.innerHTML   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> Post Tweet';
+            btn.disabled = false;
+            btn.innerHTML = 'Post Tweet';
         }
-
         function showToast(message, type) {
             var existing = document.querySelector('.toast');
             if (existing) existing.remove();
@@ -958,7 +1138,196 @@
             }
         });
     </script>
+    <script>
+                async function loadTweets() {
+            try {
 
+                const res = await fetch('/Twitter/GetMyTweets');
+                const jsonResponse = await res.json();
+
+                const tweets = jsonResponse.data || [];
+                const mediaList = jsonResponse.includes?.media || [];
+
+                let html = `
+                    <div class="history-header">
+                        <h3>Recent Tweets</h3>
+                        <span style="font-size:12px;color:var(--muted)">Live Tweets</span>
+                    </div>
+                `;
+
+                tweets.forEach(t => {
+
+                    let mediaHtml = "";
+                    let popupImage = "";
+
+                    let cleanText = (t.text || "")
+                        .replace(/https:\/\/t.co\/\w+$/, "")
+                        .trim();
+
+                    // media
+                    if (t.attachments?.media_keys) {
+
+                        t.attachments.media_keys.forEach(key => {
+
+                            const mediaItem = mediaList.find(m => m.media_key === key);
+
+                            if (mediaItem?.url) {
+
+                                mediaHtml += `
+                                    <div class="tweet-media-container">
+                                        <img src="${mediaItem.url}" class="tweet-thumb">
+                                    </div>
+                                `;
+
+                                popupImage = mediaItem.url;
+                            }
+                        });
+                    }
+
+                    // SAFE text for onclick
+                    const safeText = encodeURIComponent(cleanText);
+                    const safeImg = encodeURIComponent(popupImage);
+
+                    html += `
+                        <div class="tweet-item"
+                             onclick="openTwitterPopup('${t.id}','${safeText}','${safeImg}')">
+
+                            <div class="tweet-status-icon posted">🐦</div>
+
+                            <div class="tweet-body">
+
+                                <div class="tweet-text">${cleanText}</div>
+
+                                ${mediaHtml}
+
+                                <div class="tweet-meta">
+                                    <span>${t.created_at || ""}</span>
+                                    <a href="https://twitter.com/i/web/status/${t.id}" target="_blank">
+                                        View →
+                                    </a>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+                });
+
+                document.querySelector(".history-card").innerHTML = html;
+
+            } catch (err) {
+                console.log("ERROR:", err);
+            }
+        }
+                 function openTwitterPopup(tweetId, tweetText, imageUrl){
+
+
+                             loadReplies(tweetId);
+            document.getElementById("twOverlay").classList.add("open");
+            document.getElementById("twSidebar").classList.add("open");
+
+               tweetText = decodeURIComponent(tweetText || "");
+    imageUrl  = decodeURIComponent(imageUrl || "").trim();
+
+            let imageHtml = "";
+
+                    if (imageUrl.startsWith("http")) {
+
+            imageHtml = `
+                <div style="margin-top:15px">
+                    <img src="${imageUrl}"
+                         style="width:100%;border-radius:12px;max-height:340px;object-fit:cover;">
+                </div>
+            `;
+        }
+
+            document.getElementById("twPopupBody").innerHTML = `
+                <div class="tw-user">
+                    <div class="tw-avatar">A</div>
+                    <div>
+                        <div class="tw-name">@(twitterAccount?.TwitterName ?? "—")</div>
+                        <div class="tw-handle">@(twitterAccount?.TwitterUsername ?? "—")</div>
+                    </div>
+                </div>
+
+            <div class="tw-text">${tweetText}</div>
+
+                ${imageHtml}
+
+                <div class="tw-meta">
+                    Tweet ID: ${tweetId}
+                </div>
+
+                    <hr style="margin:15px 0">
+
+        <h4 style="margin-bottom:10px">Replies</h4>
+
+        <div id="tweetReplies">
+           
+        </div>
+            `;
+        }
+
+        function closeTwitterPopup(){
+            document.getElementById("twOverlay").classList.remove("open");
+            document.getElementById("twSidebar").classList.remove("open");
+        }
+
+        function escapeHtml(str){
+            return str
+              .replace(/&/g,"&amp;")
+              .replace(/</g,"&lt;")
+              .replace(/>/g,"&gt;");
+        }
+    </script>
+    <script>
+        async function loadReplies(tweetId) {
+
+            var repliesBox = document.getElementById("popupReplies");
+
+            /* popupReplies div not found */
+            if (!repliesBox) {
+                console.log("popupReplies element not found");
+                return;
+            }
+
+            repliesBox.innerHTML =
+                '<div style="padding:12px;color:#666;font-size:13px;">Loading replies...</div>';
+
+            try {
+
+                var res = await fetch('/Twitter/GetReplies?tweetId=' + tweetId);
+                var data = await res.json();
+
+                if (!data.success || !data.replies || data.replies.length === 0) {
+
+                    repliesBox.innerHTML =
+                        '<div style="padding:12px;color:#777;font-size:13px;">No replies found</div>';
+
+                    return;
+                }
+
+                var html = "";
+
+                data.replies.forEach(function (r) {
+
+                    html += '<div style="padding:12px;border-bottom:1px solid #eee;">';
+                    html += '<div style="font-weight:600;">@@' + (r.username || "user") + '</div>';
+                    html += '<div style="margin-top:4px;">' + (r.text || "") + '</div>';
+                    html += '<div style="font-size:11px;color:#999;margin-top:6px;">' + (r.created_at || "") + '</div>';
+                    html += '</div>';
+
+                });
+
+                repliesBox.innerHTML = html;
+
+            } catch (err) {
+
+                repliesBox.innerHTML =
+                    '<div style="padding:12px;color:#777;font-size:13px;">No replies found</div>';
+            }
+        }
+    </script>
     @Html.AntiForgeryToken()
 </body>
 </html>

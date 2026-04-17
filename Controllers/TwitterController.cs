@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Protocol;
 using SocialMediaPanel.Data;
@@ -253,6 +254,34 @@ namespace SocialMediaPanel.Controllers
         }
 
 
+        [HttpGet]
+        public async Task<IActionResult> GetTweetReplies(string tweetId)
+        {
+
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            var twitterAccount = await _context.TwitterAccounts
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+
+
+            var accessToken = twitterAccount.AccessToken;
+
+            using var client = new HttpClient();
+
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url =
+                $"https://api.twitter.com/2/tweets/search/recent" +
+                $"?query=conversation_id:{tweetId}" +
+                $"&tweet.fields=created_at,author_id,public_metrics";
+
+            var response = await client.GetAsync(url);
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return Content(json, "application/json");
+        }
 
         [HttpPost]
         public async Task<IActionResult> CreateTweet(string postContent)
@@ -305,54 +334,34 @@ namespace SocialMediaPanel.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMyTweets()
         {
-            try
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            var twitterAccount = await _context.TwitterAccounts
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+
+            var client = _httpClientFactory.CreateClient();
+
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", twitterAccount.AccessToken);
+
+            // UPDATED URL: Added expansions and media.fields
+            // attachments.media_keys -> links tweets to media
+            // media.fields=url -> gives the actual image link
+            string url = $"https://api.twitter.com/2/users/{twitterAccount.TwitterUserId}/tweets" +
+                         "?max_results=5" +
+                         "&tweet.fields=created_at,attachments" +
+                         "&expansions=attachments.media_keys" +
+                         "&media.fields=url,preview_image_url,type";
+
+            var response = await client.GetAsync(url);
+            var json = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
             {
-                var userId = HttpContext.Session.GetInt32("UserId");
-                if (userId == null)
-                    return Unauthorized(new { success = false, message = "User not logged in" });
-
-                var twitterAccount = await _context.TwitterAccounts
-                    .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
-
-                if (twitterAccount == null)
-                    return BadRequest(new { success = false, message = "Twitter not connected" });
-
-                var accessToken = twitterAccount.AccessToken;
-                var twitterUserId = twitterAccount.TwitterUserId;
-
-                var client = _httpClientFactory.CreateClient();
-
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", accessToken);
-
-                client.DefaultRequestHeaders.Add("User-Agent", "MyApp");
-
-                string url = $"https://api.twitter.com/2/users/{twitterUserId}/tweets" +
-                             "?max_results=5&tweet.fields=created_at";
-
-                var response = await client.GetAsync(url);
-                var result = await response.Content.ReadAsStringAsync();
-
-                // 🔥 Debug log
-                Console.WriteLine("Status: " + response.StatusCode);
-                Console.WriteLine("Response: " + result);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return BadRequest(new
-                    {
-                        success = false,
-                        status = response.StatusCode,
-                        error = result
-                    });
-                }
-
-                return Content(result, "application/json");
+                return Json(new { success = false, message = json });
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
+
+            return Content(json, "application/json");
         }
         // ══════════════════════════════════════════════════════
         // POST /Twitter/PostTweet
@@ -360,7 +369,7 @@ namespace SocialMediaPanel.Controllers
         // ══════════════════════════════════════════════════════
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PostTweet(string tweetText)
+        public async Task<IActionResult> PostTweet(string tweetText, IFormFile? media)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
@@ -372,25 +381,76 @@ namespace SocialMediaPanel.Controllers
             if (tweetText.Length > 280)
                 return Json(new { success = false, message = "Tweet 280 characters se zyada nahi ho sakta" });
 
+
             var account = await _context.TwitterAccounts
                 .Where(t => t.UserId == userId && t.IsActive)
                 .FirstOrDefaultAsync();
 
             if (account == null)
-                return Json(new { success = false, message = "Twitter connect nahi hai" });
+                return Json(new { success = false, message = "Twitter not connected" });
 
             // Token refresh karo agar expire ho
             var validToken = await GetValidToken(account);
             if (string.IsNullOrEmpty(validToken))
                 return Json(new { success = false, message = "Twitter token expire — reconnect karo" });
 
+
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", validToken);
 
-            var payload = JsonSerializer.Serialize(new { text = tweetText });
-            var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("https://api.twitter.com/2/tweets", content);
+
+            string? mediaId = null;
+
+            if (media != null)
+            {
+                mediaId = await UploadMedia(media, validToken);
+
+                if (string.IsNullOrEmpty(mediaId))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Media upload failed"
+                    });
+                }
+            }
+
+            object tweetPayload;
+
+            if (!string.IsNullOrEmpty(mediaId))
+            {
+                tweetPayload = new
+                {
+                    text = tweetText,
+                    media = new
+                    {
+                        media_ids = new[] { mediaId }
+                    }
+                };
+            }
+            else
+            {
+                tweetPayload = new
+                {
+                    text = tweetText
+                };
+            }
+
+            var jsonPayload = System.Text.Json.JsonSerializer.Serialize(tweetPayload);
+
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", validToken);
+
+            var content = new StringContent(jsonPayload, Encoding.UTF8);
+            content.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+            var response = await client.PostAsync(
+                "https://api.twitter.com/2/tweets",
+                content
+            );
+
             var respJson = await response.Content.ReadAsStringAsync();
 
             _logger.LogInformation("Tweet response: {Json}", respJson);
@@ -420,7 +480,7 @@ namespace SocialMediaPanel.Controllers
                 return Json(new
                 {
                     success = true,
-                    message = "Tweet post ho gaya! ✅",
+                    message = "Tweet posted ✅",
                     tweetId = tweetId
                 });
             }
@@ -434,10 +494,50 @@ namespace SocialMediaPanel.Controllers
 
                 // Rate limit check
                 if ((int)response.StatusCode == 429)
-                    return Json(new { success = false, message = "Rate limit hit — 15 minute baad try karo" });
+                    return Json(new { success = false, message = "Rate limit hit — retry in 15 minute" });
 
-                return Json(new { success = false, message = "Tweet failed — dobara try karo" });
+                return Json(new { success = false, message = "Tweet failed — retry" });
             }
+        }
+
+
+        private async Task<string> UploadMedia(IFormFile file, string token)
+        {
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // This boundary is important for multipart consistency
+            var boundary = Guid.NewGuid().ToString();
+            using var form = new MultipartFormDataContent(boundary);
+
+            var stream = file.OpenReadStream();
+            var fileContent = new StreamContent(stream);
+
+            // 1. MUST set the correct Content-Type for the image part
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+
+            // 2. The field name must be "media" for the v2/media/upload endpoint
+            // We add it with the filename to ensure the header is complete
+            form.Add(fileContent, "media", file.FileName);
+
+            // 3. MANDATORY: You must specify the category for v2 to process it
+            form.Add(new StringContent("tweet_image"), "media_category");
+
+            // 4. Hit the V2 endpoint
+            var response = await client.PostAsync("https://api.twitter.com/2/media/upload", form);
+            var json = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                // Check this log! If it's still 400, the JSON will tell us 
+                // if it's "Invalid media type" or "Media category missing"
+                _logger.LogError("Twitter API Detail: {Json}", json);
+                return null;
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            // V2 returns: { "data": { "id": "..." } }
+            return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
         }
 
         // ══════════════════════════════════════════════════════
@@ -464,7 +564,7 @@ namespace SocialMediaPanel.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            TempData["TwitterSuccess"] = "Twitter disconnect ho gaya.";
+            TempData["TwitterSuccess"] = "Twitter disconnected.";
             return RedirectToAction("Index");
         }
 
@@ -579,5 +679,17 @@ namespace SocialMediaPanel.Controllers
                 .Replace("+", "-")
                 .Replace("/", "_")
                 .Replace("=", "");
+    }
+
+    public class TwitterApiResponse
+    {
+        public List<TwitterTweetItem> Data { get; set; }
+    }
+
+    public class TwitterTweetItem
+    {
+        public string Id { get; set; }
+        public string Text { get; set; }
+        public DateTime Created_At { get; set; }
     }
 }

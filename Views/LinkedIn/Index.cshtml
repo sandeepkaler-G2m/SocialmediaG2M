@@ -11,6 +11,14 @@
     bool connected = integration != null;
 }
 
+@{
+
+    var dummyLeads = new List<dynamic> {
+        new { Id = 1, FullName = "Sarah Jenkins", Email = "sarah.j@techcorp.com", CompanyName = "TechCorp Solutions", CreatedAt = DateTime.Now.AddDays(-1) },
+        new { Id = 2, FullName = "Michael Chen", Email = "m.chen@innovate.io", CompanyName = "Innovate UI", CreatedAt = DateTime.Now.AddDays(-2) },
+        new { Id = 3, FullName = "Alex Rivera", Email = "arivera@globalsoft.net", CompanyName = "GlobalSoft", CreatedAt = DateTime.Now.AddDays(-3) }
+    };
+}
 <style>
     body.li-page .page-content { overflow-y:auto; }
 
@@ -413,6 +421,38 @@
             </div>
         }
 
+
+        <div class="li-card">
+            <div class="li-card-head" style="padding: 15px; border-bottom: 1px solid #eee;">
+                <h3 style="margin:0;">LinkedIn Leads (Dummy data)</h3>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width:100%; border-collapse: collapse; min-width: 500px;">
+                    <thead>
+                        <tr style="background: #f9fafb; text-align: left; font-size: 12px; color: #666; text-transform: uppercase;">
+                            <th style="padding: 12px;">Name</th>
+                            <th style="padding: 12px;">Company</th>
+                            <th style="padding: 12px;">Date</th>
+                            <th style="padding: 12px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lead in dummyLeads)
+                        {
+                            <tr style="border-bottom: 1px solid #eee; font-size: 13px;">
+                                <td style="padding: 12px;">
+                                    <div style="font-weight: 600;">@lead.FullName</div>
+                                    <div style="font-size: 11px; color: #777;">@lead.Email</div>
+                                </td>
+                                <td style="padding: 12px;">@lead.CompanyName</td>
+                                <td style="padding: 12px;">@lead.CreatedAt.ToString("MMM d")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div><!-- /.li-right -->
 </div><!-- /.li-shell -->
 @section Scripts {
