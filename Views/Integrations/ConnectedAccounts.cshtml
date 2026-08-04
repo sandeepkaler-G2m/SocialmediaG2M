@@ -1,0 +1,103 @@
+@using SocialMediaPanel.Controllers
+@using SocialMediaPanel.Services
+@{
+    ViewData["Title"] = "Connected Accounts";
+    var fbPages = ViewBag.FbPages as List<FacebookPageEntity> ?? new();
+    var igAccounts = ViewBag.IgAccounts as List<InstagramAccount> ?? new();
+    string? activeFbId = ViewBag.ActiveFbId;
+    string? activeIgId = ViewBag.ActiveIgId;
+}
+
+<style>
+    .ca-header { margin-bottom: 20px; }
+    .ca-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .ca-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    .ca-section { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:18px; }
+    .ca-sec-title { font-family:'Sora',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+    .ca-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:10px; }
+    .ca-row:last-child { margin-bottom:0; }
+    .ca-row-left { display:flex; flex-direction:column; gap:3px; }
+    .ca-name { font-size:13.5px; font-weight:600; color:var(--text); }
+    .ca-meta { font-size:11.5px; color:var(--muted); }
+    .ca-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; }
+    .ca-badge.active { background:rgba(75,181,67,.12); color:var(--green); }
+    .ca-empty { text-align:center; padding:24px 0; color:var(--muted); font-size:13px; }
+</style>
+
+<div class="ca-header">
+    <div class="ca-title">Connected Accounts</div>
+    <div class="ca-subtitle">Yeh saare Facebook Pages aur Instagram accounts hain jo aapke login se connect hain. Jo "Active" hai wahi Compose/Posts/Inbox mein default use hota hai.</div>
+</div>
+
+<div class="ca-section">
+    <div class="ca-sec-title">📘 Facebook Pages (@fbPages.Count)</div>
+    @if (fbPages.Count == 0)
+    {
+        <div class="ca-empty">Koi Facebook Page connected nahi hai. <a asp-controller="Dashboard" asp-action="Index">Dashboard</a> se connect karo.</div>
+    }
+    else
+    {
+        foreach (var p in fbPages)
+        {
+            var isActive = p.page_id == activeFbId;
+            <div class="ca-row">
+                <div class="ca-row-left">
+                    <div class="ca-name">@p.page_name</div>
+                    <div class="ca-meta">Page ID: @p.page_id &middot; Connected: @p.created_at.ToString("dd MMM yyyy, hh:mm tt")</div>
+                </div>
+                @if (isActive)
+                {
+                    <span class="ca-badge active">● Active</span>
+                }
+                else
+                {
+                    <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('facebook','@p.page_id')">Make Active</button>
+                }
+            </div>
+        }
+    }
+</div>
+
+<div class="ca-section">
+    <div class="ca-sec-title">📸 Instagram Accounts (@igAccounts.Count)</div>
+    @if (igAccounts.Count == 0)
+    {
+        <div class="ca-empty">Koi Instagram account connected nahi hai. <a asp-controller="Dashboard" asp-action="Index">Dashboard</a> se connect karo.</div>
+    }
+    else
+    {
+        foreach (var a in igAccounts)
+        {
+            var isActive = a.InstagramUserId == activeIgId;
+            <div class="ca-row">
+                <div class="ca-row-left">
+                    <div class="ca-name">@@@a.Username</div>
+                    <div class="ca-meta">Account ID: @a.InstagramUserId &middot; Connected: @a.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
+                </div>
+                @if (isActive)
+                {
+                    <span class="ca-badge active">● Active</span>
+                }
+                else
+                {
+                    <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('instagram','@a.InstagramUserId')">Make Active</button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function setActive(platform, pageId) {
+            var fd = new FormData();
+            fd.append('platform', platform);
+            fd.append('pageId', pageId);
+            fetch('/Integrations/SetActivePage', { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => { if (d.success) location.reload(); else alert(d.message || 'Failed'); });
+        }
+    </script>
+}

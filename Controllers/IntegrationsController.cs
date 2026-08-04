@@ -488,6 +488,24 @@ namespace SocialMediaPanel.Controllers
             });
         }
 
+        public async Task<IActionResult> ConnectedAccounts()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account");
+
+            var fbPages = await _activePages.GetAllFacebookPagesAsync(userId.Value);
+            var igAccounts = await _activePages.GetAllInstagramAccountsAsync(userId.Value);
+            var activeFb = await _activePages.GetActiveFacebookPageAsync(userId.Value);
+            var activeIg = await _activePages.GetActiveInstagramAccountAsync(userId.Value);
+
+            ViewBag.ActiveFbId = activeFb?.page_id;
+            ViewBag.ActiveIgId = activeIg?.InstagramUserId;
+            ViewBag.FbPages = fbPages;
+            ViewBag.IgAccounts = igAccounts;
+
+            return View();
+        }
+
         [HttpPost]
         [Route("Integrations/SetActivePage")]
         public async Task<IActionResult> SetActivePage([FromForm] string? platform, [FromForm] string? pageId)
