@@ -1,6 +1,7 @@
 ﻿using Google.Apis.Auth.OAuth2;
 using Google.Apis.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
@@ -30,32 +31,62 @@ namespace SocialMediaPanel.Controllers
         private readonly AppDbContext _db;
         private readonly GmailService _gmail;
         private readonly GmailIntegrationService _gmailIntegration;
+        private readonly AuditLogService _audit;
 
         public GmailController(
             AppDbContext db,
             GmailService gmail,
-            GmailIntegrationService gmailIntegration)
+            GmailIntegrationService gmailIntegration,
+            AuditLogService audit)
         {
             _db = db;
             _gmail = gmail;
             _gmailIntegration = gmailIntegration;
+            _audit = audit;
         }
 
         // ── Helper: get current user ID ──────────────────────────────
-
-        // ── Helper: get current user ID ──────────────────────────────
+        // Every action below calls this as a plain argument (e.g.
+        // _gmailIntegration.GetAsync(UserId)) OUTSIDE any try/catch, so
+        // throwing here 500'd every Gmail endpoint whenever the session had
+        // expired or the user was never logged in. Returning "" instead lets
+        // GmailIntegrationService.GetAsync("") fall through to its normal
+        // "integration == null" branch, which every caller already handles.
         private string UserId
         {
             get
             {
                 var userId = HttpContext.Session.GetInt32("UserId");
-
-                if (userId == null)
-                    throw new Exception("Session expired");
-
-                return userId.Value.ToString();
+                return userId?.ToString() ?? "";
             }
         }
+
+        // ── Belt-and-braces: block every action except NotConnected when
+        // there's no session, instead of leaning only on GmailIntegrationService
+        // treating "" as "no match" (see the security note on GetAsync).
+        // Page-rendering GETs (Inbox/Compose without ajaxOnly) redirect to
+        // Login; everything else — including AJAX Inbox — gets a 401 JSON.
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            var action = context.ActionDescriptor.RouteValues["action"] ?? "";
+            var isNotConnected = string.Equals(action, "NotConnected", StringComparison.OrdinalIgnoreCase);
+
+            if (!isNotConnected && HttpContext.Session.GetInt32("UserId") == null)
+            {
+                var isPageRender =
+                    (string.Equals(action, "Inbox", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(action, "Compose", StringComparison.OrdinalIgnoreCase)) &&
+                    Request.Method == HttpMethods.Get &&
+                    Request.Headers["X-Requested-With"] != "XMLHttpRequest";
+
+                context.Result = isPageRender
+                    ? new RedirectToActionResult("Login", "Account", null)
+                    : new UnauthorizedObjectResult(new { success = false, message = "Not logged in" });
+            }
+
+            base.OnActionExecuting(context);
+        }
+
         // ══════════════════════════════════════════════════════════════
         // INBOX — list emails
         // GET /Gmail/Inbox?q=is:unread&max=20
@@ -353,14 +384,18 @@ namespace SocialMediaPanel.Controllers
         // ══════════════════════════════════════════════════════════════
         // DISCONNECT — revoke token + mark inactive
         // POST /Gmail/Disconnect
-        // ══════════════════════════════════════════════════════════════
+        // Note: no [ValidateAntiForgeryToken] — the Inbox page's JS calls this
+        // via a plain fetch() with no body/token (and the view never renders
+        // one), so the attribute would 400 every real disconnect click. This
+        // matches the pattern used by the app's other session-gated JSON
+        // endpoints (e.g. Leads/Delete).
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Disconnect()
         {
             try
             {
                 await _gmailIntegration.DisconnectAsync(UserId);
+                _audit.Log(HttpContext.Session.GetInt32("UserId"), "gmail.disconnect", "");
                 return Json(new { success = true, message = "Gmail disconnected." });
             }
             catch (Exception ex)

@@ -539,7 +539,7 @@
 </style>
 
 <!-- ══ POST DETAILS TAB ═══════════════════════════════════════════ -->
-<div class="pm-pane active" id="pm-details">
+<div class="pm-pane active" id="pm-details" data-page-id="@Model.PageId">
 
     <!-- Brand row -->
     <div class="pm-brand-row">
@@ -650,6 +650,8 @@
                                     </span>
                                 }
                                 <button class="pm-cmt-action" onclick="toggleReply('@c.CommentId')">Reply</button>
+                                <button class="pm-cmt-action" onclick="hideComment('@c.CommentId', this)">Hide</button>
+                                <button class="pm-cmt-action" style="color:#dc3545" onclick="deleteComment('@c.CommentId', this)">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -786,6 +788,16 @@
             </div>
         }
     </div>
+
+    @if (Model.Platform == "facebook")
+    {
+        <div class="pm-stats-section" id="pmBoostSection" data-post-id="@Model.PostId" data-page-id="@Model.PageId">
+            <div class="pm-stats-title">BOOST THIS POST</div>
+            <div id="pmBoostBody">
+                <button class="pm-cmt-action" style="color:var(--green);font-weight:700" onclick="loadBoostWidget()">Load ad accounts…</button>
+            </div>
+        </div>
+    }
 
     <div class="pm-stats-section">
         <div class="pm-stats-title">IMPRESSIONS</div>

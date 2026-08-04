@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
+using SocialMediaPanel.Services;
 using System.Text;
 using System.Text.Json;
 
@@ -10,16 +11,21 @@ namespace SocialMediaPanel.Controllers
     public class InboxController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly ActivePageService _activePages;
 
-        public InboxController(AppDbContext db)
+        public InboxController(AppDbContext db, ActivePageService activePages)
         {
             _db = db;
+            _activePages = activePages;
         }
 
         // ── Index — renders the Smart Inbox page ─────────────────────
         [HttpGet]
         public async Task<IActionResult> Index()
         {
+            if (HttpContext.Session.GetInt32("UserId") == null)
+                return RedirectToAction("Login", "Account");
+
             var items = await GetMergedItems();
             var jsonOptions = new JsonSerializerOptions
             {
@@ -35,6 +41,9 @@ namespace SocialMediaPanel.Controllers
         [Route("Inbox/GetAll")]
         public async Task<IActionResult> GetAll()
         {
+            if (HttpContext.Session.GetInt32("UserId") == null)
+                return Unauthorized();
+
             var items = await GetMergedItems();
             return Json(items);
         }
@@ -111,6 +120,7 @@ namespace SocialMediaPanel.Controllers
                     else if (req.Platform == "instagram" || req.Platform == "instagram_dm")
                     {
                         var result = await SendFacebookCommentReplyAsync(comment.CommentId ?? "", req.Message, comment.PostId ?? "");
+                        apiSuccess = result.Success;
                         apiError = result.Error;
                     }
                 }
@@ -299,29 +309,51 @@ namespace SocialMediaPanel.Controllers
         }
 
         // ── Get page access token from DB ────────────────────────────
+        // Resolves the token for the SPECIFIC page/account that owns this
+        // comment/message (by pageId), not just "any" connected page — matters
+        // as soon as a user has more than one Page connected.
         private async Task<string?> GetPageAccessTokenAsync(string pageId, string platform)
         {
             var userid = HttpContext.Session.GetInt32("UserId");
+            if (userid == null) return null;
 
-            var account = await _db.FacebookPages
-                .Where(a => a.user_id == userid.ToString())
-                .Select(a => a.page_access_token)
-                .FirstOrDefaultAsync();
+            if (platform == "instagram" || platform == "instagram_dm")
+            {
+                var linkedPage = await _activePages.GetLinkedPageForInstagramAsync(userid.Value, pageId);
+                if (linkedPage != null) return linkedPage.page_access_token;
+            }
 
-            return account;
+            var pages = await _activePages.GetAllFacebookPagesAsync(userid.Value);
+            var exact = pages.FirstOrDefault(p => p.page_id == pageId);
+            if (exact != null) return exact.page_access_token;
+
+            // Fallback: single-page users / unmatched id — use the active page
+            var active = await _activePages.GetActiveFacebookPageAsync(userid.Value);
+            return active?.page_access_token;
         }
 
         // ── Private: merge comments + messages into unified list ──────
         private async Task<List<InboxItem>> GetMergedItems()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
+
             var pageIds = await _db.FacebookPages
                 .Where(o => o.user_id == userId.ToString())
                 .Select(o => o.page_id)
                 .Distinct()
                 .ToListAsync();
 
-            var comments = await _db.PageComments.Where(l => pageIds.Contains(l.PageId))
+            var pageIdsig = await _db.InstagramAccounts
+                .Where(m => m.UserId == userId.ToString())
+                .Select(m => m.InstagramUserId)
+                .ToListAsync();
+
+            // Combine ALL page IDs into one list to avoid missing matches
+            var allPageIds = pageIds.Concat(pageIdsig).Distinct().ToList();
+
+            // ── Comments ──────────────────────────────────────────────────
+            var comments = await _db.PageComments
+                .Where(c => allPageIds.Contains(c.PageId))
                 .OrderByDescending(c => c.CommentTime ?? c.CreatedAt)
                 .Select(c => new InboxItem
                 {
@@ -329,54 +361,172 @@ namespace SocialMediaPanel.Controllers
                     ItemType = "comment",
                     Platform = c.Platform,
                     SenderId = c.SenderId ?? "",
-                    // Show name if available, otherwise show shortened sender ID
                     SenderName = !string.IsNullOrEmpty(c.SenderName)
-                                    ? c.SenderName
-                                    : !string.IsNullOrEmpty(c.SenderId)
-                                        ? "User " + c.SenderId.Substring(Math.Max(0, c.SenderId.Length - 6))
-                                        : "Unknown",
+                                      ? c.SenderName
+                                      : !string.IsNullOrEmpty(c.SenderId)
+                                          ? "User " + c.SenderId.Substring(Math.Max(0, c.SenderId.Length - 6))
+                                          : "Unknown",
                     Message = c.Message ?? "",
                     PostId = c.PostId ?? "",
                     PageId = c.PageId ?? "",
-                    CommentType = c.CommentType,
+                    CommentId = c.CommentId ?? "",   // ← map CommentId
+                    CommentType = c.CommentType ?? "comment",
                     IsReplied = false,
                     Time = c.CommentTime ?? c.CreatedAt
                 })
                 .ToListAsync();
 
-            var pageIdsig = await _db.InstagramAccounts
-                .Where(m => m.UserId == userId.ToString())
-                .Select(m => m.InstagramUserId) // 🔥 only PageId
-                .ToListAsync();
+            // ── Messages ──────────────────────────────────────────────────
+            // After fetching messages, group by SenderId+Platform and keep only latest per conversation
+            var messages = (await _db.PageMessages
+                .Where(m => allPageIds.Contains(m.PageId))
+                .OrderByDescending(m => m.MessageTime ?? m.CreatedAt)
+                .ToListAsync())
+                .GroupBy(m => new { m.SenderId, m.Platform, m.PageId })  // group by conversation
+                .Select(g => g.First())  // keep only the latest message per conversation
+                .Select(m => new InboxItem
+                {
+                    Id = m.Id,
+                    ItemType = "message",
+                    Platform = m.Platform,
+                    SenderId = m.SenderId ?? "",
+                    SenderName = !string.IsNullOrEmpty(m.SenderName)
+                                      ? m.SenderName
+                                      : !string.IsNullOrEmpty(m.SenderId)
+                                          ? "User " + m.SenderId.Substring(Math.Max(0, m.SenderId.Length - 6))
+                                          : "Unknown",
+                    Message = m.MessageText ?? "",
+                    PostId = "",
+                    PageId = m.PageId ?? "",
+                    CommentId = "",
+                    CommentType = "message",
+                    IsReplied = m.IsReplied,
+                    Time = m.MessageTime ?? m.CreatedAt
+                })
+                .ToList();
 
-            var messages = await _db.PageMessages
-    .Where(o => pageIdsig.Contains(o.PageId)) // ✅ now both string
-    .OrderByDescending(m => m.MessageTime ?? m.CreatedAt)
-    .Select(m => new InboxItem
-    {
-        Id = m.Id,
-        ItemType = "message",
-        Platform = m.Platform,
-        SenderId = m.SenderId ?? "",
-        SenderName = !string.IsNullOrEmpty(m.SenderName)
-                        ? m.SenderName
-                        : !string.IsNullOrEmpty(m.SenderId)
-                            ? "User " + m.SenderId.Substring(Math.Max(0, m.SenderId.Length - 6))
-                            : "Unknown",
-        Message = m.MessageText ?? "",
-        PostId = "",
-        PageId = m.PageId ?? "",
-        CommentType = "message",
-        IsReplied = m.IsReplied,
-        Time = m.MessageTime ?? m.CreatedAt
-    })
-    .ToListAsync();
-
-            // Merge and sort newest first
             return comments
                 .Concat(messages)
+                .DistinctBy(x => new { x.Id, x.ItemType })  // ← prevent duplicates
                 .OrderByDescending(x => x.Time)
                 .ToList();
+        }
+
+        // After receiving a DM webhook, fetch the sender name
+        private async Task<string> GetFacebookUserNameAsync(string senderId, string pageAccessToken)
+        {
+            try
+            {
+                var client = new HttpClient();
+                var url = $"https://graph.facebook.com/v19.0/{senderId}?fields=name&access_token={pageAccessToken}";
+                var resp = await client.GetAsync(url);
+                var json = await resp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                return doc.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+            }
+            catch { return ""; }
+        }
+
+        // In your webhook controller, when saving a new message:
+        private async Task EnrichAndSaveMessage(PageMessage msg, string pageAccessToken)
+        {
+            // Fetch sender name from Facebook/Instagram Graph API
+            if (string.IsNullOrEmpty(msg.SenderName) && !string.IsNullOrEmpty(msg.SenderId))
+            {
+                msg.SenderName = await GetSenderNameAsync(msg.SenderId, pageAccessToken, msg.Platform);
+            }
+
+            _db.PageMessages.Add(msg);
+            await _db.SaveChangesAsync();
+        }
+
+
+
+        private async Task<string> GetSenderNameAsync(string senderId, string accessToken, string platform)
+        {
+            try
+            {
+                var client = new HttpClient();
+                string url;
+
+                if (platform == "instagram" || platform == "instagram_dm")
+                {
+                    // Instagram: fetch username
+                    url = $"https://graph.facebook.com/v19.0/{senderId}?fields=name,username&access_token={accessToken}";
+                }
+                else
+                {
+                    // Facebook: fetch name
+                    url = $"https://graph.facebook.com/v19.0/{senderId}?fields=name&access_token={accessToken}";
+                }
+
+                var resp = await client.GetAsync(url);
+                var json = await resp.Content.ReadAsStringAsync();
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                // Try name first, then username
+                if (root.TryGetProperty("name", out var name) && !string.IsNullOrEmpty(name.GetString()))
+                    return name.GetString()!;
+
+                if (root.TryGetProperty("username", out var uname) && !string.IsNullOrEmpty(uname.GetString()))
+                    return "@" + uname.GetString();
+
+                return "";
+            }
+            catch { return ""; }
+        }
+        [HttpGet]
+        [Route("Inbox/BackfillNames")]
+        public async Task<IActionResult> BackfillNames()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+
+            // Get page token
+            var page = await _db.FacebookPages
+                .FirstOrDefaultAsync(p => p.user_id == userId.ToString());
+
+            if (page == null) return Json(new { error = "No page found" });
+
+            var token = page.page_access_token;
+
+            // Find all messages with missing sender names
+            var messages = await _db.PageMessages
+                .Where(m => string.IsNullOrEmpty(m.SenderName) && !string.IsNullOrEmpty(m.SenderId))
+                .ToListAsync();
+
+            var client = new HttpClient();
+            int updated = 0;
+
+            foreach (var msg in messages)
+            {
+                try
+                {
+                    var url = $"https://graph.facebook.com/v19.0/{msg.SenderId}?fields=name,username&access_token={token}";
+                    var resp = await client.GetAsync(url);
+                    var json = await resp.Content.ReadAsStringAsync();
+
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    string name = "";
+                    if (root.TryGetProperty("name", out var n)) name = n.GetString() ?? "";
+                    else if (root.TryGetProperty("username", out var u)) name = "@" + u.GetString();
+
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        msg.SenderName = name;
+                        updated++;
+                    }
+                }
+                catch { /* skip this one */ }
+
+                await Task.Delay(50); // avoid rate limit
+            }
+
+            await _db.SaveChangesAsync();
+            return Json(new { success = true, updated });
         }
     }
 
@@ -384,7 +534,7 @@ namespace SocialMediaPanel.Controllers
     public class InboxItem
     {
         public int Id { get; set; }
-        public string ItemType { get; set; } = "comment";  // "comment" | "message"
+        public string ItemType { get; set; } = "comment";
         public string Platform { get; set; } = "";
         public string SenderId { get; set; } = "";
         public string SenderName { get; set; } = "";
@@ -392,7 +542,8 @@ namespace SocialMediaPanel.Controllers
         public string PostId { get; set; } = "";
         public string PageId { get; set; } = "";
         public string PostName { get; set; } = "";
-        public string CommentType { get; set; } = "comment";  // "comment" | "mention" | "live_comment"
+        public string CommentId { get; set; } = "";   // ← ADD THIS
+        public string CommentType { get; set; } = "comment";
         public bool IsReplied { get; set; }
         public DateTime Time { get; set; }
     }

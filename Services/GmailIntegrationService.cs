@@ -77,8 +77,14 @@ namespace SocialMediaPanel.Services
         }
 
         // ── Get active integration ────────────────────────────────────
+        // SECURITY: never let an empty/missing userId match a row. A row with
+        // an empty UserId column existing in the live DB previously meant an
+        // unauthenticated caller (userId == "") could match it and get back
+        // a real, unrelated user's connected Gmail account.
         public async Task<GmailIntegration?> GetAsync(string userId)
         {
+            if (string.IsNullOrWhiteSpace(userId)) return null;
+
             return await _db.GmailIntegrations
                 .Where(g => g.UserId.Trim() == userId.Trim() && g.IsActive == true)
                 .OrderByDescending(g => g.ConnectedAt)

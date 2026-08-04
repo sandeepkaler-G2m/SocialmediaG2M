@@ -1,0 +1,126 @@
+@*
+    _PageSwitcher.cshtml — Facebook Page / Instagram account switcher
+    ------------------------------------------------------------------
+    Renders a small dropdown so users with more than one connected Page
+    or Instagram account can pick which one the current screen acts on.
+    Selection is persisted server-side in session (see
+    IntegrationsController.SetActivePage) and read by ActivePageService
+    on every request, so it applies across Dashboard, Compose, Posts and Inbox.
+
+    Usage: @await Html.PartialAsync("_PageSwitcher")
+*@
+<div class="pgsw-wrap" id="pageSwitcherWrap">
+    <button type="button" class="pgsw-btn" id="pgswBtn" onclick="PageSwitcher.toggle()">
+        <span class="pgsw-dot"></span>
+        <span id="pgswLabel">Loading…</span>
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+    </button>
+    <div class="pgsw-menu" id="pgswMenu"></div>
+</div>
+
+<style>
+    .pgsw-wrap { position: relative; display: inline-block; }
+    .pgsw-btn {
+        display: flex; align-items: center; gap: 7px;
+        padding: 7px 12px; background: #fff; border: 1px solid #e3e6ea;
+        border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 12.5px;
+        font-weight: 600; color: #1a2332; cursor: pointer; white-space: nowrap;
+    }
+    .pgsw-btn:hover { border-color: #4BB543; }
+    .pgsw-dot { width: 7px; height: 7px; border-radius: 50%; background: #4BB543; flex-shrink: 0; }
+    .pgsw-menu {
+        display: none; position: absolute; top: calc(100% + 6px); left: 0;
+        min-width: 240px; background: #fff; border: 1px solid #e3e6ea;
+        border-radius: 10px; box-shadow: 0 10px 32px rgba(0,0,0,.14); z-index: 600;
+        overflow: hidden;
+    }
+    .pgsw-menu.open { display: block; }
+    .pgsw-group-label {
+        padding: 8px 12px 4px; font-size: 10px; font-weight: 800; color: #8a97a8;
+        text-transform: uppercase; letter-spacing: .06em;
+    }
+    .pgsw-item {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        padding: 9px 12px; font-size: 13px; color: #1a2332; cursor: pointer;
+    }
+    .pgsw-item:hover { background: #f4f5f7; }
+    .pgsw-item.active { color: #4BB543; font-weight: 700; background: rgba(75,181,67,.06); }
+    .pgsw-empty { padding: 12px; font-size: 12px; color: #8a97a8; }
+</style>
+
+<script>
+(function () {
+    var state = { fb: [], ig: [], activeFb: null, activeIg: null };
+
+    function render() {
+        var menu = document.getElementById('pgswMenu');
+        var label = document.getElementById('pgswLabel');
+        var parts = [];
+
+        if (state.fb.length) {
+            parts.push('<div class="pgsw-group-label">Facebook Pages</div>');
+            state.fb.forEach(function (p) {
+                var active = p.page_id === state.activeFb ? ' active' : '';
+                parts.push('<div class="pgsw-item' + active + '" onclick="PageSwitcher.select(\'facebook\',\'' + p.page_id + '\')">' + escHtml(p.page_name) + (active ? ' &#10003;' : '') + '</div>');
+            });
+        }
+        if (state.ig.length) {
+            parts.push('<div class="pgsw-group-label">Instagram Accounts</div>');
+            state.ig.forEach(function (a) {
+                var active = a.id === state.activeIg ? ' active' : '';
+                parts.push('<div class="pgsw-item' + active + '" onclick="PageSwitcher.select(\'instagram\',\'' + a.id + '\')">@@' + escHtml(a.name) + (active ? ' &#10003;' : '') + '</div>');
+            });
+        }
+        if (!parts.length) parts.push('<div class="pgsw-empty">No pages connected yet.</div>');
+        menu.innerHTML = parts.join('');
+
+        var activePage = state.fb.find(function (p) { return p.page_id === state.activeFb; });
+        label.textContent = activePage ? activePage.page_name : (state.fb.length || state.ig.length ? 'Select page' : 'No page connected');
+    }
+
+    function escHtml(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    window.PageSwitcher = {
+        load: function () {
+            fetch('/Integrations/MyPages', { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.success) return;
+                    state.fb = d.facebookPages || [];
+                    state.ig = d.instagramAccounts || [];
+                    state.activeFb = d.activeFacebookPageId;
+                    state.activeIg = d.activeInstagramId;
+                    render();
+                })
+                .catch(function () {});
+        },
+        toggle: function () {
+            document.getElementById('pgswMenu').classList.toggle('open');
+        },
+        select: function (platform, pageId) {
+            var body = new URLSearchParams({ platform: platform, pageId: pageId });
+            fetch('/Integrations/SetActivePage', {
+                method: 'POST', credentials: 'same-origin', body: body
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) location.reload();
+            });
+        }
+    };
+
+    document.addEventListener('click', function (e) {
+        var wrap = document.getElementById('pageSwitcherWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            var menu = document.getElementById('pgswMenu');
+            if (menu) menu.classList.remove('open');
+        }
+    });
+
+    PageSwitcher.load();
+})();
+</script>

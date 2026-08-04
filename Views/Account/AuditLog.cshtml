@@ -1,0 +1,36 @@
+@model List<string>
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<style>
+    .aud-header { margin-bottom:20px; }
+    .aud-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .aud-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    .aud-table-wrap { background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .aud-row { padding:10px 18px; font-size:12.5px; font-family:'DM Sans',monospace; color:var(--text); border-bottom:1px solid var(--border); word-break:break-word; }
+    .aud-row:last-child { border-bottom:none; }
+    .aud-row:nth-child(odd) { background:var(--bg); }
+
+    .aud-empty { text-align:center; padding:60px 0; color:var(--muted); font-size:13px; }
+</style>
+
+<div class="aud-header">
+    <div class="aud-title">Audit Log</div>
+    <div class="aud-subtitle">Most recent @Model.Count consequential action(s) — post publishing, lead changes, comment moderation, ad boosts, disconnects.</div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="aud-empty">No actions logged yet.</div>
+}
+else
+{
+    <div class="aud-table-wrap">
+        @foreach (var line in Model)
+        {
+            <div class="aud-row">@line</div>
+        }
+    </div>
+}

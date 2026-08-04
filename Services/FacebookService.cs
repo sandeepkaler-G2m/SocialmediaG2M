@@ -21,26 +21,16 @@ namespace SocialMediaPanel.Services
         private string AppId => _config["Facebook:AppId"] ?? throw new InvalidOperationException("Facebook:AppId not set in appsettings.json");
         private string AppSecret => _config["Facebook:AppSecret"] ?? throw new InvalidOperationException("Facebook:AppSecret not set in appsettings.json");
 
-        //string RedirectUri = "https://localhost:7276/Integrations/Callback/facebook";
-        string RedirectUri = "https://social.go2market.in:8084/Integrations/Callback/facebook";
-
-        //private string RedirectUri => _config["Facebook:RedirectUri"] ?? throw new InvalidOperationException("Facebook:RedirectUri not set in appsettings.json");
-
-        private static readonly string[] Scopes =
-        {
-            "pages_manage_posts",
-            "pages_read_engagement",
-            "pages_manage_comments",
-            "ads_management"
-        };
-
-        string scope = "public_profile,email,pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_engagement,pages_manage_posts,pages_read_user_content,leads_retrieval";
-
+        // Read from appsettings.json (Facebook:RedirectUri) so switching between
+        // local testing and production is a config change, not a code edit —
+        // must exactly match a "Valid OAuth Redirect URI" in the Meta App dashboard.
+        private string RedirectUri => _config["Facebook:RedirectUri"]
+            ?? throw new InvalidOperationException("Facebook:RedirectUri not set in appsettings.json");
 
         // ── Step 1: Build OAuth URL ──────────────────────────────────
         public string BuildOAuthUrl(string state)
         {
-            var scopeStr = string.Join(",", scope);
+            var scopeStr = MetaScopes.Full;
             return "https://www.facebook.com/v19.0/dialog/oauth"
                  + $"?client_id={Uri.EscapeDataString(AppId)}"
                  + $"&redirect_uri={Uri.EscapeDataString(RedirectUri)}"
@@ -122,6 +112,111 @@ namespace SocialMediaPanel.Services
             var r = await _http.DeleteAsync(
                 $"https://graph.facebook.com/v19.0/me/permissions?access_token={Uri.EscapeDataString(accessToken)}");
             return r.IsSuccessStatusCode;
+        }
+
+        // ── Page-level insights: views/engagement + fan count ─────────────
+        // Requires pages_read_engagement. Wrapped defensively — some page
+        // metrics get deprecated/renamed across Graph API versions, so a
+        // failure here just leaves the numbers at 0 instead of breaking Reports.
+        //
+        // Confirmed live against the current API version: page_impressions,
+        // page_impressions_unique, page_engaged_users and page_fan_adds are all
+        // now rejected ("The value must be a valid insights metric"). Meta has
+        // been steadily retiring Page-level impression/engagement metrics;
+        // page_views_total, page_post_engagements and page_follows are the
+        // current replacements that still validate.
+        public async Task<(int Impressions, int ImpressionsUnique, int EngagedUsers, int Fans)> GetPageInsightsAsync(
+            string pageId, string pageToken)
+        {
+            int pageViews = 0, postEngagements = 0, follows = 0, fans = 0;
+
+            try
+            {
+                var url = $"https://graph.facebook.com/v19.0/{pageId}/insights" +
+                          $"?metric=page_views_total,page_post_engagements,page_follows" +
+                          $"&period=days_28&access_token={Uri.EscapeDataString(pageToken)}";
+                var body = await _http.GetStringAsync(url);
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("data", out var data))
+                {
+                    foreach (var metric in data.EnumerateArray())
+                    {
+                        var name = metric.TryGetProperty("name", out var n) ? n.GetString() : "";
+                        int sum = 0;
+                        if (metric.TryGetProperty("values", out var values))
+                        {
+                            foreach (var v in values.EnumerateArray())
+                                if (v.TryGetProperty("value", out var val) && val.ValueKind == System.Text.Json.JsonValueKind.Number)
+                                    sum += val.GetInt32();
+                        }
+                        switch (name)
+                        {
+                            case "page_views_total": pageViews = sum; break;
+                            case "page_post_engagements": postEngagements = sum; break;
+                            case "page_follows": follows = sum; break;
+                        }
+                    }
+                }
+            }
+            catch { /* metric may be unavailable for this API version/page */ }
+
+            try
+            {
+                var fanUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=fan_count&access_token={Uri.EscapeDataString(pageToken)}";
+                var fanBody = await _http.GetStringAsync(fanUrl);
+                using var fanDoc = System.Text.Json.JsonDocument.Parse(fanBody);
+                if (fanDoc.RootElement.TryGetProperty("fan_count", out var fc) && fc.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    fans = fc.GetInt32();
+            }
+            catch { /* optional */ }
+
+            return (pageViews, follows, postEngagements, fans);
+        }
+
+        // ── Lead forms + leads (leads_retrieval) — manual pull fallback ────
+        public async Task<List<(string FormId, string Name)>> GetLeadFormsAsync(string pageId, string pageToken)
+        {
+            var forms = new List<(string, string)>();
+            try
+            {
+                var url = $"https://graph.facebook.com/v19.0/{pageId}/leadgen_forms" +
+                          $"?fields=id,name&access_token={Uri.EscapeDataString(pageToken)}";
+                var body = await _http.GetStringAsync(url);
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("data", out var data))
+                {
+                    foreach (var f in data.EnumerateArray())
+                    {
+                        var id = f.TryGetProperty("id", out var idp) ? idp.GetString() : null;
+                        var name = f.TryGetProperty("name", out var np) ? np.GetString() : "";
+                        if (!string.IsNullOrEmpty(id)) forms.Add((id, name ?? ""));
+                    }
+                }
+            }
+            catch { /* no forms / permission missing */ }
+            return forms;
+        }
+
+        public async Task<List<(string LeadId, string RawJson)>> GetFormLeadsAsync(string formId, string pageToken)
+        {
+            var leads = new List<(string, string)>();
+            try
+            {
+                var url = $"https://graph.facebook.com/v19.0/{formId}/leads" +
+                          $"?fields=id,field_data,created_time&access_token={Uri.EscapeDataString(pageToken)}";
+                var body = await _http.GetStringAsync(url);
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("data", out var data))
+                {
+                    foreach (var l in data.EnumerateArray())
+                    {
+                        var id = l.TryGetProperty("id", out var idp) ? idp.GetString() : null;
+                        if (!string.IsNullOrEmpty(id)) leads.Add((id, l.GetRawText()));
+                    }
+                }
+            }
+            catch { /* no leads / permission missing */ }
+            return leads;
         }
     }
 

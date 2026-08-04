@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
 using SocialMediaPanel.Services;
+using System.Text.Json;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -14,7 +15,6 @@ namespace SocialMediaPanel.Controllers
         private readonly IDataProtector _protector;
         private readonly IWebHostEnvironment _env;
 
-        // Cookie-based auth (matches rest of project)
         private string UserId =>
             Request.Cookies.TryGetValue("userId", out var id) && !string.IsNullOrEmpty(id)
                 ? id
@@ -37,24 +37,65 @@ namespace SocialMediaPanel.Controllers
         // ══════════════════════════════════════════════════════════════
         public async Task<IActionResult> Index()
         {
-            var Userid = HttpContext.Session.GetInt32("UserId");
-            var username = HttpContext.Session.GetString("UserEmail");
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account");
 
             var integration = await _db.LinkedInIntegrations
-                .FirstOrDefaultAsync(l => l.UserId == Userid.ToString() && l.IsActive);
+                .FirstOrDefaultAsync(l => l.UserId == userId.ToString() && l.IsActive);
 
             var posts = new List<LinkedinPosts>();
+
+            // Scope flags — drive which sections render in the view
+            var grantedScopes = integration?.GrantedScopes?
+    .Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+    ?? Array.Empty<string>();
+
+            bool hasProfile = grantedScopes.Contains("openid") || grantedScopes.Contains("profile") || grantedScopes.Contains("r_liteprofile");
+            bool hasPosting = grantedScopes.Contains("w_member_social");
+            bool hasOrgAccess = grantedScopes.Contains("r_organization_admin");
+            bool hasLeadsAccess = grantedScopes.Contains("r_marketing_leadgen_automation") || grantedScopes.Contains("r_ads_leadgen_automation");
+            bool hasAdsAccess = grantedScopes.Contains("r_ads");
+            bool hasEventsAccess = grantedScopes.Contains("r_events") || grantedScopes.Contains("rw_events");
+
+            List<(string Urn, string Name, string? LogoUrl)> organizations = new();
+            List<Dictionary<string, JsonElement>> leads = new();
+
             if (integration != null)
             {
                 posts = await _db.LinkedInPosts
-                    .Where(p => p.UserId == Userid.ToString())
+                    .Where(p => p.UserId == userId.ToString())
                     .OrderByDescending(p => p.CreatedAt)
                     .Take(20)
                     .ToListAsync();
+
+                var token = await _EnsureFreshTokenAsync(integration);
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    if (hasOrgAccess)
+                    {
+                        try { organizations = await _linkedin.GetOrganizationsAsync(token); }
+                        catch (Exception ex) { TempData["LinkedInError"] = "Could not load organization pages: " + ex.Message; }
+                    }
+
+                    if (hasLeadsAccess && organizations.Any())
+                    {
+                        try { leads = await _linkedin.GetLeadsAsync(token, organizations.First().Urn); }
+                        catch (Exception ex) { TempData["LinkedInError"] = "Could not load leads: " + ex.Message; }
+                    }
+                }
             }
 
             ViewBag.Integration = integration;
             ViewBag.Posts = posts;
+            ViewBag.HasProfile = hasProfile;
+            ViewBag.HasPosting = hasPosting;
+            ViewBag.HasOrgAccess = hasOrgAccess;
+            ViewBag.HasLeadsAccess = hasLeadsAccess;
+            ViewBag.HasAdsAccess = hasAdsAccess;
+            ViewBag.HasEventsAccess = hasEventsAccess;
+            ViewBag.Organizations = organizations;
+            ViewBag.Leads = leads;
             ViewBag.Success = TempData["LinkedInSuccess"] as string;
             ViewBag.Error = TempData["LinkedInError"] as string;
 
@@ -108,16 +149,13 @@ namespace SocialMediaPanel.Controllers
 
             try
             {
-                var (accessToken, expiresIn, refreshToken) = await _linkedin.ExchangeCodeAsync(code);
+                var (accessToken, expiresIn, refreshToken, grantedScopes) = await _linkedin.ExchangeCodeAsync(code);
                 var (liId, name, picture, email) = await _linkedin.GetProfileAsync(accessToken);
 
-                //var userId = UserId;
                 var userId = HttpContext.Session.GetInt32("UserId");
-                var username = HttpContext.Session.GetString("UserEmail");
 
                 var existing = await _db.LinkedInIntegrations
                     .FirstOrDefaultAsync(l => l.UserId == userId.ToString());
-
 
                 if (existing != null)
                 {
@@ -128,6 +166,7 @@ namespace SocialMediaPanel.Controllers
                     existing.AccessToken = accessToken;
                     existing.RefreshToken = refreshToken ?? existing.RefreshToken;
                     existing.TokenExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
+                    existing.GrantedScopes = grantedScopes;
                     existing.IsActive = true;
                     existing.DisconnectedAt = null;
                     existing.ConnectedAt = DateTime.UtcNow;
@@ -144,6 +183,7 @@ namespace SocialMediaPanel.Controllers
                         AccessToken = accessToken,
                         RefreshToken = refreshToken,
                         TokenExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn),
+                        GrantedScopes = grantedScopes,
                         IsActive = true,
                         ConnectedAt = DateTime.UtcNow
                     });
@@ -178,21 +218,17 @@ namespace SocialMediaPanel.Controllers
                 return Json(new { success = false, message = "Post exceeds 3000 character limit." });
 
             var Userid = HttpContext.Session.GetInt32("UserId");
-            var username = HttpContext.Session.GetString("UserEmail");
 
-            //var userId = UserId;
             var integration = await _db.LinkedInIntegrations
                 .FirstOrDefaultAsync(l => l.UserId == Userid.ToString() && l.IsActive);
 
             if (integration == null)
                 return Json(new { success = false, message = "LinkedIn not connected." });
 
-            // Refresh token if expiring
             var token = await _EnsureFreshTokenAsync(integration);
             if (string.IsNullOrEmpty(token))
                 return Json(new { success = false, message = "LinkedIn token expired — please reconnect." });
 
-            // Read image if provided
             string? imageBase64 = null;
             string? imageMime = null;
             if (image != null && image.Length > 0)
@@ -249,7 +285,6 @@ namespace SocialMediaPanel.Controllers
         [Route("LinkedIn/Disconnect")]
         public async Task<IActionResult> Disconnect()
         {
-            //var userId = UserId;
             var userId = HttpContext.Session.GetInt32("UserId");
 
             var integrations = await _db.LinkedInIntegrations
@@ -275,7 +310,6 @@ namespace SocialMediaPanel.Controllers
         [Route("LinkedIn/PostHistory")]
         public async Task<IActionResult> PostHistory()
         {
-            //var userId = UserId;
             var userId = HttpContext.Session.GetInt32("UserId");
 
             var posts = await _db.LinkedInPosts
@@ -301,20 +335,31 @@ namespace SocialMediaPanel.Controllers
         private bool _ValidateState(string? state, out string error)
         {
             error = "";
-            if (string.IsNullOrEmpty(state)) { error = "Missing state parameter."; return false; }
-            try
+
+            if (string.IsNullOrWhiteSpace(state))
             {
-                var raw = _protector.Unprotect(state);
-                var parts = raw.Split('|');
-                if (parts.Length < 3 || parts[0] != "linkedin") { error = "Invalid state."; return false; }
-                if (long.TryParse(parts[2], out var ts))
-                {
-                    if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() - ts > 600)
-                    { error = "OAuth session expired — please try again."; return false; }
-                }
-                return true;
+                error = "Missing state.";
+                return false;
             }
-            catch { error = "Invalid state parameter."; return false; }
+
+            var sessionState = HttpContext.Session.GetString("LinkedInOAuthState");
+
+            if (string.IsNullOrWhiteSpace(sessionState))
+            {
+                error = "OAuth session expired.";
+                return false;
+            }
+
+            if (!string.Equals(state, sessionState, StringComparison.Ordinal))
+            {
+                error = "Invalid state.";
+                return false;
+            }
+
+            // Remove after successful validation
+            HttpContext.Session.Remove("LinkedInOAuthState");
+
+            return true;
         }
 
         private async Task<string?> _EnsureFreshTokenAsync(LinkedInIntegration integration)

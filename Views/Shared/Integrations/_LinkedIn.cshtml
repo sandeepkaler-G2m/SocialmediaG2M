@@ -1,0 +1,392 @@
+﻿@{
+    Layout = null;
+    var oauthUrl = ViewData["OAuthUrl"] as string ?? "#";
+    var oauthErr = ViewData["OAuthError"] as string;
+    var isReconn = (bool)(ViewData["IsReconnecting"] ?? false);
+    var reconName = ViewData["ConnectedPageName"] as string;
+
+    var perms = new[]
+    {
+        new { Icon = "📝", Label = "Publish Posts",   Scope = "w_member_social",  Desc = "Share updates and articles on your behalf" },
+        new { Icon = "👤", Label = "Basic Profile",   Scope = "r_liteprofile",    Desc = "Read your name, headline, and profile photo" },
+        new { Icon = "✉️", Label = "Email Address",   Scope = "r_emailaddress",   Desc = "Access your primary LinkedIn email address" },
+    };
+}
+<style>
+    .li-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 18px;
+        background: #0A66C2;
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background .15s;
+    }
+
+        .li-btn:hover {
+            background: #084d94;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .li-btn svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+    .li-btn-outline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 11px 18px;
+        background: #fff;
+        border: 1.5px solid #0A66C2;
+        border-radius: 10px;
+        color: #0A66C2;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+        .li-btn-outline:hover {
+            background: #eaf3fc;
+        }
+
+    .li-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 16px 0;
+        font-size: 12px;
+        color: #aaa;
+    }
+
+        .li-divider::before, .li-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e3e6ea;
+        }
+
+    .li-lock {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11px;
+        color: #8a97a8;
+        background: #f8f9fb;
+        border: 1px solid #e3e6ea;
+        border-radius: 8px;
+        padding: 9px 12px;
+        margin-top: 12px;
+    }
+
+        .li-lock svg {
+            width: 13px;
+            height: 13px;
+            stroke: #8a97a8;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+    .li-warn {
+        background: #fff8e1;
+        border: 1px solid #ffe082;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #7a6000;
+        margin-bottom: 16px;
+    }
+
+    .li-err {
+        background: #fff0f0;
+        border: 1px solid #ffcdd2;
+        border-radius: 9px;
+        padding: 10px 14px;
+        font-size: 12px;
+        color: #c62828;
+        margin-bottom: 16px;
+    }
+
+    /* Step 2 */
+    .li-perms {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .li-perm {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #f8f9fb;
+        border: 1px solid #e3e6ea;
+        border-radius: 10px;
+    }
+
+    .li-perm-ico {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(10,102,194,.10);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .li-perm strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #1a2332;
+    }
+
+    .li-perm span {
+        font-size: 11px;
+        color: #8a97a8;
+    }
+
+    .li-scope {
+        margin-left: auto;
+        font-size: 10px;
+        font-family: monospace;
+        color: #8a97a8;
+        background: #f0f0f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .li-perms-note {
+        font-size: 11px;
+        color: #8a97a8;
+        text-align: center;
+        margin-top: 4px;
+    }
+
+    /* Step 3 */
+    .li-ok {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px 0 12px;
+    }
+
+    .li-ok-ico {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(10,102,194,.10);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+        margin-bottom: 16px;
+    }
+
+    .li-ok h3 {
+        font-family: 'Sora',sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: #1a2332;
+        margin-bottom: 8px;
+    }
+
+    .li-ok-page {
+        display: inline-block;
+        background: #eaf3fc;
+        color: #0A66C2;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 14px;
+    }
+
+    .li-ok p {
+        font-size: 13px;
+        color: #8a97a8;
+        line-height: 1.6;
+        margin-bottom: 22px;
+    }
+
+    .li-ok-btn {
+        padding: 11px 32px;
+        background: #0A66C2;
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+    }
+
+        .li-ok-btn:hover {
+            background: #084d94;
+        }
+</style>
+
+<div id="li1">
+    @if (isReconn && reconName != null)
+    {
+        <div class="li-warn">⚠️ Reconnecting <strong>@reconName</strong> — replaces existing token.</div>
+    }
+    @if (oauthErr != null)
+    {
+        <div class="li-err">❌ @oauthErr</div>
+    }
+
+    <p style="font-size:13px;color:#8a97a8;line-height:1.6;margin-bottom:20px;">
+        Connect your LinkedIn account to SocialMediaPanel to publish posts,
+        share articles, and track your activity — all in one place.
+    </p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#1a2332;">
+            <span style="font-size:18px;">📝</span> Publish posts and share articles
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#1a2332;">
+            <span style="font-size:18px;">🖼️</span> Attach images to your updates
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#1a2332;">
+            <span style="font-size:18px;">📜</span> View your post history in one place
+        </div>
+    </div>
+</div>
+
+<div id="li2" style="display:none">
+    <p style="font-size:13px;color:#8a97a8;line-height:1.6;margin-bottom:14px;">
+        SocialMediaPanel will request these permissions from your LinkedIn account.
+        You can remove any access later from <strong style="color:#1a2332">LinkedIn Settings &amp; Privacy</strong>.
+    </p>
+
+    <div class="li-perms">
+        @foreach (var p in perms)
+        {
+            <div class="li-perm">
+                <div class="li-perm-ico">@p.Icon</div>
+                <div>
+                    <strong>@p.Label</strong>
+                    <span>@p.Desc</span>
+                </div>
+                <span class="li-scope">@p.Scope</span>
+            </div>
+        }
+    </div>
+
+    <a class="li-btn" href="@oauthUrl" id="liOauthBtn">
+        <svg viewBox="0 0 24 24" fill="white">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
+                     -1.853 0-2.136 1.446-2.136 2.94v5.666H9.351V9h3.414v1.561h.046
+                     c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337
+                     7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.114
+                     20.452H3.558V9h3.556v11.452zM22.225 0H1.771C.792 0 0 .774 0
+                     1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24
+                     23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+        </svg>
+        Continue with LinkedIn
+    </a>
+
+    <div class="li-divider">secure OAuth 2.0</div>
+
+    <div class="li-lock">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        Your credentials are never stored. You authorise directly on LinkedIn's servers.
+    </div>
+</div>
+
+<div id="li3" style="display:none">
+    <div class="li-ok">
+        <div class="li-ok-ico">🎉</div>
+        <h3>LinkedIn Connected!</h3>
+        <div class="li-ok-page" id="liNameBadge"></div>
+        <p>
+            Your LinkedIn account is now linked to SocialMediaPanel.<br>
+            You can start publishing posts right away.
+        </p>
+        <button class="li-ok-btn" onclick="PlatformAuth.close()">Back to Dashboard</button>
+    </div>
+</div>
+
+<script>
+    (function () {
+
+        window._liShowSuccess = function (name) {
+            var badge = document.getElementById('liNameBadge');
+            if (badge) badge.textContent = name || 'your account';
+            _show(3);
+        };
+
+        function _show(n) {
+            document.getElementById('li1').style.display = n === 1 ? '' : 'none';
+            document.getElementById('li2').style.display = n === 2 ? '' : 'none';
+            document.getElementById('li3').style.display = n === 3 ? '' : 'none';
+
+            if (window.PlatformAuth) PlatformAuth._setStep(n);
+
+            var footer  = document.getElementById('pamFooter');
+            var nextBtn = document.getElementById('pamNextBtn');
+            var label   = document.getElementById('pamNextLabel');
+            if (!footer) return;
+
+            if (n === 1) {
+                footer.style.display = '';
+                if (label)   label.textContent = 'Review Permissions';
+                if (nextBtn) nextBtn.onclick   = function () { _show(2); };
+            } else if (n === 2) {
+                footer.style.display = 'none';
+                _wireOAuthBtn();
+            } else {
+                footer.style.display = 'none';
+            }
+        }
+
+        function _wireOAuthBtn() {
+            var btn  = document.getElementById('liOauthBtn');
+            if (!btn) return;
+            var href = btn.getAttribute('href') || '';
+
+            if (href.indexOf('linkedin.com') === -1) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var sideBtn = document.querySelector('.connect-btn[data-platform="linkedin"]');
+                    if (sideBtn) { sideBtn.classList.add('connected'); sideBtn.textContent = '\u2713 Connected'; }
+                    window._liShowSuccess('Your LinkedIn Account');
+                });
+            } else {
+                btn.addEventListener('click', function () {
+                    btn.style.opacity      = '0.7';
+                    btn.style.pointerEvents = 'none';
+                    btn.innerHTML          = '<span>Redirecting to LinkedIn\u2026</span>';
+                });
+            }
+        }
+
+        _show(1);
+    })();
+</script>

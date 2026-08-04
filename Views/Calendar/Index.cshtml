@@ -1,0 +1,78 @@
+@model List<SocialMediaPanel.Controllers.CalendarPostItem>
+@{
+    ViewData["Title"] = "Calendar";
+    int year = ViewBag.Year;
+    int month = ViewBag.Month;
+    var monthStart = new DateTime(year, month, 1);
+    var daysInMonth = DateTime.DaysInMonth(year, month);
+    var startWeekday = (int)monthStart.DayOfWeek; // 0=Sunday
+    var itemsByDay = Model.GroupBy(i => i.Date.Day).ToDictionary(g => g.Key, g => g.ToList());
+    var today = DateTime.UtcNow;
+}
+
+<style>
+    .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .cal-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .cal-nav { display:flex; align-items:center; gap:10px; }
+    .cal-nav a { padding:6px 14px; border:1px solid var(--border); border-radius:8px; background:#fff; color:var(--text); text-decoration:none; font-size:13px; font-weight:600; }
+    .cal-nav a:hover { border-color:var(--green); color:var(--green); }
+    .cal-month-label { font-weight:700; font-size:14px; min-width:130px; text-align:center; }
+
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+    .cal-dow { text-align:center; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; padding-bottom:6px; }
+    .cal-cell { background:#fff; border:1px solid var(--border); border-radius:10px; min-height:110px; padding:8px; display:flex; flex-direction:column; gap:4px; }
+    .cal-cell.empty { background:transparent; border:none; }
+    .cal-cell.today { border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; }
+    .cal-day-num { font-size:12px; font-weight:700; color:var(--text); }
+
+    .cal-item { font-size:10.5px; padding:3px 6px; border-radius:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+    .cal-item.facebook { background:rgba(24,119,242,.12); color:#1877F2; }
+    .cal-item.instagram { background:rgba(225,48,108,.12); color:#E1306C; }
+    .cal-item.twitter { background:rgba(0,0,0,.08); color:#000; }
+    .cal-item.linkedin { background:rgba(10,102,194,.12); color:#0A66C2; }
+    .cal-item.scheduled { opacity:.7; font-style:italic; }
+    .cal-item.failed { background:rgba(220,53,69,.1); color:#dc3545; }
+</style>
+
+<div class="cal-header">
+    <div class="cal-title">Content Calendar</div>
+    <div class="cal-nav">
+        <a href="@Url.Action("Index", new { year = ViewBag.PrevYear, month = ViewBag.PrevMonth })">&larr; Prev</a>
+        <span class="cal-month-label">@ViewBag.MonthName</span>
+        <a href="@Url.Action("Index", new { year = ViewBag.NextYear, month = ViewBag.NextMonth })">Next &rarr;</a>
+    </div>
+</div>
+
+<div class="cal-grid">
+    @foreach (var dow in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+    {
+        <div class="cal-dow">@dow</div>
+    }
+
+    @for (int i = 0; i < startWeekday; i++)
+    {
+        <div class="cal-cell empty"></div>
+    }
+
+    @for (int d = 1; d <= daysInMonth; d++)
+    {
+        var isToday = today.Year == year && today.Month == month && today.Day == d;
+        <div class="cal-cell @(isToday ? "today" : "")">
+            <div class="cal-day-num">@d</div>
+            @if (itemsByDay.TryGetValue(d, out var dayItems))
+            {
+                foreach (var item in dayItems.Take(4))
+                {
+                    <div class="cal-item @item.Platform.ToLower() @(item.Status == "scheduled" ? "scheduled" : "") @(item.Status == "failed" ? "failed" : "")"
+                         title="@item.Message">
+                        @(item.Status == "scheduled" ? "🕒 " : "")@(string.IsNullOrEmpty(item.Message) ? "(no text)" : item.Message)
+                    </div>
+                }
+                @if (dayItems.Count > 4)
+                {
+                    <div class="cal-item" style="background:var(--bg);color:var(--muted)">+@(dayItems.Count - 4) more</div>
+                }
+            }
+        </div>
+    }
+</div>

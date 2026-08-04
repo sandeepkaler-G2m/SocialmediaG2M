@@ -31,5 +31,9 @@ namespace SocialMediaPanel.Models
         public DateTime? PostedAt { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+
+        [NotMapped]
+        public string? MediaUrl { get; set; }
     }
 }

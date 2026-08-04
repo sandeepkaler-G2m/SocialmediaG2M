@@ -639,14 +639,14 @@
         <div class="th-right">
 
             <!-- Connect platforms -->
-            <button class="th-connect-btn" onclick="toggleConnectPopup()" title="Connect Platforms">
+         @*    <button class="th-connect-btn" onclick="toggleConnectPopup()" title="Connect Platforms">
                 <div class="th-connect-dot"></div>
                 Connect
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                 </svg>
-            </button>
+            </button> *@
 
             <!-- New Post -->
             <a href="/Dashboard/Compose" style="text-decoration:none">
@@ -660,20 +660,29 @@
             </a>
 
             <!-- Notifications -->
-            <button class="th-icon-btn" title="Notifications">
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-            </button>
+            <div class="th-user-menu" id="notifMenu">
+                <button class="th-icon-btn" title="Notifications" onclick="toggleNotifMenu()" style="position:relative">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    <span id="notifBadge" class="nav-tab-badge" style="display:none;position:absolute;top:-4px;right:-4px;">0</span>
+                </button>
+                <div class="th-user-dropdown" id="notifDropdown" style="width:260px">
+                    <div class="th-ud-head"><div class="th-ud-name">Notifications</div></div>
+                    <div id="notifList" style="max-height:260px;overflow-y:auto;">
+                        <div class="th-ud-item" style="color:var(--muted);cursor:default">Loading…</div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Settings -->
-            <button class="th-icon-btn" title="Settings">
+          @*   <button class="th-icon-btn" title="Settings">
                 <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
-            </button>
+            </button> *@
 
             <!-- User avatar + dropdown -->
             <div class="th-user-menu" id="userMenu">
@@ -683,6 +692,15 @@
                         <div class="th-ud-name">@userName</div>
                         <div class="th-ud-email" title="@userEmail">@userEmail</div>
                     </div>
+                    <a asp-controller="Account" asp-action="AuditLog" class="th-ud-item">
+                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
+                        Audit Log
+                    </a>
                     <a asp-controller="Account" asp-action="Logout" class="th-ud-item danger">
                         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -728,22 +746,32 @@
         </a>
 
               <a asp-controller="Posts" asp-action="Index"
-           class="nav-tab @(IsCtrl("Listening") ? "active" : "")">
+           class="nav-tab @(IsCtrl("Posts") ? "active" : "")">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                 <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
                 <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
             </svg>
             Posts
         </a>
+        <a asp-controller="Calendar" asp-action="Index"
+           class="nav-tab @(IsCtrl("Calendar") ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Calendar
+        </a>
         <a asp-controller="LinkedIn" asp-action="Index"
-           class="nav-tab @(IsCtrl("Gmail") ? "active" : "")">
+           class="nav-tab @(IsCtrl("LinkedIn") ? "active" : "")">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
             </svg>
             LinkedIn
         </a>
-        <a asp-controller="Home" asp-action="INProgress"
+        <a asp-controller="Gmail" asp-action="Inbox"
            class="nav-tab @(IsCtrl("Gmail") ? "active" : "")">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
@@ -762,7 +790,16 @@
 
   
 
-        <a asp-controller="Home" asp-action="INProgress"
+        <a asp-controller="Ads" asp-action="Index"
+           class="nav-tab @(IsCtrl("Ads") ? "active" : "")">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+                <path d="M3 3v18h18" />
+                <path d="M18.7 8l-5.1 5.2-4-4L3 15.9" />
+            </svg>
+            Ads
+        </a>
+
+        <a asp-controller="Reports" asp-action="Index"
            class="nav-tab @(IsCtrl("Reports") ? "active" : "")">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
                 <line x1="18" y1="20" x2="18" y2="10" />
@@ -770,24 +807,6 @@
                 <line x1="6" y1="20" x2="6" y2="14" />
             </svg>
             Reports
-        </a>
-
-        <a asp-controller="Home" asp-action="INProgress"
-           class="nav-tab @(IsCtrl("People") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            People
-        </a>
-
-        <a asp-controller="Home" asp-action="INProgress"
-           class="nav-tab @(IsCtrl("Reviews") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
-            </svg>
-            Reviews
         </a>
 
     </nav>
@@ -885,9 +904,51 @@
             document.getElementById('userMenu').classList.toggle('open');
         }
 
+        // ── Notifications (Category A, phase 7) ─────────────────────────
+        function loadNotifCount() {
+            fetch('/api/notifications/count', { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d.success) return;
+                    var badge = document.getElementById('notifBadge');
+                    if (d.count > 0) {
+                        badge.textContent = d.count > 99 ? '99+' : d.count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                    var list = document.getElementById('notifList');
+                    if (list) {
+                        var rows = [];
+                        if (d.newLeads > 0) rows.push('<div class="th-ud-item" style="cursor:default">🎯 ' + d.newLeads + ' new lead(s) — check the Leads tab</div>');
+                        if (d.newComments > 0) rows.push('<div class="th-ud-item" style="cursor:default">💬 ' + d.newComments + ' new comment(s)</div>');
+                        if (d.newMessages > 0) rows.push('<div class="th-ud-item" style="cursor:default">✉️ ' + d.newMessages + ' new message(s) — check Inbox</div>');
+                        list.innerHTML = rows.length ? rows.join('') : '<div class="th-ud-item" style="color:var(--muted);cursor:default">You\'re all caught up.</div>';
+                    }
+                })
+                .catch(function () {});
+        }
+
+        function toggleNotifMenu() {
+            var menu = document.getElementById('notifMenu');
+            var opening = !menu.classList.contains('open');
+            menu.classList.toggle('open');
+            if (opening) {
+                setTimeout(function () {
+                    fetch('/api/notifications/mark-seen', { method: 'POST', credentials: 'same-origin' })
+                        .then(function () { document.getElementById('notifBadge').style.display = 'none'; });
+                }, 2500); // give the user a moment to actually see the list before clearing the badge
+            }
+        }
+
+        loadNotifCount();
+        setInterval(loadNotifCount, 30000);
+
         document.addEventListener('click', function(e) {
             var menu = document.getElementById('userMenu');
             if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+            var notifMenu = document.getElementById('notifMenu');
+            if (notifMenu && !notifMenu.contains(e.target)) notifMenu.classList.remove('open');
         });
 
         document.addEventListener('keydown', function(e) {

@@ -635,7 +635,10 @@
                 </div>
 
                 <div class="posts-bar-right">
-                    
+                    @await Html.PartialAsync("_PageSwitcher")
+                    <a class="view-icon-btn" href="/Posts/Export?platform=@Model.ActivePlatform" title="Export CSV" style="text-decoration:none">
+                        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </a>
                     <button class="view-icon-btn" title="Refresh" onclick="location.reload()">
                         <svg viewBox="0 0 24 24" stroke-width="2">
                             <polyline points="1 4 1 10 7 10" />
@@ -895,6 +898,111 @@
                 } else showPMToast(d.message,'err');
             })
             .catch(() => showPMToast('Network error','err'));
+        }
+
+        function loadBoostWidget() {
+            var section = document.getElementById('pmBoostSection');
+            var body = document.getElementById('pmBoostBody');
+            body.innerHTML = 'Loading ad accounts…';
+
+            fetch('/Ads/AdAccounts', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.success || !d.data.length) {
+                        body.innerHTML = '<span style="color:var(--muted);font-size:12px">' + (d.message || 'No ad accounts found. Create one in Meta Ads Manager.') + '</span>';
+                        return;
+                    }
+                    var options = d.data.map(a => '<option value="' + a.id + '">' + escHtml(a.name) + ' (' + a.currency + ')</option>').join('');
+                    body.innerHTML =
+                        '<select id="boostAdAccount" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;margin-bottom:8px">' + options + '</select>' +
+                        '<input id="boostBudget" type="number" min="1" value="100" placeholder="Daily budget (in the account\'s currency)" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;margin-bottom:8px" />' +
+                        '<button class="pm-cmt-action" style="color:var(--green);font-weight:700" onclick="submitBoost()">Create Boost Campaign (paused)</button>';
+                })
+                .catch(() => { body.innerHTML = '<span style="color:#dc3545;font-size:12px">Failed to load ad accounts.</span>'; });
+        }
+
+        function submitBoost() {
+            var section = document.getElementById('pmBoostSection');
+            var postId = section.dataset.postId;
+            var pageId = section.dataset.pageId;
+            var adAccountId = document.getElementById('boostAdAccount').value;
+            var budget = document.getElementById('boostBudget').value || 100;
+
+            var body = new URLSearchParams({ adAccountId, pageId, postId, dailyBudget: budget });
+            fetch('/Ads/BoostPost', {
+                method: 'POST', credentials: 'same-origin', body: body
+            })
+            .then(r => r.json())
+            .then(d => {
+                showPMToast(d.message, d.success ? 'ok' : 'err');
+
+                // Meta rejected Ad creation because the ad account has no
+                // payment method — there's no API to add one on the user's
+                // behalf, so open Meta's own billing page in a new tab and
+                // leave the Boost button in place so they can just retry
+                // here once it's added, without re-entering anything.
+                if (d.needsPaymentMethod && d.billingUrl) {
+                    var body2 = document.getElementById('pmBoostBody');
+                    if (body2) {
+                        var retryBtn = body2.querySelector('button[onclick="submitBoost()"]');
+                        var payLink = document.createElement('a');
+                        payLink.href = d.billingUrl;
+                        payLink.target = '_blank';
+                        payLink.rel = 'noopener';
+                        payLink.className = 'pm-cmt-action';
+                        payLink.style.cssText = 'color:#1877F2;font-weight:700;display:inline-block;margin-right:10px';
+                        payLink.textContent = 'Add Payment Method on Meta ↗';
+                        if (retryBtn) retryBtn.before(payLink);
+                    }
+                }
+            })
+            .catch(() => showPMToast('Network error', 'err'));
+        }
+
+        function _currentPageId() {
+            var el = document.getElementById('pm-details');
+            return el ? (el.dataset.pageId || '') : '';
+        }
+
+        function hideComment(commentId, btn) {
+            var hiding = !btn.classList.contains('active-like');
+            fetch('/Posts/HideComment?commentId=' + encodeURIComponent(commentId)
+                    + '&hide=' + hiding
+                    + '&platform=' + encodeURIComponent(window._currentPlatform || 'facebook')
+                    + '&pageId=' + encodeURIComponent(_currentPageId()), {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                showPMToast(d.message, d.success ? 'ok' : 'err');
+                if (d.success) {
+                    btn.textContent = hiding ? 'Unhide' : 'Hide';
+                    btn.classList.toggle('active-like', hiding);
+                    var item = btn.closest('.pm-comment-item');
+                    if (item) item.style.opacity = hiding ? '0.45' : '1';
+                }
+            })
+            .catch(() => showPMToast('Network error', 'err'));
+        }
+
+        function deleteComment(commentId, btn) {
+            if (!confirm('Delete this comment? This cannot be undone.')) return;
+            fetch('/Posts/DeleteComment?commentId=' + encodeURIComponent(commentId)
+                    + '&platform=' + encodeURIComponent(window._currentPlatform || 'facebook')
+                    + '&pageId=' + encodeURIComponent(_currentPageId()), {
+                method: 'POST', credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(d => {
+                showPMToast(d.message, d.success ? 'ok' : 'err');
+                if (d.success) {
+                    var item = btn.closest('.pm-comment-item');
+                    if (item) item.remove();
+                }
+            })
+            .catch(() => showPMToast('Network error', 'err'));
         }
 
         function focusMainComment() {

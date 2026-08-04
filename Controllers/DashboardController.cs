@@ -1,6 +1,5 @@
-
-﻿using Azure.Core;
-﻿using Google.Apis.Gmail.v1.Data;
+using Azure.Core;
+using Google.Apis.Gmail.v1.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
@@ -17,15 +16,21 @@ namespace SocialMediaPanel.Controllers
         private readonly PostService _postService;
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
-        private readonly LinkedInService _linkedin;
+        private readonly ActivePageService _activePages;
+        private readonly FacebookService _facebookService;
+        private readonly PostPublishingService _publishing;
+        private readonly AuditLogService _audit;
 
-
-        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env, LinkedInService linkedInService, PostService postService)
+        public DashboardController(AppDbContext context, IConfiguration config, IWebHostEnvironment env, PostService postService, ActivePageService activePages, FacebookService facebookService, PostPublishingService publishing, AuditLogService audit)
         {
             _context = context;
             _config = config;
             _postService = postService;
-            _linkedin = linkedInService;
+            _activePages = activePages;
+            _facebookService = facebookService;
+            _publishing = publishing;
+            _audit = audit;
+
             _env = env;
         }
 
@@ -72,87 +77,148 @@ namespace SocialMediaPanel.Controllers
 
 
 
+        //public async Task<List<SocialPost>> GetAllPosts()
+        //{
+        //    List<SocialPost> allPosts = new List<SocialPost>();
+        //    var username = HttpContext.Session.GetString("UserEmail");
+        //    var fbtoken = await _postService.GetTokenAsync(username);
+
+        //    var httpClient = new HttpClient(); // Best practice: reuse one client
+        //    if (!string.IsNullOrEmpty(fbtoken))
+        //    {
+
+
+
+        //    var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
+        //    var (pageId, pageToken) = page.Value;
+
+
+        //    // 1. ✅ Get Facebook Page Name
+        //    string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
+        //    var fbPageResponse = await httpClient.GetStringAsync(fbPageInfoUrl);
+        //    dynamic fbPageData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbPageResponse);
+        //    string fbPageName = fbPageData.name;
+
+        //    // Fetch Facebook Posts
+        //    string fbUrl = $"https://graph.facebook.com/v19.0/{pageId}/posts"
+        //                     + $"?fields=message,full_picture,created_time,"
+        //                     + $"likes.summary(true),comments.summary(true),shares"
+        //                     + $"&access_token={pageToken}";
+        //    var fbResponse = await httpClient.GetStringAsync(fbUrl);
+        //    dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
+
+        //    foreach (var item in fbData.data)
+        //    {
+        //        allPosts.Add(new SocialPost
+        //        {
+        //            platform = "facebook",
+        //            account_name = fbPageName, // Added this
+        //            message = item.message,
+        //            media_url = item.full_picture,
+        //            created_at = item.created_time,
+        //            like_count = item.likes?.summary?.total_count ?? 0,
+        //            comment_count = item.comments?.summary?.total_count ?? 0,
+        //            share_count = item.shares?.count ?? 0
+        //        });
+        //    }
+        //    }
+
+
+        //    // 2. ✅ Get Instagram Name
+        //    var instatoken = await _postService.GetInstagramTokenAsync(username);
+
+
+        //    if (!string.IsNullOrEmpty(instatoken))
+        //    {
+
+        //        // Note: Use "username" for IG handle or "name" if available in your API scope
+        //        string igInfoUrl = $"https://graph.instagram.com/me?fields=username&access_token={instatoken}";
+        //        var igInfoResponse = await httpClient.GetStringAsync(igInfoUrl);
+        //        dynamic igInfoData = Newtonsoft.Json.JsonConvert.DeserializeObject(igInfoResponse);
+        //        string igAccountName = igInfoData.username;
+
+        //        // Fetch Instagram Posts
+        //        string igUrl = $"https://graph.instagram.com/me/media?fields=caption,media_url,timestamp,like_count,comments_count&access_token={instatoken}"; var igResponse = await httpClient.GetStringAsync(igUrl);
+        //        dynamic igData = Newtonsoft.Json.JsonConvert.DeserializeObject(igResponse);
+
+        //        foreach (var item in igData.data)
+        //        {
+        //            allPosts.Add(new SocialPost
+        //            {
+        //                platform = "instagram",
+        //                account_name = igAccountName, // Added this
+        //                message = item.caption,
+        //                media_url = item.media_url,
+        //                created_at = item.timestamp,
+        //                like_count = item.like_count ?? 0,
+        //                comment_count = item.comments_count ?? 0
+        //            });
+        //        }
+        //    }
+        //    return allPosts.OrderByDescending(x => x.created_at).ToList();
+        //}
         public async Task<List<SocialPost>> GetAllPosts()
         {
             List<SocialPost> allPosts = new List<SocialPost>();
-            var username = HttpContext.Session.GetString("UserEmail");
-            var fbtoken = await _postService.GetTokenAsync(username);
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var username = HttpContext.Session.GetString("UserEmail") ?? "";
+            if (userId == null) return allPosts;
 
-            var httpClient = new HttpClient(); // Best practice: reuse one client
-            if (!string.IsNullOrEmpty(fbtoken))
+            var httpClient = new HttpClient();
+
+            // 1. Facebook Posts — active page (or first connected page)
+            try
             {
-
-
-
-                var page = await _postService.GetFirstPageAsync(fbtoken.ToString());
-                var (pageId, pageToken) = page.Value;
-
-
-                // 1. ✅ Get Facebook Page Name
-                string fbPageInfoUrl = $"https://graph.facebook.com/v19.0/{pageId}?fields=name&access_token={pageToken}";
-                var fbPageResponse = await httpClient.GetStringAsync(fbPageInfoUrl);
-                dynamic fbPageData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbPageResponse);
-                string fbPageName = fbPageData.name;
-
-                // Fetch Facebook Posts
-                string fbUrl = $"https://graph.facebook.com/v19.0/{pageId}/posts"
+                var page = await _activePages.GetActiveFacebookPageAsync(userId.Value);
+                if (page != null)
+                {
+                    string fbUrl = $"https://graph.facebook.com/v19.0/{page.page_id}/posts"
                                  + $"?fields=message,full_picture,created_time,"
                                  + $"likes.summary(true),comments.summary(true),shares"
-                                 + $"&access_token={pageToken}";
-                var fbResponse = await httpClient.GetStringAsync(fbUrl);
-                dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
+                                 + $"&access_token={page.page_access_token}";
+                    var fbResponse = await httpClient.GetStringAsync(fbUrl);
+                    dynamic fbData = Newtonsoft.Json.JsonConvert.DeserializeObject(fbResponse);
 
-                foreach (var item in fbData.data)
-                {
-                    allPosts.Add(new SocialPost
+                    foreach (var item in fbData.data)
                     {
-                        platform = "facebook",
-                        account_name = fbPageName, // Added this
-                        message = item.message,
-                        media_url = item.full_picture,
-                        created_at = item.created_time,
-                        like_count = item.likes?.summary?.total_count ?? 0,
-                        comment_count = item.comments?.summary?.total_count ?? 0,
-                        share_count = item.shares?.count ?? 0
-                    });
+                        allPosts.Add(new SocialPost
+                        {
+                            platform = "facebook",
+                            account_name = page.page_name,
+                            message = item.message,
+                            media_url = item.full_picture,
+                            created_at = item.created_time,
+                            like_count = item.likes?.summary?.total_count ?? 0,
+                            comment_count = item.comments?.summary?.total_count ?? 0,
+                            share_count = item.shares?.count ?? 0
+                        });
+                    }
                 }
             }
+            catch { /* FB fail hone par dashboard break na ho */ }
 
-
-            // 2. ✅ Get Instagram Name
-            var instatoken = await _postService.GetInstagramTokenAsync(username);
-
-
-            if (!string.IsNullOrEmpty(instatoken))
+            // 2. Instagram Posts — active account (or first connected account)
+            try
             {
-
-                // Note: Use "username" for IG handle or "name" if available in your API scope
-                string igInfoUrl = $"https://graph.instagram.com/me?fields=username&access_token={instatoken}";
-                var igInfoResponse = await httpClient.GetStringAsync(igInfoUrl);
-                dynamic igInfoData = Newtonsoft.Json.JsonConvert.DeserializeObject(igInfoResponse);
-                string igAccountName = igInfoData.username;
-
-                // Fetch Instagram Posts
-                string igUrl = $"https://graph.instagram.com/me/media?fields=caption,media_url,timestamp,like_count,comments_count&access_token={instatoken}"; var igResponse = await httpClient.GetStringAsync(igUrl);
-                dynamic igData = Newtonsoft.Json.JsonConvert.DeserializeObject(igResponse);
-
-                foreach (var item in igData.data)
+                var igVm = await _postService.GetInstagramPostsAsync(userId.Value, username, null);
+                foreach (var row in igVm.Posts)
                 {
                     allPosts.Add(new SocialPost
                     {
                         platform = "instagram",
-                        account_name = igAccountName, // Added this
-                        message = item.caption,
-                        media_url = item.media_url,
-                        created_at = item.timestamp,
-                        like_count = item.like_count ?? 0,
-                        comment_count = item.comments_count ?? 0
+                        account_name = "Instagram",
+                        message = row.Message,
+                        media_url = row.FullPicture,
+                        created_at = row.CreatedTime ?? DateTime.UtcNow,
+                        like_count = row.LikesCount,
+                        comment_count = row.CommentsCount
                     });
                 }
             }
+            catch { /* Instagram fail hone par dashboard break na ho */ }
+
             return allPosts.OrderByDescending(x => x.created_at).ToList();
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Leads()
@@ -189,6 +255,28 @@ namespace SocialMediaPanel.Controllers
             return View(leads);
         }
 
+        // ── CSV EXPORT — Leads (Category A, phase 4) ──────────────────────
+        [HttpGet]
+        [Route("Leads/Export")]
+        public async Task<IActionResult> ExportLeads(string? status)
+        {
+            var query = _context.Leads.AsQueryable();
+            if (!string.IsNullOrEmpty(status) && status != "all")
+                query = query.Where(l => l.Status == status);
+
+            var leads = await query.OrderByDescending(l => l.CreatedAt).ToListAsync();
+
+            var csv = CsvExportHelper.BuildCsv(
+                new[] { "LeadId", "Name", "Email", "Phone", "Platform", "FormId", "PageId", "Status", "CreatedAt" },
+                leads.Select(l => new object?[]
+                {
+                    l.LeadId, l.FullName, l.Email, l.Phone, l.Platform, l.FormId, l.PageId,
+                    l.Status ?? "open", l.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                }));
+
+            return File(System.Text.Encoding.UTF8.GetBytes(csv), "text/csv", $"leads-{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
         [HttpGet]
         [Route("Leads/GetAll")]
         public async Task<IActionResult> GetAll(string? status)
@@ -222,6 +310,7 @@ namespace SocialMediaPanel.Controllers
             if (lead == null) return Json(new { success = false, message = "Lead not found." });
             lead.Status = request.Status;
             await _context.SaveChangesAsync();
+            _audit.Log(HttpContext.Session.GetInt32("UserId"), "lead.status_change", $"leadId={lead.Id} newStatus={request.Status}");
             return Json(new { success = true });
         }
 
@@ -233,6 +322,7 @@ namespace SocialMediaPanel.Controllers
             if (lead == null) return Json(new { success = false, message = "Lead not found." });
             _context.Leads.Remove(lead);
             await _context.SaveChangesAsync();
+            _audit.Log(HttpContext.Session.GetInt32("UserId"), "lead.delete", $"leadId={id} name={lead.FullName} email={lead.Email}");
             return Json(new { success = true });
         }
 
@@ -242,6 +332,95 @@ namespace SocialMediaPanel.Controllers
             var lead = await _context.Leads.FindAsync(id);
             if (lead == null) return NotFound();
             return Json(lead);
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // SYNC LEADS NOW — manual pull via Graph API (leads_retrieval)
+        // Webhook ingestion (WebhookController.FetchAndSaveLead) stays the
+        // real-time primary path; this is a demo-friendly backfill button that
+        // doesn't depend on live webhook traffic.
+        // ════════════════════════════════════════════════════════════════
+        [HttpPost]
+        [Route("Dashboard/SyncLeadsNow")]
+        public async Task<IActionResult> SyncLeadsNow()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Not logged in" });
+
+            var pages = await _activePages.GetAllFacebookPagesAsync(userId.Value);
+            if (pages.Count == 0)
+                return Json(new { success = false, message = "No Facebook page connected." });
+
+            int added = 0, skipped = 0;
+
+            foreach (var page in pages)
+            {
+                var forms = await _facebookService.GetLeadFormsAsync(page.page_id, page.page_access_token);
+
+                foreach (var form in forms)
+                {
+                    var leads = await _facebookService.GetFormLeadsAsync(form.FormId, page.page_access_token);
+
+                    foreach (var lead in leads)
+                    {
+                        if (await _context.Leads.AnyAsync(l => l.LeadId == lead.LeadId))
+                        {
+                            skipped++;
+                            continue;
+                        }
+
+                        string? fullName = null, email = null, phone = null;
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(lead.RawJson);
+                            if (doc.RootElement.TryGetProperty("field_data", out var fieldData))
+                            {
+                                foreach (var field in fieldData.EnumerateArray())
+                                {
+                                    var name = field.TryGetProperty("name", out var n) ? n.GetString()?.ToLower() : "";
+                                    var vals = field.TryGetProperty("values", out var v) ? v : (JsonElement?)null;
+                                    var val = vals.HasValue && vals.Value.GetArrayLength() > 0 ? vals.Value[0].GetString() : null;
+
+                                    switch (name)
+                                    {
+                                        case "full_name":
+                                        case "name": fullName = val; break;
+                                        case "email":
+                                        case "email_address": email = val; break;
+                                        case "phone_number":
+                                        case "phone": phone = val; break;
+                                    }
+                                }
+                            }
+                        }
+                        catch { /* keep raw JSON even if field parsing fails */ }
+
+                        _context.Leads.Add(new Lead
+                        {
+                            LeadId = lead.LeadId,
+                            PageId = page.page_id,
+                            FormId = form.FormId,
+                            FullName = fullName,
+                            Email = email,
+                            Phone = phone,
+                            Platform = "facebook",
+                            RawData = lead.RawJson,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        added++;
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                success = true,
+                message = added > 0 ? $"Synced {added} new lead(s)." : "No new leads found.",
+                added,
+                skipped
+            });
         }
 
 
@@ -267,13 +446,11 @@ namespace SocialMediaPanel.Controllers
         [RequestSizeLimit(104857600)]
         [RequestFormLimits(MultipartBodyLengthLimit = 104857600)]
         public async Task<IActionResult> PublishPost(
-            List<IFormFile> images, string message, string platform, string campaign, bool isDraft = false)
+            List<IFormFile> images, string message, string platform, string campaign, bool isDraft = false, string? pageId = null, DateTime? scheduledAt = null)
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return Json(new { success = false, message = "User not logged in" });
-
-            var userEmail = HttpContext.Session.GetString("UserEmail") ?? "";
 
             // ── STEP 1: Images → bytes mein load ─────────────────────
             var imageDataList = new List<(byte[] bytes, string contentType, string fileName)>();
@@ -303,7 +480,6 @@ namespace SocialMediaPanel.Controllers
 
             foreach (var (bytes, contentType, fileName) in imageDataList)
             {
-                // fileName blob ho sakta hai — contentType se extension lo
                 var ext = contentType.ToLower() switch
                 {
                     "image/jpeg" => ".jpg",
@@ -313,10 +489,8 @@ namespace SocialMediaPanel.Controllers
                     "image/webp" => ".webp",
                     "video/mp4" => ".mp4",
                     "video/mov" => ".mov",
-                    _ => System.IO.Path.GetExtension(fileName).ToLower()  // fallback
+                    _ => System.IO.Path.GetExtension(fileName).ToLower()
                 };
-
-                // Agar ext empty hai toh .jpg default
                 if (string.IsNullOrEmpty(ext)) ext = ".jpg";
 
                 var newName = Guid.NewGuid().ToString("N") + ext;
@@ -331,8 +505,8 @@ namespace SocialMediaPanel.Controllers
             {
                 _context.SocialPosts.Add(new SocialPost
                 {
-                    user_id = userId,
-                    page_id = "",
+                    user_id = (int)userId,
+                    page_id = pageId ?? "",
                     post_id = "",
                     message = message,
                     media_url = string.Join(",", savedPaths),
@@ -344,385 +518,70 @@ namespace SocialMediaPanel.Controllers
                 return Json(new { success = true, message = "Draft saved!" });
             }
 
-            using var http = new HttpClient();
-            http.Timeout = TimeSpan.FromSeconds(120); // timeout badhao
-
-            // ─────────────────────────────────────────────────────────
-            // FACEBOOK
-            // FIX: ByteArrayContent sahi tarike se banao
-            // ─────────────────────────────────────────────────────────
-            if (platform?.ToLower() == "fb" || platform?.ToLower() == "facebook")
+            // ── STEP 3b: SCHEDULED — save for ScheduledPostPublisher to pick up ──
+            if (scheduledAt.HasValue && scheduledAt.Value > DateTime.UtcNow)
             {
-                var page = await _context.FacebookPages
-                    .Where(x => x.user_id == userId.ToString())
-                    .OrderByDescending(x => x.id)
-                    .FirstOrDefaultAsync();
-
-                if (page == null)
-                    return Json(new { success = false, message = "No Facebook page connected." });
-
-                string pageId = page.page_id;
-                string pageToken = page.page_access_token;
-                string? fbPostId = null;
-
-                if (imageDataList.Count == 1)
-                {
-                    // Single image
-                    var (bytes, contentType, fileName) = imageDataList[0];
-
-                    // FIX: ByteArrayContent alag banao, phir header set karo
-                    var imageContent = new ByteArrayContent(bytes);
-                    imageContent.Headers.ContentType =
-                        System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
-
-                    var mc = new MultipartFormDataContent();
-                    mc.Add(imageContent, "source", fileName);
-                    mc.Add(new StringContent(message ?? ""), "caption");
-
-                    var r = await http.PostAsync(
-                        $"https://graph.facebook.com/v19.0/{pageId}/photos?access_token={pageToken}", mc);
-                    var b = await r.Content.ReadAsStringAsync();
-                    if (!r.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "FB upload failed: " + b });
-
-                    fbPostId = JsonDocument.Parse(b).RootElement.GetProperty("id").GetString();
-                }
-                else if (imageDataList.Count > 1)
-                {
-                    // Multiple images → unpublished → one feed post
-                    var photoIds = new List<string>();
-                    foreach (var (bytes, contentType, fileName) in imageDataList.Take(10))
-                    {
-                        // FIX: ByteArrayContent alag banao
-                        var imageContent = new ByteArrayContent(bytes);
-                        imageContent.Headers.ContentType =
-                            System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
-
-                        var mc = new MultipartFormDataContent();
-                        mc.Add(imageContent, "source", fileName);
-                        mc.Add(new StringContent("false"), "published");
-
-                        var r = await http.PostAsync(
-                            $"https://graph.facebook.com/v19.0/{pageId}/photos?access_token={pageToken}", mc);
-                        var b = await r.Content.ReadAsStringAsync();
-                        if (!r.IsSuccessStatusCode)
-                            return Json(new { success = false, message = "FB image upload failed: " + b });
-
-                        photoIds.Add(JsonDocument.Parse(b).RootElement.GetProperty("id").GetString() ?? "");
-                    }
-
-                    // One post with all photos
-                    var feed = new MultipartFormDataContent();
-                    feed.Add(new StringContent(message ?? ""), "message");
-                    feed.Add(new StringContent(pageToken), "access_token");
-                    for (int i = 0; i < photoIds.Count; i++)
-                        feed.Add(new StringContent($"{{\"media_fbid\":\"{photoIds[i]}\"}}"), $"attached_media[{i}]");
-
-                    var fr = await http.PostAsync($"https://graph.facebook.com/v19.0/{pageId}/feed", feed);
-                    var fb2 = await fr.Content.ReadAsStringAsync();
-                    if (!fr.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "FB multi-image post failed: " + fb2 });
-
-                    fbPostId = JsonDocument.Parse(fb2).RootElement.GetProperty("id").GetString();
-                }
-                else
-                {
-                    // Text only
-                    var fd = new FormUrlEncodedContent(new[] {
-                        new KeyValuePair<string,string>("message",      message ?? ""),
-                        new KeyValuePair<string,string>("access_token", pageToken)
-                    });
-                    var r = await http.PostAsync($"https://graph.facebook.com/v19.0/{pageId}/feed", fd);
-                    var b = await r.Content.ReadAsStringAsync();
-                    if (!r.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "FB post failed: " + b });
-
-                    fbPostId = JsonDocument.Parse(b).RootElement.GetProperty("id").GetString();
-                }
-
                 _context.SocialPosts.Add(new SocialPost
                 {
-                    user_id = userId,
-                    page_id = pageId,
-                    post_id = fbPostId ?? "",
+                    user_id = (int)userId,
+                    page_id = pageId ?? "",
+                    post_id = "",
                     message = message,
                     media_url = string.Join(",", savedPaths),
-                    platform = "facebook",
-                    status = "published",
+                    platform = platform,
+                    status = "scheduled",
+                    scheduled_at = scheduledAt.Value,
                     created_at = DateTime.UtcNow
                 });
                 await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Posted to Facebook!", postId = fbPostId });
+                _audit.Log((int)userId, "post.schedule", $"platform={platform} pageId={pageId} scheduledAt={scheduledAt.Value:o}");
+                return Json(new { success = true, message = $"Post scheduled for {scheduledAt.Value:dd MMM yyyy, hh:mm tt} UTC." });
             }
 
-            // ─────────────────────────────────────────────────────────
-            // INSTAGRAM
-            // FIX: imageDataList.Count check — savedFullUrls pe depend karo
-            // ─────────────────────────────────────────────────────────
-            if (platform?.ToLower() == "ig" || platform?.ToLower() == "instagram")
+            // ── STEP 4: PUBLISH NOW — via the shared PostPublishingService ──
+            var isFacebook = platform?.ToLower() == "fb" || platform?.ToLower() == "facebook";
+            var isInstagram = platform?.ToLower() == "ig" || platform?.ToLower() == "instagram";
+
+            if (!isFacebook && !isInstagram)
+                return Json(new { success = false, message = "Unknown platform: " + platform });
+
+            var result = isFacebook
+                ? await _publishing.PublishToFacebookAsync(userId.Value, pageId, message, imageDataList)
+                : await _publishing.PublishToInstagramAsync(userId.Value, pageId, message, baseUrl, imageDataList, savedFullUrls);
+
+            if (!result.Success)
+                return Json(new { success = false, message = result.Message });
+
+            _context.SocialPosts.Add(new SocialPost
             {
-                // FIX: imageDataList check karo — savedFullUrls nahi
-                if (imageDataList.Count == 0)
-                    return Json(new { success = false, message = "Instagram requires at least one image." });
+                user_id = (int)userId,
+                page_id = result.ResolvedPageId ?? pageId ?? "",
+                post_id = result.PostId ?? "",
+                message = message,
+                media_url = string.Join(",", savedPaths),
+                platform = isFacebook ? "facebook" : "instagram",
+                status = "published",
+                created_at = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+            _audit.Log((int)userId, "post.publish", $"platform={(isFacebook ? "facebook" : "instagram")} pageId={result.ResolvedPageId ?? pageId} postId={result.PostId}");
 
-                // Instagram token
-                var igRow = await _context.UserTokens
-                    .Where(t => t.username == userEmail
-                             && t.instagramtoken != null
-                             && t.instagramtoken != "")
-                    .OrderByDescending(t => t.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                if (igRow == null)
-                    return Json(new { success = false, message = "No Instagram account connected." });
-
-                var igToken = igRow.instagramtoken!;
-
-                // Instagram User ID
-                var meR = await http.GetAsync(
-                    $"https://graph.instagram.com/me?fields=id,username&access_token={igToken}");
-                var meB = await meR.Content.ReadAsStringAsync();
-                if (!meR.IsSuccessStatusCode)
-                    return Json(new { success = false, message = "IG auth failed: " + meB });
-
-                var igUserId = JsonDocument.Parse(meB).RootElement.GetProperty("id").GetString() ?? "";
-
-                // FIX: Localhost pe savedFullUrls localhost URL hoga — override with ImgBB
-                if (baseUrl.Contains("localhost") || baseUrl.Contains("127.0.0.1"))
-                {
-                    var imgbbKey = _config["ImgBB:ApiKey"] ?? "";
-                    if (string.IsNullOrEmpty(imgbbKey))
-                        return Json(new { success = false, message = "Localhost pe Instagram test ke liye ImgBB:ApiKey set karo appsettings.json mein." });
-
-                    savedFullUrls.Clear();
-                    foreach (var (bytes, _, _) in imageDataList)
-                    {
-                        var base64 = Convert.ToBase64String(bytes);
-                        var imgbbResp = await http.PostAsync(
-                            "https://api.imgbb.com/1/upload",
-                            new FormUrlEncodedContent(new[] {
-                                new KeyValuePair<string,string>("key",   imgbbKey),
-                                new KeyValuePair<string,string>("image", base64)
-                            }));
-                        var imgbbBody = await imgbbResp.Content.ReadAsStringAsync();
-                        if (!imgbbResp.IsSuccessStatusCode)
-                            return Json(new { success = false, message = "ImgBB upload failed: " + imgbbBody });
-
-                        var imgUrl = JsonDocument.Parse(imgbbBody)
-                            .RootElement.GetProperty("data").GetProperty("url").GetString() ?? "";
-                        savedFullUrls.Add(imgUrl);
-                    }
-                }
-
-                string? igPostId = null;
-
-                if (savedFullUrls.Count == 1)
-                {
-                    // Single image
-                    var cr = await http.PostAsync(
-                        $"https://graph.instagram.com/v19.0/{igUserId}/media"
-                        + $"?image_url={Uri.EscapeDataString(savedFullUrls[0])}"
-                        + $"&caption={Uri.EscapeDataString(message ?? "")}"
-                        + $"&access_token={igToken}", null);
-                    var cb = await cr.Content.ReadAsStringAsync();
-                    if (!cr.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "IG container failed: " + cb });
-
-                    var cid = JsonDocument.Parse(cb).RootElement.GetProperty("id").GetString() ?? "";
-
-                    var pr = await http.PostAsync(
-                        $"https://graph.instagram.com/v19.0/{igUserId}/media_publish"
-                        + $"?creation_id={cid}&access_token={igToken}", null);
-                    var pb = await pr.Content.ReadAsStringAsync();
-                    if (!pr.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "IG publish failed: " + pb });
-
-                    igPostId = JsonDocument.Parse(pb).RootElement.GetProperty("id").GetString();
-                }
-                else
-                {
-                    // Carousel
-                    var childIds = new List<string>();
-                    foreach (var url in savedFullUrls)
-                    {
-                        var cr = await http.PostAsync(
-                            $"https://graph.instagram.com/v19.0/{igUserId}/media"
-                            + $"?image_url={Uri.EscapeDataString(url)}"
-                            + $"&is_carousel_item=true"
-                            + $"&access_token={igToken}", null);
-                        var cb = await cr.Content.ReadAsStringAsync();
-                        if (!cr.IsSuccessStatusCode)
-                            return Json(new { success = false, message = "IG child failed: " + cb });
-                        childIds.Add(JsonDocument.Parse(cb).RootElement.GetProperty("id").GetString() ?? "");
-                    }
-
-                    var car = await http.PostAsync(
-                        $"https://graph.instagram.com/v19.0/{igUserId}/media"
-                        + $"?media_type=CAROUSEL"
-                        + $"&children={Uri.EscapeDataString(string.Join(",", childIds))}"
-                        + $"&caption={Uri.EscapeDataString(message ?? "")}"
-                        + $"&access_token={igToken}", null);
-                    var carB = await car.Content.ReadAsStringAsync();
-                    if (!car.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "IG carousel failed: " + carB });
-
-                    var carId = JsonDocument.Parse(carB).RootElement.GetProperty("id").GetString() ?? "";
-
-                    var pr = await http.PostAsync(
-                        $"https://graph.instagram.com/v19.0/{igUserId}/media_publish"
-                        + $"?creation_id={carId}&access_token={igToken}", null);
-                    var pb = await pr.Content.ReadAsStringAsync();
-                    if (!pr.IsSuccessStatusCode)
-                        return Json(new { success = false, message = "IG carousel publish failed: " + pb });
-
-                    igPostId = JsonDocument.Parse(pb).RootElement.GetProperty("id").GetString();
-                }
-
-                _context.SocialPosts.Add(new SocialPost
-                {
-                    user_id = userId,
-                    page_id = igUserId,
-                    post_id = igPostId ?? "",
-                    message = message,
-                    media_url = string.Join(",", savedPaths),
-                    platform = "instagram",
-                    status = "published",
-                    created_at = DateTime.UtcNow
-                });
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "Posted to Instagram!", postId = igPostId });
-            }
-
-
-         
-
-                if (platform?.ToLower() == "li" || platform?.ToLower() == "linkedin")
-                {
-                    if (string.IsNullOrWhiteSpace(message))
-                        return Json(new { success = false, message = "Post text is required." });
-
-                    if (message.Length > 3000)
-                        return Json(new { success = false, message = "Post exceeds 3000 character limit." });
-
-                    var integration = await _context.LinkedInIntegrations
-                        .FirstOrDefaultAsync(l => l.UserId == userId.ToString() && l.IsActive);
-
-                    if (integration == null)
-                        return Json(new { success = false, message = "LinkedIn not connected." });
-
-                    // Refresh token
-                    var token = await _EnsureFreshTokenAsync(integration);
-                    if (string.IsNullOrEmpty(token))
-                        return Json(new { success = false, message = "LinkedIn token expired — reconnect required." });
-
-                    // Image handling (take first image only — LinkedIn supports single image in simple API)
-                    string? imageBase64 = null;
-                    string? imageMime = null;
-
-                    if (imageDataList.Count > 0)
-                    {
-                        var (bytes, contentType, _) = imageDataList[0];
-                        imageBase64 = Convert.ToBase64String(bytes);
-                        imageMime = contentType;
-                    }
-
-                    var record = new LinkedinPosts
-                    {
-                        UserId = userId.ToString(),
-                        PostText = message,
-                        ArticleUrl = null,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    try
-                    {
-                        var postId = await _linkedin.PostAsync(
-                            token,
-                            integration.LinkedInUserId,
-                            message,
-                            null,
-                            imageBase64,
-                            imageMime
-                        );
-
-                        record.PostId = postId;
-                        record.Status = "posted";
-                        record.PostedAt = DateTime.UtcNow;
-
-                        _context.LinkedInPosts.Add(record);
-
-                        // ALSO SAVE IN SocialPosts (same as FB & IG)
-                        _context.SocialPosts.Add(new SocialPost
-                        {
-                            user_id = userId,
-                            page_id = integration.LinkedInUserId,
-                            post_id = postId,
-                            message = message,
-                            media_url = string.Join(",", savedPaths),
-                            platform = "linkedin",
-                            status = "published",
-                            created_at = DateTime.UtcNow
-                        });
-
-                        await _context.SaveChangesAsync();
-                        await _context.SaveChangesAsync();
-
-                        return Json(new
-                        {
-                            success = true,
-                            message = "Posted to LinkedIn!",
-                            postId = postId
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        record.Status = "failed";
-                        record.ErrorMessage = ex.Message;
-
-                        _context.LinkedInPosts.Add(record);
-                        await _context.SaveChangesAsync();
-
-                        return Json(new
-                        {
-                            success = false,
-                            message = "LinkedIn post failed: " + ex.Message
-                        });
-                    }
-                }
-            
-
-            return Json(new { success = false, message = "Unknown platform: " + platform });
+            return Json(new { success = true, message = result.Message, postId = result.PostId });
         }
 
-        private async Task<string?> _EnsureFreshTokenAsync(LinkedInIntegration integration)
-        {
-            if (integration.TokenExpiresAt.HasValue &&
-                integration.TokenExpiresAt.Value > DateTime.UtcNow.AddMinutes(5))
-                return integration.AccessToken;
-
-            if (string.IsNullOrEmpty(integration.RefreshToken))
-                return null;
-
-            try
-            {
-                var (newToken, expiresIn) = await _linkedin.RefreshTokenAsync(integration.RefreshToken);
-                integration.AccessToken = newToken;
-                integration.TokenExpiresAt = DateTime.UtcNow.AddSeconds(expiresIn);
-                await _context.SaveChangesAsync();
-                return newToken;
-            }
-            catch { return null; }
-        }
 
     }
+
+
+
     public class SocialPost
     {
         public int id { get; set; }
-        public int? user_id { get; set; }
-        public string page_id { get; set; }
+        public int user_id { get; set; }
+        public string? page_id { get; set; }
         public string? account_name { get; set; }
-        public string post_id { get; set; }
-        public string message { get; set; }
+        public string? post_id { get; set; }
+        public string? message { get; set; }
 
 
         public string? media_url { get; set; }
@@ -733,7 +592,12 @@ namespace SocialMediaPanel.Controllers
         public int? comment_count { get; set; }
         public string? status { get; set; }
         public int? share_count { get; set; }
+
+        // Post Scheduling (Category A, phase 1) — maps to the scheduled_at
+        // column added at startup in Program.cs (no EF migrations in this
+        // repo — see project notes on why that's a raw idempotent ALTER
+        // instead of a real migration).
+        public DateTime? scheduled_at { get; set; }
     }
 
 }
-

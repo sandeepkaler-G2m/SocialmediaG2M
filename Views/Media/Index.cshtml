@@ -1,0 +1,62 @@
+@model List<SocialMediaPanel.Controllers.MediaLibraryItem>
+@{
+    ViewData["Title"] = "Media Library";
+}
+
+<style>
+    .med-header { margin-bottom:20px; }
+    .med-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .med-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    .med-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+    .med-card { background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; transition:box-shadow .15s; }
+    .med-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); }
+    .med-thumb { width:100%; height:130px; object-fit:cover; display:block; background:var(--bg); }
+    .med-meta { padding:8px 10px; }
+    .med-name { font-size:11px; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .med-date { font-size:10.5px; color:var(--muted); margin-top:2px; }
+
+    .med-empty { text-align:center; padding:60px 0; color:var(--muted); font-size:13px; }
+
+    .med-copied-toast { position:fixed; bottom:24px; right:24px; background:#1a2332; color:#fff; padding:10px 16px; border-radius:8px; font-size:12.5px; display:none; z-index:999; }
+</style>
+
+<div class="med-header">
+    <div class="med-title">Media Library</div>
+    <div class="med-subtitle">Every image you've uploaded while composing a post — click to copy its URL, reuse it without re-uploading.</div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="med-empty">No uploaded media yet — images you attach in Compose will show up here.</div>
+}
+else
+{
+    <div class="med-grid">
+        @foreach (var item in Model)
+        {
+            <div class="med-card" onclick="copyMediaUrl('@item.Url')">
+                <img class="med-thumb" src="@item.Url" alt="@item.FileName" loading="lazy" />
+                <div class="med-meta">
+                    <div class="med-name">@item.FileName</div>
+                    <div class="med-date">@item.UploadedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div class="med-copied-toast" id="medToast">URL copied — paste it in Compose.</div>
+
+@section Scripts {
+    <script>
+        function copyMediaUrl(url) {
+            var full = window.location.origin + url;
+            navigator.clipboard.writeText(full).then(function () {
+                var t = document.getElementById('medToast');
+                t.style.display = 'block';
+                setTimeout(function () { t.style.display = 'none'; }, 2000);
+            });
+        }
+    </script>
+}

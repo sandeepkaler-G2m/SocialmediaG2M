@@ -1,0 +1,184 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<style>
+    .rep-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .rep-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .rep-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    .rep-tiles { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:24px; }
+    @@media (max-width: 1100px) { .rep-tiles { grid-template-columns:repeat(3,1fr); } }
+
+    .rep-tile { background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+    .rep-tile-label { font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+    .rep-tile-val { font-family:'Sora',sans-serif; font-size:26px; font-weight:800; color:var(--text); line-height:1; }
+    .rep-tile-val.zero { color:var(--muted); }
+
+    .rep-section { background:#fff; border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:20px; }
+    .rep-sec-title { font-family:'Sora',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px; }
+
+    .rep-bar-row { margin-bottom:14px; }
+    .rep-bar-label { display:flex; justify-content:space-between; font-size:12.5px; color:var(--text); margin-bottom:5px; }
+    .rep-bar-label .plat { color:var(--muted); font-weight:500; text-transform:capitalize; }
+    .rep-bar-track { height:8px; background:var(--bg); border-radius:5px; overflow:hidden; }
+    .rep-bar-fill { height:100%; background:linear-gradient(90deg,var(--green),var(--teal)); border-radius:5px; }
+
+    .rep-empty { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
+    .rep-loading { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
+
+    .rep-platform-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+    .rep-platform-card { border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+    .rep-platform-name { font-size:12px; font-weight:700; text-transform:capitalize; margin-bottom:6px; color:var(--text); }
+    .rep-platform-stat { font-size:11.5px; color:var(--muted); }
+    .rep-platform-stat b { color:var(--text); font-weight:700; }
+
+    .rep-trend { display:flex; align-items:baseline; gap:10px; }
+    .rep-trend-val { font-family:'Sora',sans-serif; font-size:22px; font-weight:800; }
+    .rep-trend-badge { font-size:12px; font-weight:700; padding:3px 9px; border-radius:20px; }
+    .rep-trend-badge.up { background:rgba(75,181,67,.12); color:var(--green); }
+    .rep-trend-badge.down { background:rgba(220,53,69,.1); color:#dc3545; }
+    .rep-trend-badge.flat { background:var(--bg); color:var(--muted); }
+</style>
+
+<div class="rep-header">
+    <div>
+        <div class="rep-title">Reports</div>
+        <div class="rep-subtitle">Reach, engagement and follower growth across your connected pages.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+        <a href="/Reports/Export" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text)">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+        </a>
+        @await Html.PartialAsync("_PageSwitcher")
+    </div>
+</div>
+
+<div class="rep-section">
+    <div class="rep-sec-title">📊 Best Times to Post</div>
+    <div id="bestTimesBody"><div class="rep-loading">Loading…</div></div>
+</div>
+
+<div id="repBody">
+    <div class="rep-loading">Loading insights…</div>
+</div>
+
+@section Scripts {
+    <script>
+        function fmt(n) { return (n || 0).toLocaleString(); }
+
+        function loadReports() {
+            fetch('/api/insights/overview', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.success) { renderEmpty(); return; }
+                    render(d.data);
+                })
+                .catch(() => renderEmpty());
+        }
+
+        function renderEmpty() {
+            document.getElementById('repBody').innerHTML =
+                '<div class="rep-section"><div class="rep-empty">No insights yet — connect a page and open a post\'s Stats tab, or wait for the next webhook update.</div></div>';
+        }
+
+        function render(d) {
+            var tiles = [
+                ['Total Reach', d.totalReach],
+                ['Total Impressions', d.totalImpressions],
+                ['Total Engagement', d.totalEngagement],
+                ['Posts Tracked', d.postsTracked],
+                ['Facebook Fans', d.facebookFans],
+                ['Instagram Followers', d.instagramFollowers]
+            ];
+
+            var tilesHtml = tiles.map(function (t) {
+                var val = t[1];
+                var zero = !val;
+                return '<div class="rep-tile"><div class="rep-tile-label">' + t[0] + '</div>' +
+                       '<div class="rep-tile-val' + (zero ? ' zero' : '') + '">' + fmt(val) + '</div></div>';
+            }).join('');
+
+            var topPosts = d.topPosts || [];
+            var maxEngagement = Math.max.apply(null, topPosts.map(function (p) { return p.engagement; }).concat([1]));
+
+            var barsHtml = topPosts.length
+                ? topPosts.map(function (p) {
+                    var pct = Math.round((p.engagement / maxEngagement) * 100);
+                    return '<div class="rep-bar-row">' +
+                           '<div class="rep-bar-label"><span>' + p.postId + ' <span class="plat">· ' + p.platform + '</span></span><span>' + fmt(p.engagement) + '</span></div>' +
+                           '<div class="rep-bar-track"><div class="rep-bar-fill" style="width:' + pct + '%"></div></div>' +
+                           '</div>';
+                }).join('')
+                : '<div class="rep-empty">No post-level data yet.</div>';
+
+            // Per-platform breakdown (Facebook/Instagram from PostInsights)
+            var breakdown = d.platformBreakdown || [];
+            var platformHtml = breakdown.length
+                ? '<div class="rep-platform-grid">' + breakdown.map(function (p) {
+                    return '<div class="rep-platform-card">' +
+                           '<div class="rep-platform-name">' + p.platform + '</div>' +
+                           '<div class="rep-platform-stat">Engagement: <b>' + fmt(p.engagement) + '</b></div>' +
+                           '<div class="rep-platform-stat">Reach: <b>' + fmt(p.reach) + '</b></div>' +
+                           '<div class="rep-platform-stat">Posts tracked: <b>' + fmt(p.postsTracked) + '</b></div>' +
+                           '</div>';
+                }).join('') + '</div>'
+                : '<div class="rep-empty">No per-platform data yet.</div>';
+
+            // Twitter/LinkedIn don't have stored engagement numbers — show
+            // activity counts instead of fabricating engagement we don't have.
+            if (d.twitterPostsThisMonth != null) {
+                platformHtml += '<div class="rep-platform-card" style="margin-top:14px;display:inline-block;margin-right:14px">' +
+                    '<div class="rep-platform-name">Twitter</div>' +
+                    '<div class="rep-platform-stat">Tweets posted (30d): <b>' + fmt(d.twitterPostsThisMonth) + '</b></div></div>';
+            }
+            if (d.linkedInPostsThisMonth != null) {
+                platformHtml += '<div class="rep-platform-card" style="margin-top:14px;display:inline-block">' +
+                    '<div class="rep-platform-name">LinkedIn</div>' +
+                    '<div class="rep-platform-stat">Posts published (30d): <b>' + fmt(d.linkedInPostsThisMonth) + '</b></div></div>';
+            }
+
+            // This-week vs last-week engagement trend
+            var thisWk = d.engagementThisWeek || 0, lastWk = d.engagementLastWeek || 0;
+            var trendClass = thisWk > lastWk ? 'up' : (thisWk < lastWk ? 'down' : 'flat');
+            var trendArrow = thisWk > lastWk ? '▲' : (thisWk < lastWk ? '▼' : '—');
+            var trendPct = lastWk > 0 ? Math.round(((thisWk - lastWk) / lastWk) * 100) : (thisWk > 0 ? 100 : 0);
+            var trendHtml =
+                '<div class="rep-trend">' +
+                '<div class="rep-trend-val">' + fmt(thisWk) + '</div>' +
+                '<div class="rep-trend-badge ' + trendClass + '">' + trendArrow + ' ' + Math.abs(trendPct) + '% vs last week (' + fmt(lastWk) + ')</div>' +
+                '</div>';
+
+            document.getElementById('repBody').innerHTML =
+                '<div class="rep-tiles">' + tilesHtml + '</div>' +
+                '<div class="rep-section"><div class="rep-sec-title">This Week\'s Engagement</div>' + trendHtml + '</div>' +
+                '<div class="rep-section"><div class="rep-sec-title">Per-Platform Breakdown</div>' + platformHtml + '</div>' +
+                '<div class="rep-section"><div class="rep-sec-title">Top Posts by Engagement</div>' + barsHtml + '</div>';
+        }
+
+        function loadBestTimes() {
+            fetch('/api/insights/best-times', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => {
+                    var box = document.getElementById('bestTimesBody');
+                    if (!box) return;
+                    if (!d.success || !d.data.length) {
+                        box.innerHTML = '<div class="rep-empty">Not enough tracked posts yet to suggest a best time — open a few posts\' Stats tabs to build up history.</div>';
+                        return;
+                    }
+                    box.innerHTML = d.data.map(function (t, i) {
+                        return '<div class="rep-platform-card" style="display:inline-block;margin-right:12px;margin-bottom:12px;min-width:160px">' +
+                               '<div class="rep-platform-name">#' + (i + 1) + ' ' + t.dayOfWeek + ' at ' + t.displayTime + '</div>' +
+                               '<div class="rep-platform-stat">Avg engagement: <b>' + t.averageEngagement.toFixed(1) + '</b></div>' +
+                               '<div class="rep-platform-stat">Based on ' + t.sampleSize + ' post(s)</div>' +
+                               '</div>';
+                    }).join('');
+                })
+                .catch(function () {});
+        }
+
+        loadReports();
+        loadBestTimes();
+    </script>
+}

@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
+using SocialMediaPanel.Services;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using JsonException = Newtonsoft.Json.JsonException;
 
 namespace SocialMediaPanel.Controllers
 {
@@ -47,7 +52,11 @@ namespace SocialMediaPanel.Controllers
             }
 
             _logger.LogWarning("Webhook verification FAILED ❌ — check verify token");
-            return Forbid();
+            // Forbid() invokes the authentication service's ForbidAsync, which
+            // needs a configured auth scheme — this app uses custom session
+            // auth, not ASP.NET Core authentication, so that throws. A plain
+            // 403 status is all Meta's webhook verification actually needs.
+            return StatusCode(403, "Forbidden");
         }
 
         // ══════════════════════════════════════════════════════
@@ -131,11 +140,11 @@ namespace SocialMediaPanel.Controllers
                     switch (obj?.ToLower())
                     {
                         case "page":
-                            await HandlePageEvent(entry, context, httpFactory, logger);
+                            await HandlePageEvent(entry, context, httpFactory, config, logger);
                             break;
 
                         case "instagram":
-                            await HandleInstagramEvent(entry, context, httpFactory, logger);
+                            await HandleInstagramEvent(entry, context, httpFactory, config, logger);
                             break;
 
                         case "ad_account":
@@ -163,6 +172,7 @@ namespace SocialMediaPanel.Controllers
             JsonElement entry,
             AppDbContext context,
             IHttpClientFactory httpFactory,
+            IConfiguration config,
             ILogger logger)
         {
             var pageId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
@@ -193,7 +203,7 @@ namespace SocialMediaPanel.Controllers
                         // ── POST FEED (likes, comments, shares, reactions) ──
                         case "feed":
                             if (value.HasValue)
-                                await HandleFeedChange(value.Value, pageId, "facebook", context, logger);
+                                await HandleFeedChange(value.Value, pageId, "facebook", context, httpFactory, config, logger);
                             break;
 
                         // ── MESSENGER ──
@@ -205,7 +215,7 @@ namespace SocialMediaPanel.Controllers
                         // ── PAGE MENTION ──
                         case "mention":
                             if (value.HasValue)
-                                await SaveComment(value.Value, pageId, "facebook", "mention", context, logger);
+                                await SaveComment(value.Value, pageId, "facebook", "mention", context, httpFactory, config, logger);
                             break;
 
                         case "ratings":
@@ -232,6 +242,7 @@ namespace SocialMediaPanel.Controllers
             JsonElement entry,
             AppDbContext context,
             IHttpClientFactory httpFactory,
+            IConfiguration config,
             ILogger logger)
         {
             var igId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
@@ -255,17 +266,17 @@ namespace SocialMediaPanel.Controllers
                     {
                         case "comments":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "comment", context, logger);
+                                await SaveComment(value.Value, igId, "instagram", "comment", context, httpFactory, config, logger);
                             break;
 
                         case "mentions":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "mention", context, logger);
+                                await SaveComment(value.Value, igId, "instagram", "mention", context, httpFactory, config, logger);
                             break;
 
                         case "live_comments":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "live_comment", context, logger);
+                                await SaveComment(value.Value, igId, "instagram", "live_comment", context, httpFactory, config, logger);
                             break;
 
                         case "leadgen":
@@ -329,6 +340,8 @@ namespace SocialMediaPanel.Controllers
             string? pageId,
             string platform,
             AppDbContext context,
+            IHttpClientFactory httpFactory,
+            IConfiguration config,
             ILogger logger)
         {
             var item = value.TryGetProperty("item", out var i) ? i.GetString() : "";
@@ -346,7 +359,7 @@ namespace SocialMediaPanel.Controllers
                 case "comment":
                     if (verb == "add")
                     {
-                        await SaveComment(value, pageId, platform, "comment", context, logger);
+                        await SaveComment(value, pageId, platform, "comment", context, httpFactory, config, logger);
 
                         // Post ka comment count bhi update karo
                         if (postId != null)
@@ -639,6 +652,8 @@ namespace SocialMediaPanel.Controllers
             string platform,
             string type,
             AppDbContext context,
+            IHttpClientFactory httpFactory,
+            IConfiguration config,
             ILogger logger)
         {
             // Comment ID lo — alag alag fields mein ho sakta hai
@@ -690,6 +705,93 @@ namespace SocialMediaPanel.Controllers
                 "Comment saved ✅ — platform={P} type={T} sender={S} msg={M}",
                 platform, type, senderName ?? "Unknown",
                 msg?[..Math.Min(50, msg?.Length ?? 0)] ?? "");
+
+            await AutoHideIfSpam(commentId!, msg, pageId, platform, context, httpFactory, config, logger);
+        }
+
+        // ══════════════════════════════════════════════════════
+        // SPAM AUTO-HIDE
+        // Checks a newly-saved comment's text against the configured
+        // keyword list (appsettings.json → CommentModeration:BlockedKeywords)
+        // and hides it via the Graph API on a match. Keyword-list based —
+        // no DB table, so the operator edits appsettings.json to tune it.
+        // ══════════════════════════════════════════════════════
+        private static async Task AutoHideIfSpam(
+            string commentId,
+            string? message,
+            string? pageId,
+            string platform,
+            AppDbContext context,
+            IHttpClientFactory httpFactory,
+            IConfiguration config,
+            ILogger logger)
+        {
+            if (string.IsNullOrWhiteSpace(message)) return;
+
+            var keywords = config.GetSection("CommentModeration:BlockedKeywords").Get<string[]>() ?? Array.Empty<string>();
+            if (keywords.Length == 0) return;
+
+            var matched = keywords.FirstOrDefault(k =>
+                !string.IsNullOrWhiteSpace(k) && message.Contains(k, StringComparison.OrdinalIgnoreCase));
+            if (matched == null) return;
+
+            var token = await ResolvePageTokenForHide(pageId, platform, context, httpFactory);
+            if (string.IsNullOrEmpty(token))
+            {
+                logger.LogWarning("Spam match on comment {CommentId} (keyword '{Keyword}') but no page token resolved — could not hide.", commentId, matched);
+                return;
+            }
+
+            try
+            {
+                var client = httpFactory.CreateClient();
+                var resp = await client.PostAsync(
+                    $"https://graph.facebook.com/v19.0/{commentId}?hide=true&access_token={token}", null);
+                logger.LogInformation(
+                    "Auto-hid spam comment {CommentId} (keyword '{Keyword}') — success={Success}",
+                    commentId, matched, resp.IsSuccessStatusCode);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("Auto-hide error for comment {CommentId}: {Msg}", commentId, ex.Message);
+            }
+        }
+
+        // Facebook comments: pageId is the actual FB Page ID, token comes straight
+        // from FacebookPages. Instagram comments: pageId is the IG business account
+        // ID, which isn't linked to a page by a foreign key (no migrations — see
+        // ActivePageService), so each connected page's instagram_business_account
+        // field is checked via the Graph API to find the owning page's token.
+        private static async Task<string?> ResolvePageTokenForHide(
+            string? pageId, string platform, AppDbContext context, IHttpClientFactory httpFactory)
+        {
+            if (string.IsNullOrEmpty(pageId)) return null;
+
+            if (platform == "facebook")
+            {
+                var page = await context.FacebookPages.FirstOrDefaultAsync(p => p.page_id == pageId);
+                return page?.page_access_token;
+            }
+
+            var pages = await context.FacebookPages.ToListAsync();
+            var client = httpFactory.CreateClient();
+            foreach (var page in pages)
+            {
+                try
+                {
+                    var url = $"https://graph.facebook.com/v19.0/{page.page_id}?fields=instagram_business_account&access_token={page.page_access_token}";
+                    var body = await client.GetStringAsync(url);
+                    using var doc = JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("instagram_business_account", out var ig) &&
+                        ig.TryGetProperty("id", out var idProp) &&
+                        idProp.GetString() == pageId)
+                    {
+                        return page.page_access_token;
+                    }
+                }
+                catch { /* try next page */ }
+            }
+            return null;
         }
 
         // ══════════════════════════════════════════════════════

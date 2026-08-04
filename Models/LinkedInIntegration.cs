@@ -27,6 +27,7 @@ namespace SocialMediaPanel.Models
         public string? AccessToken { get; set; }
 
         public string? RefreshToken { get; set; }
+        public string? GrantedScopes { get; set; }   // e.g. "openid profile email w_member_social"
 
         public DateTime? TokenExpiresAt { get; set; }
 

@@ -1,0 +1,91 @@
+@model List<SocialMediaPanel.Services.AdAccountInfo>
+@{
+    ViewData["Title"] = "Ads";
+}
+
+<style>
+    .ads-header { margin-bottom:20px; }
+    .ads-title { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; color:var(--text); }
+    .ads-subtitle { font-size:13px; color:var(--muted); margin-top:2px; }
+
+    .ads-layout { display:flex; gap:20px; align-items:flex-start; }
+    .ads-accounts { width:280px; flex-shrink:0; background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .ads-account-item { padding:12px 16px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--border); }
+    .ads-account-item:last-child { border-bottom:none; }
+    .ads-account-item:hover { background:#f4f5f7; }
+    .ads-account-item.active { background:rgba(75,181,67,.08); color:var(--green); font-weight:700; }
+    .ads-account-name { font-weight:600; color:var(--text); }
+    .ads-account-item.active .ads-account-name { color:var(--green); }
+    .ads-account-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    .ads-main { flex:1; background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px; min-height:200px; }
+    .ads-empty { text-align:center; padding:50px 0; color:var(--muted); font-size:13px; }
+
+    .ads-campaign-row { display:flex; align-items:center; justify-content:space-between; padding:12px 4px; border-bottom:1px solid var(--border); }
+    .ads-campaign-row:last-child { border-bottom:none; }
+    .ads-campaign-name { font-size:13px; font-weight:600; color:var(--text); }
+    .ads-campaign-meta { font-size:11.5px; color:var(--muted); margin-top:2px; }
+    .ads-status-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; }
+    .ads-status-badge.active { background:rgba(75,181,67,.12); color:var(--green); }
+    .ads-status-badge.paused { background:rgba(138,151,168,.15); color:var(--muted); }
+</style>
+
+<div class="ads-header">
+    <div class="ads-title">Ads</div>
+    <div class="ads-subtitle">Ad accounts, campaigns and insights. New campaigns are created paused — nothing spends until you activate them.</div>
+</div>
+
+@if (!ViewBag.HasToken)
+{
+    <div class="ads-main"><div class="ads-empty">Connect Facebook first to manage ads.</div></div>
+}
+else if (Model.Count == 0)
+{
+    <div class="ads-main"><div class="ads-empty">No ad accounts found for this Facebook login. Create one in Meta Ads Manager first.</div></div>
+}
+else
+{
+    <div class="ads-layout">
+        <div class="ads-accounts" id="adsAccountList">
+            @foreach (var acc in Model)
+            {
+                <div class="ads-account-item" data-account-id="@acc.Id" onclick="selectAccount('@acc.Id', this)">
+                    <div class="ads-account-name">@acc.Name</div>
+                    <div class="ads-account-meta">@acc.Currency · @acc.Id</div>
+                </div>
+            }
+        </div>
+        <div class="ads-main" id="adsMain">
+            <div class="ads-empty">Select an ad account to see its campaigns.</div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function selectAccount(id, el) {
+            document.querySelectorAll('.ads-account-item').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+
+            var main = document.getElementById('adsMain');
+            main.innerHTML = '<div class="ads-empty">Loading campaigns…</div>';
+
+            fetch('/Ads/Campaigns/' + encodeURIComponent(id), { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => {
+                    if (!d.success) { main.innerHTML = '<div class="ads-empty">' + d.message + '</div>'; return; }
+                    if (!d.data.length) { main.innerHTML = '<div class="ads-empty">No campaigns yet on this ad account.</div>'; return; }
+
+                    main.innerHTML = d.data.map(function (c) {
+                        var statusClass = c.status === 'ACTIVE' ? 'active' : 'paused';
+                        return '<div class="ads-campaign-row">' +
+                               '<div><div class="ads-campaign-name">' + c.name + '</div>' +
+                               '<div class="ads-campaign-meta">' + c.objective + '</div></div>' +
+                               '<span class="ads-status-badge ' + statusClass + '">' + c.status + '</span>' +
+                               '</div>';
+                    }).join('');
+                })
+                .catch(() => { main.innerHTML = '<div class="ads-empty">Failed to load campaigns.</div>'; });
+        }
+    </script>
+}

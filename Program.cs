@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using SocialMediaPanel.Data;
@@ -17,11 +18,23 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(
+        new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "DataProtectionKeys")));
+
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
 builder.Services.AddScoped<InstagramService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<LinkedInService>();
+builder.Services.AddScoped<ActivePageService>();
+builder.Services.AddScoped<InsightsSyncService>();
+builder.Services.AddScoped<FacebookAdsService>();
+builder.Services.AddScoped<PostPublishingService>();
+builder.Services.AddHostedService<ScheduledPostPublisher>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<AuditLogService>();
 
 builder.Services.AddHttpClient<SocialMediaPanel.Services.GmailService>(c =>
     c.Timeout = TimeSpan.FromSeconds(15));
@@ -73,6 +86,36 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // ── One-time additive schema patch: Post Scheduling ──────────────────
+    // This repo has no EF Core migrations even though it runs against a
+    // live shared MySQL DB (see project memory: project-no-ef-migrations),
+    // so a real `dotnet ef migrations add` isn't safe here — it would try
+    // to recreate every existing table. This idempotent check+ALTER is the
+    // hand-rolled stand-in: it only ever adds one nullable column, checked
+    // first so it's a no-op after the first run (safe to leave in permanently,
+    // same as db.Database.Migrate() above).
+    var conn = db.Database.GetDbConnection();
+    conn.Open();
+    try
+    {
+        using var checkCmd = conn.CreateCommand();
+        checkCmd.CommandText =
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'SocialPosts' AND COLUMN_NAME = 'scheduled_at'";
+        var exists = Convert.ToInt32(checkCmd.ExecuteScalar()) > 0;
+
+        if (!exists)
+        {
+            using var alterCmd = conn.CreateCommand();
+            alterCmd.CommandText = "ALTER TABLE `SocialPosts` ADD COLUMN `scheduled_at` DATETIME NULL";
+            alterCmd.ExecuteNonQuery();
+        }
+    }
+    finally
+    {
+        conn.Close();
+    }
 }
 
 app.Run();

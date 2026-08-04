@@ -36,16 +36,54 @@ namespace SocialMediaPanel.Controllers
         // GET /Twitter/Index
         // Twitter dashboard
         // ══════════════════════════════════════════════════════
+        //public async Task<IActionResult> Index()
+        //{
+        //    var userId = HttpContext.Session.GetInt32("UserId");
+        //    if (userId == null)
+        //        return RedirectToAction("Login", "Account");
+
+        //    var user = await _context.Users
+        //        .Where(u => u.Id == userId)
+        //        .FirstOrDefaultAsync();
+
+        //    if (user == null)
+        //    {
+        //        HttpContext.Session.Clear();
+        //        return RedirectToAction("Login", "Account");
+        //    }
+
+        //    ViewBag.UserName = user.Name;
+        //    ViewBag.UserEmail = user.Email;
+        //    ViewBag.CompanyName = user.CompanyName ?? "My Workspace";
+
+        //    // Twitter account check karo
+        //    var twitterAccount = await _context.TwitterAccounts
+        //        .Where(t => t.UserId == userId && t.IsActive)
+        //        .FirstOrDefaultAsync();
+
+        //    ViewBag.TwitterConnected = twitterAccount != null;
+        //    ViewBag.TwitterAccount = twitterAccount;
+
+        //    // Posted tweets history
+        //    var tweets = await _context.TweetsPosted
+        //        .Where(t => t.UserId == userId)
+        //        .OrderByDescending(t => t.CreatedAt)
+        //        .Take(20)
+        //        .ToListAsync();
+
+        //    ViewBag.Tweets = tweets;
+
+        //    return View();
+        //}
+
+
         public async Task<IActionResult> Index()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
             if (userId == null)
                 return RedirectToAction("Login", "Account");
 
-            var user = await _context.Users
-                .Where(u => u.Id == userId)
-                .FirstOrDefaultAsync();
-
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
             {
                 HttpContext.Session.Clear();
@@ -56,26 +94,108 @@ namespace SocialMediaPanel.Controllers
             ViewBag.UserEmail = user.Email;
             ViewBag.CompanyName = user.CompanyName ?? "My Workspace";
 
-            // Twitter account check karo
             var twitterAccount = await _context.TwitterAccounts
-                .Where(t => t.UserId == userId && t.IsActive)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
 
             ViewBag.TwitterConnected = twitterAccount != null;
             ViewBag.TwitterAccount = twitterAccount;
 
-            // Posted tweets history
-            var tweets = await _context.TweetsPosted
-                .Where(t => t.UserId == userId)
-                .OrderByDescending(t => t.CreatedAt)
-                .Take(20)
-                .ToListAsync();
+            var tweets = new List<TweetPosted>();
+
+            if (twitterAccount != null)
+            {
+                try
+                {
+                    using var client = new HttpClient();
+                    client.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", twitterAccount.AccessToken);
+
+                    var url = $"https://api.twitter.com/2/users/{twitterAccount.TwitterUserId}/tweets" +
+          "?max_results=10" +
+          "&tweet.fields=created_at,attachments" +
+          "&expansions=attachments.media_keys" +
+          "&media.fields=url,preview_image_url,type";
+
+                    var response = await client.GetAsync(url);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(json);
+
+                        // Build media lookup dictionary
+                        var mediaLookup = new Dictionary<string, string>();
+                        if (doc.RootElement.TryGetProperty("includes", out var includes) &&
+                            includes.TryGetProperty("media", out var mediaArray))
+                        {
+                            foreach (var m in mediaArray.EnumerateArray())
+                            {
+                                var key = m.TryGetProperty("media_key", out var mk) ? mk.GetString() : null;
+                                var mUrl = m.TryGetProperty("url", out var mu) ? mu.GetString() : null;
+                                if (key != null && mUrl != null)
+                                    mediaLookup[key] = mUrl;
+                            }
+                        }
+
+                        if (doc.RootElement.TryGetProperty("data", out var data))
+                        {
+                            foreach (var tweet in data.EnumerateArray())
+                            {
+                                var id = tweet.TryGetProperty("id", out var tid) ? tid.GetString() : null;
+                                var text = tweet.TryGetProperty("text", out var ttxt) ? ttxt.GetString() : "";
+
+                                // Strip t.co link at end
+                                text = System.Text.RegularExpressions.Regex.Replace(text, @"\s*https://t\.co/\S+$", "").Trim();
+
+                                DateTime createdAt = DateTime.UtcNow;
+                                if (tweet.TryGetProperty("created_at", out var tca))
+                                    DateTime.TryParse(tca.GetString(), out createdAt);
+
+                                // Find first media image URL
+                                string? thumbUrl = null;
+                                if (tweet.TryGetProperty("attachments", out var att) &&
+                                    att.TryGetProperty("media_keys", out var keys))
+                                {
+                                    foreach (var k in keys.EnumerateArray())
+                                    {
+                                        var keyStr = k.GetString();
+                                        if (keyStr != null && mediaLookup.TryGetValue(keyStr, out var imgUrl))
+                                        {
+                                            thumbUrl = imgUrl;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                tweets.Add(new TweetPosted
+                                {
+                                    TweetId = id,
+                                    TweetText = text,
+                                    Status = "posted",
+                                    CreatedAt = createdAt,
+                                    UserId = userId.Value,
+                                    TwitterAccountId = twitterAccount.TwitterUserId,
+                                    MediaUrl = thumbUrl   // add this field — see Step 2
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ViewBag.Error = "Failed to fetch tweets from Twitter API";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError("Error fetching tweets from API: {Msg}", ex.Message);
+                    ViewBag.Error = "Error fetching tweets";
+                }
+            }
 
             ViewBag.Tweets = tweets;
 
             return View();
         }
-
         // ══════════════════════════════════════════════════════
         // Step 1: Redirect user to Twitter login
         // ══════════════════════════════════════════════════════
@@ -254,33 +374,85 @@ namespace SocialMediaPanel.Controllers
         }
 
 
+        // Route renamed to match the view's actual call ('/Twitter/GetReplies') —
+        // the old name (GetTweetReplies) never matched via default routing, so
+        // this always 404'd. Response reshaped to {success, replies:[{username,
+        // text, created_at}]} to match what the view's JS reads — it was
+        // previously handed Twitter's raw {data:[...]} shape with no username
+        // (needs the author_id -> user expansion) and no "replies" key at all.
         [HttpGet]
-        public async Task<IActionResult> GetTweetReplies(string tweetId)
+        [Route("Twitter/GetReplies")]
+        public async Task<IActionResult> GetReplies(string tweetId)
         {
-
             var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Unauthorized(new { success = false, message = "Not logged in" });
 
             var twitterAccount = await _context.TwitterAccounts
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
 
+            if (twitterAccount == null)
+                return Json(new { success = false, message = "Twitter not connected" });
 
             var accessToken = twitterAccount.AccessToken;
 
-            using var client = new HttpClient();
-
+            var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+                new AuthenticationHeaderValue("Bearer", accessToken);
 
+            // Note: tweets/search/recent only covers the last 7 days — a Twitter/X
+            // API restriction, not something this app can work around without
+            // elevated/full-archive access.
             var url =
                 $"https://api.twitter.com/2/tweets/search/recent" +
                 $"?query=conversation_id:{tweetId}" +
-                $"&tweet.fields=created_at,author_id,public_metrics";
+                $"&tweet.fields=created_at,author_id" +
+                $"&expansions=author_id&user.fields=username";
 
             var response = await client.GetAsync(url);
-
             var json = await response.Content.ReadAsStringAsync();
 
-            return Content(json, "application/json");
+            if (!response.IsSuccessStatusCode)
+                return Json(new { success = false, message = json });
+
+            var replies = new List<object>();
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                var usernames = new Dictionary<string, string>();
+                if (root.TryGetProperty("includes", out var includes) &&
+                    includes.TryGetProperty("users", out var users))
+                {
+                    foreach (var u in users.EnumerateArray())
+                    {
+                        var uid = u.TryGetProperty("id", out var uidProp) ? uidProp.GetString() : null;
+                        var uname = u.TryGetProperty("username", out var unameProp) ? unameProp.GetString() : null;
+                        if (uid != null && uname != null) usernames[uid] = uname;
+                    }
+                }
+
+                if (root.TryGetProperty("data", out var data))
+                {
+                    foreach (var tweet in data.EnumerateArray())
+                    {
+                        var authorId = tweet.TryGetProperty("author_id", out var aid) ? aid.GetString() : null;
+                        replies.Add(new
+                        {
+                            username = authorId != null && usernames.TryGetValue(authorId, out var un) ? un : "user",
+                            text = tweet.TryGetProperty("text", out var t) ? t.GetString() : "",
+                            created_at = tweet.TryGetProperty("created_at", out var ca) ? ca.GetString() : ""
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetReplies parse error: {Msg}", ex.Message);
+            }
+
+            return Json(new { success = true, replies });
         }
 
         [HttpPost]
@@ -335,9 +507,14 @@ namespace SocialMediaPanel.Controllers
         public async Task<IActionResult> GetMyTweets()
         {
             var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Unauthorized(new { success = false, message = "Not logged in" });
 
             var twitterAccount = await _context.TwitterAccounts
                 .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+
+            if (twitterAccount == null)
+                return Json(new { success = false, message = "Twitter not connected" });
 
             var client = _httpClientFactory.CreateClient();
 

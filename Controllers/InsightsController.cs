@@ -23,22 +23,115 @@ namespace SocialMediaPanel.Controllers
         private readonly AppDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<InsightsController> _logger;
+        private readonly SocialMediaPanel.Services.InsightsSyncService _insightsSync;
+        private readonly SocialMediaPanel.Services.ActivePageService _activePages;
+        private readonly SocialMediaPanel.Services.FacebookService _facebookService;
+        private readonly SocialMediaPanel.Services.InstagramService _instagramService;
 
-        // Facebook Page Post ke liye sahi metrics
-        // post_clicks aur post_reactions_by_type_total — Ads ke liye hain, Page post ke liye NAHI
+        // Confirmed live against the current Graph API version (v23.0, the
+        // version this app's tokens get served): post_impressions,
+        // post_impressions_unique and post_engaged_users are ALL rejected
+        // ("The value must be a valid insights metric") — Meta has removed
+        // per-post reach/impressions for organic (unboosted) Page posts
+        // entirely. There is no current replacement metric that gives reach/
+        // impressions for an organic post, so FetchAndUpdateInsight skips the
+        // Facebook branch's API call below rather than making a call that
+        // always fails.
         private const string FB_METRICS = "post_impressions,post_impressions_unique,post_engaged_users";
 
-        // Instagram Media ke liye metrics
-        private const string IG_METRICS = "reach,impressions,saved,likes_count,comments_count";
+        // Instagram Media metrics — "impressions" and "likes_count"/"comments_count"
+        // removed: impressions errors on current-version media ("no longer
+        // supported for the queried media"), and likes_count/comments_count
+        // were never valid insight metric names (that's "likes"/"comments",
+        // and this method doesn't consume them anyway — see WebhookController
+        // for likes/comments, which come from webhook events instead).
+        private const string IG_METRICS = "reach,saved";
 
         public InsightsController(
             AppDbContext context,
             IHttpClientFactory httpClientFactory,
-            ILogger<InsightsController> logger)
+            ILogger<InsightsController> logger,
+            SocialMediaPanel.Services.InsightsSyncService insightsSync,
+            SocialMediaPanel.Services.ActivePageService activePages,
+            SocialMediaPanel.Services.FacebookService facebookService,
+            SocialMediaPanel.Services.InstagramService instagramService)
         {
             _context = context;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _insightsSync = insightsSync;
+            _activePages = activePages;
+            _facebookService = facebookService;
+            _instagramService = instagramService;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // GET /api/insights/overview
+        // Aggregated reach/engagement + page-level snapshot for the
+        // logged-in user's connected pages/accounts — feeds the Reports page.
+        // ══════════════════════════════════════════════════════
+        [HttpGet("overview")]
+        public async Task<IActionResult> Overview()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Unauthorized(new { success = false, message = "Not logged in" });
+
+            var fbPages = await _activePages.GetAllFacebookPagesAsync(userId.Value);
+            var igAccounts = await _activePages.GetAllInstagramAccountsAsync(userId.Value);
+
+            var pageIds = fbPages.Select(p => p.page_id)
+                .Concat(igAccounts.Select(a => a.InstagramUserId))
+                .Distinct()
+                .ToList();
+
+            var overview = await _insightsSync.GetOverviewAsync(pageIds, userId.Value);
+
+            // Page-level snapshot from the active Facebook Page + Instagram account
+            var activeFb = await _activePages.GetActiveFacebookPageAsync(userId.Value);
+            if (activeFb != null)
+            {
+                try
+                {
+                    var fbInsights = await _facebookService.GetPageInsightsAsync(activeFb.page_id, activeFb.page_access_token);
+                    overview.FacebookFans = fbInsights.Fans;
+                }
+                catch { }
+            }
+
+            var activeIg = await _activePages.GetActiveInstagramAccountAsync(userId.Value);
+            if (activeIg != null)
+            {
+                var linkedPage = await _activePages.GetLinkedPageForInstagramAsync(userId.Value, activeIg.InstagramUserId);
+                if (linkedPage != null)
+                {
+                    try
+                    {
+                        var igInsights = await _instagramService.GetAccountInsightsAsync(activeIg.InstagramUserId, linkedPage.page_access_token);
+                        overview.InstagramFollowers = igInsights.Followers;
+                    }
+                    catch { }
+                }
+            }
+
+            return Ok(new { success = true, data = overview });
+        }
+
+        // ══════════════════════════════════════════════════════
+        // GET /api/insights/best-times
+        // Top hour/day-of-week combos by historical average engagement.
+        // ══════════════════════════════════════════════════════
+        [HttpGet("best-times")]
+        public async Task<IActionResult> BestTimes()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Unauthorized(new { success = false, message = "Not logged in" });
+
+            var fbPages = await _activePages.GetAllFacebookPagesAsync(userId.Value);
+            var igAccounts = await _activePages.GetAllInstagramAccountsAsync(userId.Value);
+            var pageIds = fbPages.Select(p => p.page_id).Concat(igAccounts.Select(a => a.InstagramUserId)).Distinct();
+
+            var bestTimes = await _insightsSync.GetBestPostingTimesAsync(pageIds);
+            return Ok(new { success = true, data = bestTimes });
         }
 
         // ══════════════════════════════════════════════════════
@@ -292,76 +385,13 @@ namespace SocialMediaPanel.Controllers
 
                 if (platform == "facebook")
                 {
-                    // ── Facebook Page Post Insights ──
-                    var url = $"https://graph.facebook.com/v19.0/{postId}/insights" +
-                              $"?metric={FB_METRICS}" +
-                              $"&period=lifetime" +
-                              $"&access_token={accessToken}";
-
-                    _logger.LogInformation(
-                        "FB insight fetch — postId={PostId} metrics={Metrics}",
-                        postId, FB_METRICS);
-
-                    var response = await client.GetStringAsync(url);
-
-                    _logger.LogInformation(
-                        "FB response preview: {Preview}",
-                        response[..Math.Min(300, response.Length)]);
-
-                    using var doc = JsonDocument.Parse(response);
-                    var root = doc.RootElement;
-
-                    // Error check
-                    if (root.TryGetProperty("error", out var error))
-                    {
-                        var errMsg = error.TryGetProperty("message", out var em)
-                            ? em.GetString() : "Unknown";
-                        _logger.LogWarning("FB insight API error: {ErrMsg}", errMsg);
-                        return false;
-                    }
-
-                    if (root.TryGetProperty("data", out var data))
-                    {
-                        foreach (var metric in data.EnumerateArray())
-                        {
-                            var name = metric.TryGetProperty("name", out var n) ? n.GetString() : "";
-                            var values = metric.TryGetProperty("values", out var v) ? v : (JsonElement?)null;
-
-                            if (!values.HasValue || values.Value.GetArrayLength() == 0) continue;
-
-                            // Lifetime period mein sirf ek value hoti hai
-                            var firstVal = values.Value[0];
-                            var val = firstVal.TryGetProperty("value", out var vv) ? vv : (JsonElement?)null;
-
-                            if (!val.HasValue) continue;
-
-                            // Value number hai ya nahi check karo
-                            int intVal = 0;
-                            if (val.Value.ValueKind == JsonValueKind.Number)
-                                intVal = val.Value.GetInt32();
-
-                            switch (name)
-                            {
-                                // Unique reach (unique users jo dekha)
-                                case "post_impressions_unique":
-                                    reach = intVal;
-                                    _logger.LogInformation("reach={V}", intVal);
-                                    break;
-
-                                // Total impressions
-                                case "post_impressions":
-                                    impressions = intVal;
-                                    _logger.LogInformation("impressions={V}", intVal);
-                                    break;
-
-                                // Engaged users
-                                case "post_engaged_users":
-                                    saves = intVal;
-                                    _logger.LogInformation("engaged={V}", intVal);
-                                    break;
-                            }
-                        }
-                    }
+                    // Meta no longer exposes reach/impressions for organic Page
+                    // posts (see FB_METRICS comment) — nothing to fetch here.
+                    // Likes/comments/shares for this post already arrive via
+                    // WebhookController's feed-change events. Treat as a
+                    // successful no-op rather than calling an endpoint that's
+                    // guaranteed to error.
+                    return true;
                 }
                 else if (platform == "instagram")
                 {
@@ -422,29 +452,10 @@ namespace SocialMediaPanel.Controllers
                     }
                 }
 
-                // ── DB mein update karo ──
-                var insight = await _context.PostInsights
-                    .FirstOrDefaultAsync(p => p.PostId == postId && p.Platform == platform);
-
-                if (insight == null)
-                {
-                    insight = new PostInsight
-                    {
-                        PostId = postId,
-                        PageId = pageId,
-                        Platform = platform,
-                        UpdatedAt = DateTime.UtcNow
-                    };
-                    _context.PostInsights.Add(insight);
-                }
-
-                // Sirf update karo agar value 0 se zyada hai
-                if (reach > 0) insight.Reach = reach;
-                if (impressions > 0) insight.Impressions = impressions;
-                if (saves > 0) insight.SavesCount = saves;
-
-                insight.UpdatedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+                // ── DB mein update karo — shared upsert (InsightsSyncService) ──
+                await _insightsSync.UpsertPostInsightAsync(
+                    postId, pageId, platform,
+                    reach: reach, impressions: impressions, saves: saves);
 
                 _logger.LogInformation(
                     "Insight updated ✅ postId={PostId} reach={R} impressions={I} engaged={S}",

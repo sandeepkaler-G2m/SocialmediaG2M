@@ -1,4 +1,5 @@
 ﻿@using SocialMediaPanel.Models
+@using System.Text.Json
 @{
     ViewData["Title"] = "LinkedIn";
     ViewData["PageTitle"] = "LinkedIn";
@@ -9,195 +10,586 @@
     var error = ViewBag.Error as string;
 
     bool connected = integration != null;
-}
+    bool hasProfile = ViewBag.HasProfile ?? false;
+    bool hasPosting = ViewBag.HasPosting ?? false;
+    bool hasOrgAccess = ViewBag.HasOrgAccess ?? false;
+    bool hasLeadsAccess = ViewBag.HasLeadsAccess ?? false;
 
-@{
-
-    var dummyLeads = new List<dynamic> {
-        new { Id = 1, FullName = "Sarah Jenkins", Email = "sarah.j@techcorp.com", CompanyName = "TechCorp Solutions", CreatedAt = DateTime.Now.AddDays(-1) },
-        new { Id = 2, FullName = "Michael Chen", Email = "m.chen@innovate.io", CompanyName = "Innovate UI", CreatedAt = DateTime.Now.AddDays(-2) },
-        new { Id = 3, FullName = "Alex Rivera", Email = "arivera@globalsoft.net", CompanyName = "GlobalSoft", CreatedAt = DateTime.Now.AddDays(-3) }
-    };
+    var organizations = ViewBag.Organizations as List<(string Urn, string Name, string? LogoUrl)> ?? new();
+    var leads = ViewBag.Leads as List<Dictionary<string, JsonElement>> ?? new();
 }
 <style>
-    body.li-page .page-content { overflow-y:auto; }
+    body.li-page .page-content {
+        overflow-y: auto;
+        background: #fafbfc;
+    }
 
-    /* ── Page layout ────────────────────────────── */
-    .li-shell { display:flex;gap:20px;align-items:flex-start; }
-    .li-left  { width:320px;min-width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:16px; }
-    .li-right { flex:1;min-width:0;display:flex;flex-direction:column;gap:16px; }
+    .li-page-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        max-width: 760px;
+        margin: 0 auto;
+    }
+
+    /* ── Profile header — simple, no action buttons ─────────── */
+    .li-profile-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: linear-gradient(135deg,#0A66C2 0%,#0d7fe8 100%);
+        border-radius: 18px;
+        padding: 22px 26px;
+        color: #fff;
+        box-shadow: 0 8px 24px rgba(10,102,194,.18);
+    }
+
+    .li-pb-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: rgba(255,255,255,.18);
+        border: 2px solid rgba(255,255,255,.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 700;
+        color: #fff;
+        overflow: hidden;
+    }
+
+        .li-pb-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .li-pb-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .li-pb-name {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .li-pb-email {
+        font-size: 12.5px;
+        opacity: .85;
+        margin-top: 1px;
+    }
+
+    .li-pb-badges {
+        display: flex;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
+    .li-pb-badge {
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: rgba(255,255,255,.18);
+        color: #fff;
+    }
+
+    .li-pb-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+        background: rgba(255,255,255,.15);
+        padding: 5px 12px;
+        border-radius: 20px;
+    }
+
+    .li-pb-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #4ade80;
+        flex-shrink: 0;
+    }
+
+    /* Not-connected bar variant */
+    .li-profile-bar.disc {
+        background: #fff;
+        border: 1px dashed var(--border);
+        color: var(--text);
+        box-shadow: none;
+    }
+
+        .li-profile-bar.disc .li-pb-avatar {
+            background: #f4f5f7;
+            border-color: var(--border);
+        }
+
+            .li-profile-bar.disc .li-pb-avatar svg {
+                fill: #0A66C2;
+                opacity: .5;
+            }
+
+        .li-profile-bar.disc .li-pb-name {
+            color: var(--text);
+        }
+
+        .li-profile-bar.disc .li-pb-email {
+            color: var(--muted);
+            opacity: 1;
+        }
+
+            .li-profile-bar.disc .li-pb-email a {
+                color: #0A66C2;
+                font-weight: 600;
+                text-decoration: none;
+            }
+
+                .li-profile-bar.disc .li-pb-email a:hover {
+                    text-decoration: underline;
+                }
+
+        .li-profile-bar.disc .li-pb-status {
+            background: rgba(220,53,69,.08);
+            color: #dc3545;
+        }
+
+            .li-profile-bar.disc .li-pb-status .li-pb-status-dot {
+                background: #dc3545;
+            }
 
     /* ── Cards ──────────────────────────────────── */
     .li-card {
-        background:#fff;border:1px solid var(--border);
-        border-radius:16px;overflow:hidden;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
     }
+
     .li-card-head {
-        padding:16px 20px;border-bottom:1px solid var(--border);
-        display:flex;align-items:center;justify-content:space-between;
-    }
-    .li-card-head h3 { font-size:14px;font-weight:700;color:var(--text);margin:0; }
-    .li-card-body { padding:20px; }
-
-    /* ── Profile block ──────────────────────────── */
-    .li-profile {
-        display:flex;flex-direction:column;align-items:center;
-        text-align:center;padding:24px 20px 20px;
-    }
-    .li-avatar {
-        width:64px;height:64px;border-radius:50%;
-        background:linear-gradient(135deg,#0A66C2,#0a8fd6);
-        display:flex;align-items:center;justify-content:center;
-        font-size:24px;font-weight:700;color:#fff;
-        margin-bottom:12px;overflow:hidden;flex-shrink:0;
-    }
-    .li-avatar img { width:100%;height:100%;object-fit:cover; }
-    .li-profile-name  { font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px; }
-    .li-profile-email { font-size:12px;color:var(--muted);margin-bottom:14px; }
-    .li-status {
-        display:inline-flex;align-items:center;gap:6px;
-        padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;
-        margin-bottom:16px;
-    }
-    .li-status.connected    { background:rgba(75,181,67,.1);color:var(--green); }
-    .li-status.disconnected { background:rgba(220,53,69,.08);color:#dc3545; }
-    .li-status-dot {
-        width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
 
-    /* ── Buttons ─────────────────────────────────── */
-    .li-connect-btn {
-        display:flex;align-items:center;justify-content:center;gap:8px;
-        width:100%;padding:10px 18px;
-        background:#0A66C2;border:none;border-radius:9px;
-        color:#fff;font-size:13px;font-weight:700;
-        font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;
-        transition:background .15s;
-    }
-    .li-connect-btn:hover { background:#085199;color:#fff;text-decoration:none; }
-    .li-connect-btn svg { width:16px;height:16px;fill:#fff; }
+        .li-card-head h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
 
-    .li-disconnect-btn {
-        display:flex;align-items:center;justify-content:center;gap:6px;
-        width:100%;padding:8px 14px;
-        background:none;border:1px solid rgba(220,53,69,.3);border-radius:9px;
-        color:#dc3545;font-size:12px;font-weight:600;
-        font-family:'DM Sans',sans-serif;cursor:pointer;
-        transition:background .15s,border-color .15s;
+    .li-card-body {
+        padding: 20px;
     }
-    .li-disconnect-btn:hover { background:rgba(220,53,69,.06);border-color:#dc3545; }
 
     /* ── Compose box ─────────────────────────────── */
-    .li-compose { display:flex;flex-direction:column;gap:10px; }
+    .li-compose {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .li-textarea {
-        width:100%;padding:12px 14px;
-        border:1px solid var(--border);border-radius:10px;
-        font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);
-        resize:none;outline:none;min-height:100px;
-        transition:border-color .15s;line-height:1.5;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        resize: none;
+        outline: none;
+        min-height: 100px;
+        transition: border-color .15s;
+        line-height: 1.5;
     }
-    .li-textarea:focus { border-color:#0A66C2;box-shadow:0 0 0 3px rgba(10,102,194,.1); }
+
+        .li-textarea:focus {
+            border-color: #0A66C2;
+            box-shadow: 0 0 0 3px rgba(10,102,194,.1);
+        }
+
     .li-input {
-        width:100%;padding:9px 14px;
-        border:1px solid var(--border);border-radius:9px;
-        font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);
-        outline:none;background:#fff;transition:border-color .15s;
+        width: 100%;
+        padding: 9px 14px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        font-size: 13px;
+        font-family: 'DM Sans',sans-serif;
+        color: var(--text);
+        outline: none;
+        background: #fff;
+        transition: border-color .15s;
     }
-    .li-input:focus { border-color:#0A66C2; }
-    .li-input::placeholder { color:var(--muted); }
 
-    /* File upload button */
+        .li-input:focus {
+            border-color: #0A66C2;
+        }
+
+        .li-input::placeholder {
+            color: var(--muted);
+        }
+
     .li-file-label {
-        display:flex;align-items:center;gap:7px;
-        padding:8px 14px;background:#f4f5f7;
-        border:1px dashed var(--border);border-radius:9px;
-        font-size:12px;color:var(--muted);cursor:pointer;
-        transition:border-color .15s,background .15s;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 14px;
+        background: #f4f5f7;
+        border: 1px dashed var(--border);
+        border-radius: 9px;
+        font-size: 12px;
+        color: var(--muted);
+        cursor: pointer;
+        transition: border-color .15s,background .15s;
     }
-    .li-file-label:hover { border-color:#0A66C2;color:#0A66C2;background:#f0f6ff; }
-    .li-file-label svg { width:14px;height:14px;stroke:currentColor;fill:none; }
-    .li-file-name { font-size:11px;color:var(--muted);margin-top:2px;padding-left:2px; }
 
-    /* Char counter */
-    .li-char-row { display:flex;align-items:center;justify-content:space-between; }
-    .li-char-count { font-size:11px;color:var(--muted); }
-    .li-char-count.warn { color:#e6a817; }
-    .li-char-count.over { color:#dc3545;font-weight:700; }
+        .li-file-label:hover {
+            border-color: #0A66C2;
+            color: #0A66C2;
+            background: #f0f6ff;
+        }
 
-    /* Post button */
+        .li-file-label svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    .li-file-name {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+        padding-left: 2px;
+    }
+
+    .li-char-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .li-char-count {
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+        .li-char-count.warn {
+            color: #e6a817;
+        }
+
+        .li-char-count.over {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
     .li-post-btn {
-        display:flex;align-items:center;justify-content:center;gap:7px;
-        width:100%;padding:11px;
-        background:#0A66C2;border:none;border-radius:9px;
-        color:#fff;font-size:13px;font-weight:700;
-        font-family:'DM Sans',sans-serif;cursor:pointer;
-        transition:background .15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        width: 100%;
+        padding: 11px;
+        background: #0A66C2;
+        border: none;
+        border-radius: 9px;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'DM Sans',sans-serif;
+        cursor: pointer;
+        transition: background .15s;
     }
-    .li-post-btn:hover { background:#085199; }
-    .li-post-btn:disabled { opacity:.5;cursor:not-allowed; }
-    .li-post-btn svg { width:14px;height:14px;stroke:#fff;fill:none; }
 
-    /* ── Toast ──────────────────────────────────── */
+        .li-post-btn:hover {
+            background: #085199;
+        }
+
+        .li-post-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .li-post-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: #fff;
+            fill: none;
+        }
+
     .li-toast {
-        display:none;align-items:center;gap:10px;
-        padding:11px 16px;border-radius:9px;font-size:13px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        border-radius: 9px;
+        font-size: 13px;
     }
-    .li-toast.success { display:flex;background:rgba(75,181,67,.1);border:1px solid rgba(75,181,67,.3);color:#2d7a27; }
-    .li-toast.error   { display:flex;background:#fff0f0;border:1px solid #ffcdd2;color:#c62828; }
+
+        .li-toast.success {
+            display: flex;
+            background: rgba(75,181,67,.1);
+            border: 1px solid rgba(75,181,67,.3);
+            color: #2d7a27;
+        }
+
+        .li-toast.error {
+            display: flex;
+            background: #fff0f0;
+            border: 1px solid #ffcdd2;
+            color: #c62828;
+        }
 
     /* ── Post history ────────────────────────────── */
     .li-post-row {
-        padding:14px 20px;border-bottom:1px solid var(--border);
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
     }
-    .li-post-row:last-child { border-bottom:none; }
+
+        .li-post-row:last-child {
+            border-bottom: none;
+        }
+
     .li-post-text {
-        font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px;
-        display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.5;
+        margin-bottom: 6px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
-    .li-post-meta { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+
+    .li-post-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
     .li-post-status {
-        font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 10px;
     }
-    .li-post-status.posted { background:rgba(75,181,67,.1);color:var(--green); }
-    .li-post-status.failed { background:#fff0f0;color:#c62828; }
-    .li-post-date { font-size:11px;color:var(--muted); }
+
+        .li-post-status.posted {
+            background: rgba(75,181,67,.1);
+            color: var(--green);
+        }
+
+        .li-post-status.failed {
+            background: #fff0f0;
+            color: #c62828;
+        }
+
+    .li-post-date {
+        font-size: 11px;
+        color: var(--muted);
+    }
+
     .li-post-link {
-        font-size:11px;color:#0A66C2;text-decoration:none;
-        display:flex;align-items:center;gap:3px;
+        font-size: 11px;
+        color: #0A66C2;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 3px;
     }
-    .li-post-link svg { width:10px;height:10px;stroke:currentColor;fill:none; }
 
-    /* ── Empty state ─────────────────────────────── */
+        .li-post-link svg {
+            width: 10px;
+            height: 10px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+    /* ── Org pages ────────────────────────────────── */
+    .li-org-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+        .li-org-row:last-child {
+            border-bottom: none;
+        }
+
+    .li-org-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background: rgba(10,102,194,.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+        .li-org-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .li-org-logo svg {
+            width: 18px;
+            height: 18px;
+            fill: #0A66C2;
+        }
+
+    .li-org-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .li-org-urn {
+        font-size: 11px;
+        color: var(--muted);
+        font-family: monospace;
+    }
+
+    /* ── Leads list ─────────────────────────────────── */
+    .li-leads-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .li-lead-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        transition: background .12s;
+    }
+
+        .li-lead-row:last-child {
+            border-bottom: none;
+        }
+
+        .li-lead-row:hover {
+            background: #fafbfc;
+        }
+
+    .li-lead-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: linear-gradient(135deg,#0A66C2,#0a8fd6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .li-lead-main {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .li-lead-name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+
+    .li-lead-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .li-lead-tag {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 9px;
+        border-radius: 20px;
+        background: #f4f5f7;
+        color: var(--muted);
+    }
+
+        .li-lead-tag.form {
+            background: rgba(10,102,194,.08);
+            color: #0A66C2;
+        }
+
+    .li-lead-date {
+        font-size: 11px;
+        color: var(--muted);
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    /* ── Empty / gated states ──────────────────────── */
     .li-empty {
-        display:flex;flex-direction:column;align-items:center;
-        padding:48px 24px;text-align:center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 44px 24px;
+        text-align: center;
     }
-    .li-empty svg { width:48px;height:48px;stroke:var(--muted);fill:none;opacity:.3;margin-bottom:14px; }
-    .li-empty h4  { font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px; }
-    .li-empty p   { font-size:13px;color:var(--muted);line-height:1.6; }
 
-    /* ── Not connected overlay ───────────────────── */
-    .li-not-conn {
-        display:flex;flex-direction:column;align-items:center;
-        padding:48px 24px;text-align:center;
-    }
-    .li-not-conn-icon {
-        width:72px;height:72px;border-radius:50%;
-        background:rgba(10,102,194,.08);
-        display:flex;align-items:center;justify-content:center;
-        margin-bottom:16px;
-    }
-    .li-not-conn-icon svg { width:36px;height:36px;fill:#0A66C2;opacity:.6; }
-    .li-not-conn h3 { font-family:'Sora',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-bottom:8px; }
-    .li-not-conn p  { font-size:13px;color:var(--muted);line-height:1.6;max-width:280px;margin-bottom:20px; }
+        .li-empty svg {
+            width: 44px;
+            height: 44px;
+            stroke: var(--muted);
+            fill: none;
+            opacity: .3;
+            margin-bottom: 12px;
+        }
+
+        .li-empty h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .li-empty p {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.6;
+            max-width: 340px;
+        }
+
+        .li-empty.no-permission svg {
+            opacity: .35;
+            stroke: #e6a817;
+        }
+
+        .li-empty.no-permission h4 {
+            color: #7a6000;
+        }
 </style>
 
 @* ── Banners ─────────────────────────────────── *@
 @if (success != null)
 {
     <div style="background:rgba(75,181,67,.1);border:1px solid rgba(75,181,67,.3);color:#2d7a27;
-                    border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;
-                    display:flex;align-items:center;justify-content:space-between;">
+                        border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;max-width:760px;margin-left:auto;margin-right:auto;
+                        display:flex;align-items:center;justify-content:space-between;">
         <span>✓ @success</span>
         <button onclick="this.parentElement.remove()"
                 style="background:none;border:none;cursor:pointer;color:inherit;font-size:16px;">
@@ -208,8 +600,8 @@
 @if (error != null)
 {
     <div style="background:#fff0f0;border:1px solid #ffcdd2;color:#c62828;
-                    border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;
-                    display:flex;align-items:center;justify-content:space-between;">
+                        border-radius:10px;padding:12px 18px;margin-bottom:18px;font-size:13px;max-width:760px;margin-left:auto;margin-right:auto;
+                        display:flex;align-items:center;justify-content:space-between;">
         <span>⚠️ @error</span>
         <button onclick="this.parentElement.remove()"
                 style="background:none;border:none;cursor:pointer;color:inherit;font-size:16px;">
@@ -218,74 +610,83 @@
     </div>
 }
 
-<div class="li-shell">
+<div class="li-page-wrap">
 
-    <!-- ═══ LEFT COLUMN ═══════════════════════════════════════ -->
-    <div class="li-left">
-
-        <!-- Profile / Connect card -->
-        <div class="li-card">
-            <div class="li-profile">
-
-                @if (connected)
+    @* ── Simple profile header — name, email, status. No connect/disconnect buttons. ── *@
+    @if (connected)
+    {
+        <div class="li-profile-bar">
+            <div class="li-pb-avatar">
+                @if (hasProfile && !string.IsNullOrEmpty(integration!.ProfilePicture))
                 {
-                    <div class="li-avatar">
-                        @if (!string.IsNullOrEmpty(integration!.ProfilePicture))
-                        {
-                            <img src="@integration.ProfilePicture" alt="@integration.DisplayName" />
-                        }
-                        else
-                        {
-                            @integration.DisplayName.Substring(0, 1).ToUpper()
-                        }
-                    </div>
-                    <div class="li-profile-name">@integration!.DisplayName</div>
-                    <div class="li-profile-email">@(integration.Email ?? "")</div>
-                    <div class="li-status connected">
-                        <div class="li-status-dot"></div>
-                        Connected
-                    </div>
-                    <button class="li-disconnect-btn" onclick="disconnectLinkedIn()">
-                        Disconnect
-                    </button>
+                    <img src="@integration.ProfilePicture" alt="@integration.DisplayName" />
                 }
                 else
                 {
-                    <div class="li-avatar">
-                        <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                        </svg>
-                    </div>
-                    <div class="li-profile-name">LinkedIn</div>
-                    <div class="li-profile-email">Not connected</div>
-                    <div class="li-status disconnected">
-                        <div class="li-status-dot"></div>
-                        Disconnected
-                    </div>
-                    <a href="/LinkedIn/Connect" class="li-connect-btn">
-                        <svg viewBox="0 0 24 24" fill="white" width="16" height="16">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                        </svg>
-                        Connect LinkedIn
-                    </a>
+                    @((hasProfile ? integration!.DisplayName : "?").Substring(0, 1).ToUpper())
                 }
             </div>
-        </div>
-
-        @* Compose only shown when connected *@
-        @if (connected)
-        {
-            <div class="li-card">
-                <div class="li-card-head">
-                    <h3>Create Post</h3>
+            <div class="li-pb-info">
+                <div class="li-pb-name">@(hasProfile? integration!.DisplayName : "LinkedIn Account")</div>
+                <div class="li-pb-email">@(hasProfile ? (integration!.Email ?? "") : "Profile permission not granted")</div>
+                <div class="li-pb-badges">
+                    @if (hasProfile)
+                    {
+                        <span class="li-pb-badge">Profile</span>
+                    }
+                    @if (hasPosting)
+                    {
+                        <span class="li-pb-badge">Posting</span>
+                    }
+                    @if (hasOrgAccess)
+                    {
+                        <span class="li-pb-badge">Org Pages</span>
+                    }
+                    @if (hasLeadsAccess)
+                    {
+                        <span class="li-pb-badge">Leads</span>
+                    }
                 </div>
+            </div>
+            <div class="li-pb-status">
+                <div class="li-pb-status-dot"></div>
+                Connected
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="li-profile-bar disc">
+            <div class="li-pb-avatar">
+                <svg viewBox="0 0 24 24" width="26" height="26">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+            </div>
+            <div class="li-pb-info">
+                <div class="li-pb-name">LinkedIn</div>
+                <div class="li-pb-email">Not connected — connect from the <a href="/Dashboard/Index">Dashboard</a></div>
+            </div>
+            <div class="li-pb-status">
+                <div class="li-pb-status-dot"></div>
+                Disconnected
+            </div>
+        </div>
+    }
+
+    @if (connected)
+    {
+        @* ── Create Post — or a no-permission notice if posting isn't granted ── *@
+        <div class="li-card">
+            <div class="li-card-head"><h3>Create Post</h3></div>
+
+            @if (hasPosting)
+            {
                 <div class="li-card-body">
                     <div class="li-compose">
-
                         <div>
                             <textarea class="li-textarea" id="liPostText"
-                                  placeholder="What do you want to talk about?"
-                                  oninput="liUpdateChar()"></textarea>
+                              placeholder="What do you want to talk about?"
+                              oninput="liUpdateChar()"></textarea>
                             <div class="li-char-row">
                                 <span></span>
                                 <span class="li-char-count" id="liCharCount">0 / 3000</span>
@@ -318,155 +719,229 @@
                             </svg>
                             Publish Post
                         </button>
-
                     </div>
                 </div>
-            </div>
-        }
-
-    </div><!-- /.li-left -->
-    <!-- ═══ RIGHT COLUMN ══════════════════════════════════════ -->
-    <div class="li-right">
-
-        @if (!connected)
-        {
-            <!-- Not connected state -->
-            <div class="li-card">
-                <div class="li-not-conn">
-                    <div class="li-not-conn-icon">
-                        <svg viewBox="0 0 24 24" fill="#0A66C2">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                        </svg>
-                    </div>
-                    <h3>Connect Your LinkedIn</h3>
-                    <p>
-                        Connect your LinkedIn account to publish posts, share articles,
-                        and track your content performance — all from one place.
-                    </p>
-                    <a href="/LinkedIn/Connect" class="li-connect-btn" style="width:auto;padding:10px 24px;">
-                        <svg viewBox="0 0 24 24" fill="white" width="16" height="16">
-                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                        </svg>
-                        Get Started
-                    </a>
+            }
+            else
+            {
+                <div class="li-empty no-permission">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <h4>No permission for posting</h4>
+                    <p>The <strong>w_member_social</strong> permission wasn't granted for this connection.</p>
                 </div>
-            </div>
-        }
-        else
-        {
-            <!-- Post history -->
-            <div class="li-card">
-                <div class="li-card-head">
-                    <h3>Post History</h3>
-                    <span style="font-size:12px;color:var(--muted);">Last 20 posts</span>
-                </div>
+            }
+        </div>
 
-                @if (!posts.Any())
+        @* ── Post History — or no-permission notice ── *@
+        <div class="li-card">
+            <div class="li-card-head">
+                <h3>Post History</h3>
+                @if (hasPosting)
                 {
-                    <div class="li-empty">
-                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                            <polyline points="10 9 9 9 8 9" />
-                        </svg>
-                        <h4>No posts yet</h4>
-                        <p>Your published posts will appear here.<br>Use the compose box to create your first post.</p>
+                    <span style="font-size:12px;color:var(--muted);">Last 20 posts</span>
+                }
+            </div>
+
+            @if (!hasPosting)
+            {
+                <div class="li-empty no-permission">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <h4>No permission for post history</h4>
+                    <p>The <strong>w_member_social</strong> permission wasn't granted for this connection.</p>
+                </div>
+            }
+            else if (!posts.Any())
+            {
+                <div class="li-empty">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                    </svg>
+                    <h4>No posts yet</h4>
+                    <p>Your published posts will appear here. Use the compose box above to create your first post.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var post in posts)
+                {
+                    <div class="li-post-row">
+                        <div class="li-post-text">@post.PostText</div>
+                        <div class="li-post-meta">
+                            <span class="li-post-status @post.Status">@post.Status</span>
+                            <span class="li-post-date">
+                                @(post.PostedAt.HasValue
+                                                    ? post.PostedAt.Value.ToString("MMM d, yyyy h:mm tt")
+                                                    : post.CreatedAt.ToString("MMM d, yyyy"))
+                </span>
+                @if (!string.IsNullOrEmpty(post.ArticleUrl))
+                            {
+                                <a class="li-post-link" href="@post.ArticleUrl" target="_blank">
+                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                    </svg>
+                                    Link
+                                </a>
+                            }
+                            @if (!string.IsNullOrEmpty(post.PostId))
+                            {
+                                <a class="li-post-link" href="https://www.linkedin.com/feed/update/@post.PostId" target="_blank">
+                                    View on LinkedIn
+                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                        <line x1="7" y1="17" x2="17" y2="7" />
+                                        <polyline points="7 7 17 7 17 17" />
+                                    </svg>
+                                </a>
+                            }
+                            @if (post.Status == "failed" && !string.IsNullOrEmpty(post.ErrorMessage))
+                            {
+                                <span style="font-size:11px;color:#c62828;" title="@post.ErrorMessage">⚠️ Failed</span>
+                            }
+                        </div>
                     </div>
                 }
-                else
+            }
+        </div>
+
+        @* ── Organization Pages — or no-permission notice ── *@
+        <div class="li-card">
+            <div class="li-card-head">
+                <h3>Organization Pages</h3>
+                @if (hasOrgAccess)
                 {
-                    @foreach (var post in posts)
+                    <span style="font-size:12px;color:var(--muted);">@organizations.Count linked</span>
+                }
+            </div>
+
+            @if (!hasOrgAccess)
+            {
+                <div class="li-empty no-permission">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <h4>No permission for organization pages</h4>
+                    <p>The <strong>r_organization_admin</strong> permission wasn't granted for this connection.</p>
+                </div>
+            }
+            else if (!organizations.Any())
+            {
+                <div class="li-empty">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <rect x="3" y="7" width="18" height="14" rx="2" />
+                        <path d="M8 7V3h8v4" />
+                    </svg>
+                    <h4>No organization pages found</h4>
+                    <p>You need to be an admin on a LinkedIn Page for it to show up here.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var org in organizations)
+                {
+                    <div class="li-org-row">
+                        <div class="li-org-logo">
+                            @if (!string.IsNullOrEmpty(org.LogoUrl))
+                            {
+                                <img src="@org.LogoUrl" alt="@org.Name" />
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2" /></svg>
+                            }
+                        </div>
+                        <div>
+                            <div class="li-org-name">@org.Name</div>
+                            <div class="li-org-urn">@org.Urn</div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        @* ── Leads — or no-permission notice ── *@
+        <div class="li-card">
+            <div class="li-card-head">
+                <h3>LinkedIn Leads</h3>
+                @if (hasLeadsAccess)
+                {
+                    <span style="font-size:12px;color:var(--muted);">@leads.Count total</span>
+                }
+            </div>
+
+            @if (!hasLeadsAccess)
+            {
+                <div class="li-empty no-permission">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <h4>No permission for leads</h4>
+                    <p>The <strong>r_marketing_leadgen_automation</strong> / <strong>r_ads_leadgen_automation</strong> permissions weren't granted for this connection.</p>
+                </div>
+            }
+            else if (!leads.Any())
+            {
+                <div class="li-empty">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 21v-1a8 8 0 0 1 16 0v1" />
+                    </svg>
+                    <h4>No leads found</h4>
+                    <p>Leads submitted through your LinkedIn Lead Gen Forms will appear here.</p>
+                </div>
+            }
+            else
+            {
+                <div class="li-leads-list">
+                    @foreach (var lead in leads)
                     {
-                        <div class="li-post-row">
-                            <div class="li-post-text">@post.PostText</div>
-                            <div class="li-post-meta">
-                                <span class="li-post-status @post.Status">@post.Status</span>
-                                <span class="li-post-date">
-                                    @(post.PostedAt.HasValue
-                                                            ? post.PostedAt.Value.ToString("MMM d, yyyy h:mm tt")
-                                                            : post.CreatedAt.ToString("MMM d, yyyy"))
-                    </span>
-                    @if (!string.IsNullOrEmpty(post.ArticleUrl))
-                                {
-                                    <a class="li-post-link" href="@post.ArticleUrl" target="_blank">
-                                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                        </svg>
-                                        Link
-                                    </a>
-                                }
-                                @if (!string.IsNullOrEmpty(post.PostId))
-                                {
-                                    <a class="li-post-link"
-                                       href="https://www.linkedin.com/feed/update/@post.PostId"
-                                       target="_blank">
-                                        View on LinkedIn
-                                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                            <line x1="7" y1="17" x2="17" y2="7" />
-                                            <polyline points="7 7 17 7 17 17" />
-                                        </svg>
-                                    </a>
-                                }
-                                @if (post.Status == "failed" && !string.IsNullOrEmpty(post.ErrorMessage))
-                                {
-                                    <span style="font-size:11px;color:#c62828;" title="@post.ErrorMessage">⚠️ Failed</span>
-                                }
+                        var leadType = lead.TryGetValue("leadType", out var lt) ? lt.ToString() : "Lead";
+                        var submitted = lead.TryGetValue("submittedAt", out var sa) ? sa.ToString() : "";
+                        var initial = string.IsNullOrEmpty(leadType) ? "L" : leadType.Substring(0, 1).ToUpper();
+
+                        <div class="li-lead-row">
+                            <div class="li-lead-avatar">@initial</div>
+                            <div class="li-lead-main">
+                                <div class="li-lead-name">@leadType</div>
+                                <div class="li-lead-tags">
+                                    <span class="li-lead-tag form">LinkedIn</span>
+                                    <span class="li-lead-tag">Lead Gen Form</span>
+                                </div>
                             </div>
+                            <div class="li-lead-date">@submitted</div>
                         </div>
                     }
-                }
-            </div>
-        }
-
-
-        <div class="li-card">
-            <div class="li-card-head" style="padding: 15px; border-bottom: 1px solid #eee;">
-                <h3 style="margin:0;">LinkedIn Leads (Dummy data)</h3>
-            </div>
-
-            <div style="overflow-x: auto;">
-                <table style="width:100%; border-collapse: collapse; min-width: 500px;">
-                    <thead>
-                        <tr style="background: #f9fafb; text-align: left; font-size: 12px; color: #666; text-transform: uppercase;">
-                            <th style="padding: 12px;">Name</th>
-                            <th style="padding: 12px;">Company</th>
-                            <th style="padding: 12px;">Date</th>
-                            <th style="padding: 12px; text-align: right;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var lead in dummyLeads)
-                        {
-                            <tr style="border-bottom: 1px solid #eee; font-size: 13px;">
-                                <td style="padding: 12px;">
-                                    <div style="font-weight: 600;">@lead.FullName</div>
-                                    <div style="font-size: 11px; color: #777;">@lead.Email</div>
-                                </td>
-                                <td style="padding: 12px;">@lead.CompanyName</td>
-                                <td style="padding: 12px;">@lead.CreatedAt.ToString("MMM d")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                </div>
+            }
         </div>
-    </div><!-- /.li-right -->
-</div><!-- /.li-shell -->
+    }
+
+</div><!-- /.li-page-wrap -->
 @section Scripts {
     <script>
         document.body.classList.add('li-page');
 
-        // ── Char counter ──────────────────────────────────────────
         function liUpdateChar() {
-            var ta    = document.getElementById('liPostText');
-            var el    = document.getElementById('liCharCount');
+            var ta = document.getElementById('liPostText');
+            var el = document.getElementById('liCharCount');
             if (!ta || !el) return;
-            var len   = ta.value.length;
+            var len = ta.value.length;
             el.textContent = len + ' / 3000';
-            el.className   = 'li-char-count' + (len > 2800 ? ' warn' : '') + (len > 3000 ? ' over' : '');
+            el.className = 'li-char-count' + (len > 2800 ? ' warn' : '') + (len > 3000 ? ' over' : '');
         }
 
         function liShowFileName(input) {
@@ -474,19 +949,17 @@
             if (el) el.textContent = input.files.length ? input.files[0].name : '';
         }
 
-        // ── Publish ───────────────────────────────────────────────
         async function liPublish() {
             var text  = (document.getElementById('liPostText')?.value   || '').trim();
             var url   = (document.getElementById('liArticleUrl')?.value || '').trim();
             var file  = document.getElementById('liImageFile')?.files[0];
             var btn   = document.getElementById('liPostBtn');
-            var toast = document.getElementById('liToast');
 
             if (!text) { liToast('Please write something before posting.', 'error'); return; }
             if (text.length > 3000) { liToast('Post exceeds 3000 characters.', 'error'); return; }
 
-            btn.disabled     = true;
-            btn.textContent  = 'Publishing…';
+            btn.disabled = true;
+            btn.textContent = 'Publishing…';
 
             var formData = new FormData();
             formData.append('text', text);
@@ -500,12 +973,11 @@
 
                 if (d.success) {
                     liToast('Post published successfully!', 'success');
-                    document.getElementById('liPostText').value   = '';
+                    document.getElementById('liPostText').value = '';
                     document.getElementById('liArticleUrl').value = '';
-                    document.getElementById('liImageFile').value  = '';
+                    document.getElementById('liImageFile').value = '';
                     document.getElementById('liFileName').textContent = '';
                     liUpdateChar();
-                    // Refresh history after short delay
                     setTimeout(function() { window.location.reload(); }, 1800);
                 } else {
                     liToast(d.message || 'Post failed.', 'error');
@@ -518,23 +990,11 @@
             btn.innerHTML = '<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="width:14px;height:14px;stroke:#fff;fill:none;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publish Post';
         }
 
-        // ── Disconnect ────────────────────────────────────────────
-        function disconnectLinkedIn() {
-            if (!confirm('Disconnect LinkedIn?')) return;
-            fetch('/LinkedIn/Disconnect', { method: 'POST' })
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d.success) window.location.reload();
-                else liToast(d.message || 'Disconnect failed.', 'error');
-            });
-        }
-
-        // ── Toast helper ──────────────────────────────────────────
         function liToast(msg, type) {
             var el = document.getElementById('liToast');
             if (!el) return;
             el.textContent = msg;
-            el.className   = 'li-toast ' + (type || 'success');
+            el.className = 'li-toast ' + (type || 'success');
             setTimeout(function() { el.className = 'li-toast'; }, 4000);
         }
     </script>

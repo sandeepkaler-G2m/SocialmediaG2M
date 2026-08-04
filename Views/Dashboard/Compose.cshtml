@@ -911,6 +911,7 @@
                 <h1>New Post</h1>
             </div>
             <div class="topbar-right">
+                @await Html.PartialAsync("_PageSwitcher")
                 <button class="btn-outline" onclick="window.location.href='/Dashboard/Compose'">
                     ✕ Discard
                 </button>
@@ -970,6 +971,7 @@
                     <div class="campaign-section">
                         <div class="campaign-section-label">Campaign (optional)</div>
                         <input type="text" class="campaign-input" id="campaignInput" placeholder="⊕ Add a campaign name" />
+                        <a href="/Media/Index" target="_blank" style="display:inline-block;margin-top:8px;font-size:12px;color:var(--green);text-decoration:none;font-weight:600">🖼️ Browse Media Library (previously uploaded images)</a>
                     </div>
 
                     <!-- PUBLISHING OPTIONS -->
@@ -1182,7 +1184,36 @@
             var d = document.getElementById('schedDate').value;
             var t = document.getElementById('schedTime').value;
             if (!d) { showToast('Select a date to schedule', 'error'); return; }
-            showToast('Scheduled for ' + d + ' ' + t, 'info');
+
+            var scheduledIso = parseScheduleDateTime(d, t);
+            if (!scheduledIso) { showToast('Invalid date/time', 'error'); return; }
+
+            setLoading(true);
+            var nets = Array.from(activeNets);
+            var schedResults = [];
+
+            for (var si = 0; si < nets.length; si++) {
+              try {
+                var sfd = new FormData();
+                sfd.append('message', text);
+                sfd.append('platform', nets[si]);
+                sfd.append('campaign', document.getElementById('campaignInput').value);
+                sfd.append('scheduledAt', scheduledIso);
+                selectedFiles.forEach(function (f) { sfd.append('images', f); });
+
+                var sresp = await fetch('/Dashboard/PublishPost', { method: 'POST', body: sfd, credentials: 'same-origin' });
+                var sdata = await sresp.json();
+                schedResults.push({ net: nets[si], ok: sdata.success, msg: sdata.message });
+              } catch (e) {
+                schedResults.push({ net: nets[si], ok: false, msg: 'Network error' });
+              }
+            }
+            setLoading(false);
+
+            var sok = schedResults.filter(function (r) { return r.ok; });
+            var serr = schedResults.filter(function (r) { return !r.ok; });
+            if (sok.length > 0) showToast('Scheduled for ' + d + ' ' + t + ' — ' + sok.map(function (r) { return r.net.toUpperCase(); }).join(', '), 'success');
+            if (serr.length > 0) showToast('Failed to schedule: ' + serr.map(function (r) { return r.net.toUpperCase() + ' — ' + r.msg; }).join(', '), 'error');
             return;
           }
 
@@ -1231,6 +1262,25 @@
           if (ok.length > 0) {
             setTimeout(function(){ window.location.href = '/Posts/index'; }, 1500);
           }
+        }
+
+        // Combines the date input + "HH:MM AM/PM" select into an ISO UTC
+        // string, treating the picked values as the user's local time — this
+        // was previously never wired up at all (see handlePublish's old
+        // 'schedule' branch, which just showed a fake toast and returned).
+        function parseScheduleDateTime(dateStr, timeStr) {
+          var m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeStr || '').trim());
+          if (!m || !dateStr) return null;
+
+          var hours = parseInt(m[1], 10) % 12;
+          if (m[3].toUpperCase() === 'PM') hours += 12;
+          var minutes = parseInt(m[2], 10);
+
+          var parts = dateStr.split('-'); // yyyy-mm-dd from <input type="date">
+          var local = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), hours, minutes, 0);
+          if (isNaN(local.getTime())) return null;
+
+          return local.toISOString();
         }
 
         function setLoading(on) {

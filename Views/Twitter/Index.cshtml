@@ -865,6 +865,31 @@
             .tw-btn:hover {
                 background: #f9fafb;
             }
+
+
+        .tweet-media-container {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            flex-shrink: 0; /* ← add this so it doesn't squish */
+        }
+
+        .tweet-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .tweet-item {
+            display: flex;
+            align-items: center; /* vertically center image with text */
+            gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -951,9 +976,10 @@
                                 </div>
                             </div>
                             <div style="padding: 0 16px 16px">
-                                <button type="button" class="btn-disconnect" onclick="loadTweets()">
+                                <!--  <button type="button" class="btn-disconnect" onclick="loadTweets()">
                                     Get My Tweets
                                 </button>
+                                -->
                                 <form asp-action="Disconnect" asp-controller="Twitter" method="post">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn-disconnect">Disconnect Twitter</button>
@@ -975,7 +1001,7 @@
                             </h3>
                             <textarea class="tweet-textarea"
                                   id="tweet-text"
-                                  placeholder="Kya chal raha hai? Tweet likho..."
+                                  placeholder="Tweet here..."
                                   maxlength="280"
                                   oninput="updateCharCount(this)"></textarea>
                             <input type="file" id="tweet-media" accept="image/*" />
@@ -993,30 +1019,29 @@
                         <div class="history-card">
                             <div class="history-header">
                                 <h3>Recent Tweets</h3>
-                                <span style="font-size:12px;color:var(--muted)">Last 20</span>
+                                <span style="font-size:12px;color:var(--muted)">Last 10</span>
                             </div>
 
                             @if (!tweets.Any())
                             {
                                 <div class="history-empty">
-                                    Abhi koi tweet nahi — upar se pehla tweet karo! 🐦
+                                    No tweet found — tweet first! 🐦
                                 </div>
                             }
                             else
                             {
                                 @foreach (var tweet in tweets)
                                 {
-                                    <div class="tweet-item" onclick="openTwitterPopup('@tweet.TweetId', '@Html.Raw(tweet.TweetText.Replace("'", "\\'"))')">
-                                        <div class="tweet-status-icon @tweet.Status">
-                                            @if (tweet.Status == "posted")
-                                            {
-                                                <span>🐦</span>
-                                            }
-                                            else
-                                            {
-                                                <span>❌</span>
-                                            }
-                                        </div>
+                                    <div class="tweet-item" onclick="openTwitterPopup('@tweet.TweetId', '@Html.Raw(tweet.TweetText.Replace("'", "\\'"))', '@tweet.MediaUrl')">
+
+                                        @* Thumbnail — only if media exists *@
+                                        @if (!string.IsNullOrEmpty(tweet.MediaUrl))
+                                        {
+                                            <div class="tweet-media-container">
+                                                <img src="@tweet.MediaUrl" class="tweet-thumb" alt="media" />
+                                            </div>
+                                        }
+
                                         <div class="tweet-body">
                                             <div class="tweet-text">@tweet.TweetText</div>
                                             <div class="tweet-meta">
