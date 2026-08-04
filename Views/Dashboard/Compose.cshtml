@@ -668,6 +668,13 @@
             background: #f4f5f7;
         }
 
+        @@media (max-width: 900px) {
+            body { height: auto; overflow: auto; }
+            .content-area { flex-direction: column; overflow: visible; }
+            .compose-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+            .preview-panel { min-height: 320px; }
+        }
+
         .preview-tab-bar {
             display: flex;
             border-bottom: 1px solid var(--border);
@@ -959,8 +966,8 @@
                         <div class="media-upload" onclick="document.getElementById('mediaInput').click()">
                             <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
                             <span>Drag &amp; drop or <strong>browse files</strong></span>
-                            <span style="font-size:11px;color:#c4cdd6">JPG, PNG, GIF, MP4 (multiple images supported)</span>
-                            <input type="file" id="mediaInput" style="display:none" accept="image/*,video/*" multiple onchange="handleMedia(this)" />
+                            <span style="font-size:11px;color:#c4cdd6">JPG, PNG, GIF (multiple images supported)</span>
+                            <input type="file" id="mediaInput" style="display:none" accept="image/*" multiple onchange="handleMedia(this)" />
                         </div>
                     </div>
 

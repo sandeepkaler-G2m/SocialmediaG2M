@@ -103,14 +103,16 @@
         overflow: hidden;
         background: #f2f3f5;
         transition: width .25s ease, min-width .25s ease;
-        width: 40%;
+        flex: 1;
         min-width: 0;
-        flex-shrink: 0;
     }
-    /* when detail panel is open, list shrinks to 40% */
+    /* when detail panel is open, list shrinks to 40%; otherwise it fills
+       the full width instead of leaving dead space where the closed
+       detail panel would be */
     .inbox-shell.detail-open .inbox-center {
         width: 40%;
         min-width: 320px;
+        flex: none;
     }
 
     .inbox-topbar {

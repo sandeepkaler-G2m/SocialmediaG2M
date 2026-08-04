@@ -1,8 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Http
 
 @{
-    var userName = ViewBag.UserName as string ?? "User";
-    var userEmail = ViewBag.UserEmail as string ?? "";
+    var userName = ViewBag.UserName as string ?? Context.Session.GetString("UserName") ?? "User";
+    var userEmail = ViewBag.UserEmail as string ?? Context.Session.GetString("UserEmail") ?? "";
     var companyName = Context.Session.GetString("CompanyName") ?? "Your Workspace";
 
     string FirstChar(string s) => s.Length > 0 ? s[0].ToString().ToUpper() : "?";

@@ -6,9 +6,10 @@ using SocialMediaPanel.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var listenPort = int.TryParse(Environment.GetEnvironmentVariable("APP_PORT"), out var envPort) ? envPort : 8080;
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(8080);
+    options.ListenAnyIP(listenPort);
     options.Limits.MaxRequestBodySize = 104857600;
 });
 
