@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Services;
+using SocialMediaPanel.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,7 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -82,6 +84,7 @@ app.MapControllerRoute(
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.MapControllers();
+app.MapHub<InboxHub>("/hubs/inbox");
 
 // Auto Migrate
 using (var scope = app.Services.CreateScope())

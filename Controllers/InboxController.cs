@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
+using SocialMediaPanel.Hubs;
 using SocialMediaPanel.Models;
 using SocialMediaPanel.Services;
 using System.Text;
@@ -13,12 +15,14 @@ namespace SocialMediaPanel.Controllers
         private readonly AppDbContext _db;
         private readonly ActivePageService _activePages;
         private readonly NativeInstagramService _nativeInstagram;
+        private readonly IHubContext<InboxHub> _hub;
 
-        public InboxController(AppDbContext db, ActivePageService activePages, NativeInstagramService nativeInstagram)
+        public InboxController(AppDbContext db, ActivePageService activePages, NativeInstagramService nativeInstagram, IHubContext<InboxHub> hub)
         {
             _db = db;
             _activePages = activePages;
             _nativeInstagram = nativeInstagram;
+            _hub = hub;
         }
 
         // Native-login IG accounts (direct "Instagram API with Instagram
@@ -149,6 +153,7 @@ namespace SocialMediaPanel.Controllers
             reply.ErrorMessage = apiSuccess ? null : apiError;
             _db.PageReplies.Add(reply);
             await _db.SaveChangesAsync();
+            await _hub.Clients.All.SendAsync("inboxChanged");
 
             if (!apiSuccess)
                 return Ok(new { success = false, error = apiError });
@@ -195,6 +200,61 @@ namespace SocialMediaPanel.Controllers
                 picture = root.TryGetProperty("picture", out var pic) ? pic.GetString() : "",
                 createdTime = root.TryGetProperty("created_time", out var ct) ? ct.GetString() : ""
             });
+        }
+
+        // ── GetThread — full merged conversation for a DM sender ──────
+        // Unlike GetReplies (which only shows one message + our replies to
+        // THAT specific row), this pulls every PageMessage ever received from
+        // this sender on this platform/page plus every reply we've sent back,
+        // interleaved chronologically — a real chat history, not a per-item
+        // ticket view. Only meaningful for messages; comments stay per-item.
+        [HttpGet]
+        [Route("Inbox/GetThread")]
+        public async Task<IActionResult> GetThread(int itemId)
+        {
+            var anchor = await _db.PageMessages.FindAsync(itemId);
+            if (anchor == null) return Json(new { success = false, message = "Not found" });
+
+            var incoming = await _db.PageMessages
+                .Where(m => m.SenderId == anchor.SenderId && m.Platform == anchor.Platform && m.PageId == anchor.PageId)
+                .OrderBy(m => m.MessageTime ?? m.CreatedAt)
+                .ToListAsync();
+
+            var incomingIds = incoming.Select(m => m.Id).ToList();
+
+            var outgoing = await _db.PageReplies
+                .Where(r => r.SourceType == "message" && incomingIds.Contains(r.SourceId))
+                .OrderBy(r => r.CreatedAt)
+                .ToListAsync();
+
+            var merged = new List<object>();
+            foreach (var m in incoming)
+            {
+                merged.Add(new
+                {
+                    own = false,
+                    sender = string.IsNullOrEmpty(m.SenderName) ? "User " + (m.SenderId ?? "").PadLeft(6, '0')[^6..] : m.SenderName,
+                    text = m.MessageText ?? "",
+                    time = (m.MessageTime ?? m.CreatedAt).ToString("o"),
+                    failed = false,
+                    error = (string?)null
+                });
+            }
+            foreach (var r in outgoing)
+            {
+                merged.Add(new
+                {
+                    own = true,
+                    sender = "You (Page)",
+                    text = r.ReplyText,
+                    time = r.CreatedAt.ToString("o"),
+                    failed = !r.IsSuccess,
+                    error = r.ErrorMessage
+                });
+            }
+
+            var sorted = merged.OrderBy(x => ((dynamic)x).time).ToList();
+            return Json(new { success = true, messages = sorted });
         }
 
         // ── GetReplies — load existing replies for a thread ──────────

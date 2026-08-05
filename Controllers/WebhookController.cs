@@ -1,8 +1,10 @@
 ﻿using Azure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SocialMediaPanel.Data;
+using SocialMediaPanel.Hubs;
 using SocialMediaPanel.Models;
 using SocialMediaPanel.Services;
 using System.Security.Cryptography;
@@ -19,15 +21,18 @@ namespace SocialMediaPanel.Controllers
         private readonly ILogger<WebhookController> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IConfiguration _config;
+        private readonly IHubContext<InboxHub> _hub;
 
         public WebhookController(
             ILogger<WebhookController> logger,
             IServiceScopeFactory scopeFactory,
-            IConfiguration config)
+            IConfiguration config,
+            IHubContext<InboxHub> hub)
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
             _config = config;
+            _hub = hub;
         }
 
         // ══════════════════════════════════════════════════════
@@ -89,7 +94,7 @@ namespace SocialMediaPanel.Controllers
 
                 try
                 {
-                    await ProcessWebhook(rawBody, context, httpFactory, config, logger);
+                    await ProcessWebhook(rawBody, context, httpFactory, config, logger, _hub);
                 }
                 catch (Exception ex)
                 {
@@ -109,7 +114,8 @@ namespace SocialMediaPanel.Controllers
             AppDbContext context,
             IHttpClientFactory httpFactory,
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             JsonDocument doc;
             try
@@ -140,11 +146,11 @@ namespace SocialMediaPanel.Controllers
                     switch (obj?.ToLower())
                     {
                         case "page":
-                            await HandlePageEvent(entry, context, httpFactory, config, logger);
+                            await HandlePageEvent(entry, context, httpFactory, config, logger, hub);
                             break;
 
                         case "instagram":
-                            await HandleInstagramEvent(entry, context, httpFactory, config, logger);
+                            await HandleInstagramEvent(entry, context, httpFactory, config, logger, hub);
                             break;
 
                         case "ad_account":
@@ -173,13 +179,14 @@ namespace SocialMediaPanel.Controllers
             AppDbContext context,
             IHttpClientFactory httpFactory,
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             var pageId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
 
             // Direct Messenger messages (entry ke andar messaging array)
             if (entry.TryGetProperty("messaging", out var directMsg))
-                await HandleMessaging(directMsg, pageId, "messenger", context, httpFactory, logger);
+                await HandleMessaging(directMsg, pageId, "messenger", context, httpFactory, logger, hub);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -203,19 +210,19 @@ namespace SocialMediaPanel.Controllers
                         // ── POST FEED (likes, comments, shares, reactions) ──
                         case "feed":
                             if (value.HasValue)
-                                await HandleFeedChange(value.Value, pageId, "facebook", context, httpFactory, config, logger);
+                                await HandleFeedChange(value.Value, pageId, "facebook", context, httpFactory, config, logger, hub);
                             break;
 
                         // ── MESSENGER ──
                         case "messages":
                             if (entry.TryGetProperty("messaging", out var msg))
-                                await HandleMessaging(msg, pageId, "messenger", context, httpFactory, logger);
+                                await HandleMessaging(msg, pageId, "messenger", context, httpFactory, logger, hub);
                             break;
 
                         // ── PAGE MENTION ──
                         case "mention":
                             if (value.HasValue)
-                                await SaveComment(value.Value, pageId, "facebook", "mention", context, httpFactory, config, logger);
+                                await SaveComment(value.Value, pageId, "facebook", "mention", context, httpFactory, config, logger, hub);
                             break;
 
                         case "ratings":
@@ -243,13 +250,14 @@ namespace SocialMediaPanel.Controllers
             AppDbContext context,
             IHttpClientFactory httpFactory,
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             var igId = entry.TryGetProperty("id", out var idP) ? idP.GetString() : null;
 
             // Instagram Direct Messages
             if (entry.TryGetProperty("messaging", out var messaging))
-                await HandleMessaging(messaging, igId, "instagram_dm", context, httpFactory, logger);
+                await HandleMessaging(messaging, igId, "instagram_dm", context, httpFactory, logger, hub);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -266,17 +274,17 @@ namespace SocialMediaPanel.Controllers
                     {
                         case "comments":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "comment", context, httpFactory, config, logger);
+                                await SaveComment(value.Value, igId, "instagram", "comment", context, httpFactory, config, logger, hub);
                             break;
 
                         case "mentions":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "mention", context, httpFactory, config, logger);
+                                await SaveComment(value.Value, igId, "instagram", "mention", context, httpFactory, config, logger, hub);
                             break;
 
                         case "live_comments":
                             if (value.HasValue)
-                                await SaveComment(value.Value, igId, "instagram", "live_comment", context, httpFactory, config, logger);
+                                await SaveComment(value.Value, igId, "instagram", "live_comment", context, httpFactory, config, logger, hub);
                             break;
 
                         case "leadgen":
@@ -342,7 +350,8 @@ namespace SocialMediaPanel.Controllers
             AppDbContext context,
             IHttpClientFactory httpFactory,
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             var item = value.TryGetProperty("item", out var i) ? i.GetString() : "";
             var verb = value.TryGetProperty("verb", out var vb) ? vb.GetString() : "";
@@ -359,7 +368,7 @@ namespace SocialMediaPanel.Controllers
                 case "comment":
                     if (verb == "add")
                     {
-                        await SaveComment(value, pageId, platform, "comment", context, httpFactory, config, logger);
+                        await SaveComment(value, pageId, platform, "comment", context, httpFactory, config, logger, hub);
 
                         // Post ka comment count bhi update karo
                         if (postId != null)
@@ -436,7 +445,8 @@ namespace SocialMediaPanel.Controllers
             string platform,
             AppDbContext context,
             IHttpClientFactory httpFactory,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             foreach (var msgEvent in messaging.EnumerateArray())
             {
@@ -510,6 +520,7 @@ namespace SocialMediaPanel.Controllers
                     // event in a webhook delivery can never take the rest of that
                     // delivery's real messages down with it.
                     await context.SaveChangesAsync();
+                    await hub.Clients.All.SendAsync("inboxChanged");
 
                     logger.LogInformation(
                         "Message saved ✅ — platform={P} sender={S} text={T}",
@@ -731,7 +742,8 @@ namespace SocialMediaPanel.Controllers
             AppDbContext context,
             IHttpClientFactory httpFactory,
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IHubContext<InboxHub> hub)
         {
             // Comment ID lo — alag alag fields mein ho sakta hai
             var commentId = value.TryGetProperty("comment_id", out var cid) ? cid.GetString()
@@ -777,6 +789,7 @@ namespace SocialMediaPanel.Controllers
             });
 
             await context.SaveChangesAsync();
+            await hub.Clients.All.SendAsync("inboxChanged");
 
             logger.LogInformation(
                 "Comment saved ✅ — platform={P} type={T} sender={S} msg={M}",

@@ -1508,6 +1508,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
 <script>
     var ALL_ITEMS     = @Html.Raw(ViewBag.InboxJson ?? "[]");
     var COMPLETED     = new Set();
@@ -1733,26 +1734,36 @@
             postPreview.style.display='none';
         }
 
-        /* Original comment/message */
+        /* Original comment/message — for messages the full merged thread
+           (loaded below) already shows this as its own bubble, so only
+           render the standalone "original" block for comments. */
         var ini=name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)||'?';
         var profileUrl=buildProfileUrl(item);
-        document.getElementById('detailOrigComment').innerHTML=
-            '<div class="doc-label">'+(item.itemType==='message'?'Message':'Comment')+'</div>'
-            +'<div class="doc-row">'
-                +'<div class="doc-ava" style="background:'+avatarColor(name)+'">'+ini+'</div>'
-                +'<div class="doc-body">'
-                    +'<div class="doc-name"><a href="'+esc(profileUrl)+'" target="_blank">'+esc(name)+'</a></div>'
-                    +'<div class="doc-text">'+esc(item.message||'(no message text)')+'</div>'
-                    +'<div class="doc-time">'+fmtTime(item.time)+'</div>'
-                +'</div>'
-            +'</div>';
+        if(item.itemType!=='message'){
+            document.getElementById('detailOrigComment').innerHTML=
+                '<div class="doc-label">Comment</div>'
+                +'<div class="doc-row">'
+                    +'<div class="doc-ava" style="background:'+avatarColor(name)+'">'+ini+'</div>'
+                    +'<div class="doc-body">'
+                        +'<div class="doc-name"><a href="'+esc(profileUrl)+'" target="_blank">'+esc(name)+'</a></div>'
+                        +'<div class="doc-text">'+esc(item.message||'(no message text)')+'</div>'
+                        +'<div class="doc-time">'+fmtTime(item.time)+'</div>'
+                    +'</div>'
+                +'</div>';
+        } else {
+            document.getElementById('detailOrigComment').innerHTML='';
+        }
 
         /* Reset composer */
         document.getElementById('dReplyTxt').value='';
         document.getElementById('dSendBtn').disabled=true;
 
-        /* Load replies */
-        loadDetailReplies(id, item.itemType);
+        /* Load full chat history for messages, single-item replies for comments */
+        if(item.itemType==='message'){
+            loadMergedThread(id);
+        } else {
+            loadDetailReplies(id, item.itemType);
+        }
 
         /* Scroll active card into view */
         if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -1793,6 +1804,24 @@
             .catch(function(){
                 card.innerHTML='<div class="dpp-content"><div class="dpp-post-body" style="color:#aaa;font-style:italic;">Could not load post preview.</div></div>';
             });
+    }
+
+    /* ── Load full merged chat history (messages only) ── */
+    function loadMergedThread(id){
+        var c=document.getElementById('detailReplies');
+        c.innerHTML='<div class="no-replies-msg">Loading conversation…</div>';
+
+        fetch('/Inbox/GetThread?itemId='+id)
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if(!data.success){ c.innerHTML='<div class="no-replies-msg">Could not load conversation.</div>'; return; }
+                var local=(tReplies[id]||[]).filter(function(l){ return !l.saved; });
+                tReplies[id]=data.messages.map(function(m){
+                    return {sender:m.sender,text:m.text,time:fmtTime(m.time),own:m.own,saved:true,failed:m.failed,error:m.error};
+                }).concat(local);
+                renderDetailReplies(id);
+            })
+            .catch(function(){ c.innerHTML='<div class="no-replies-msg">Could not load conversation.</div>'; });
     }
 
     /* ── Load replies ── */
@@ -2014,4 +2043,33 @@
     function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function capFirst(s){ return s?s.charAt(0).toUpperCase()+s.slice(1):''; }
     function autoGrow(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
+
+    /* ── Real-time (SignalR) — new comments/messages/replies push here
+       instead of needing a manual reload. Payload-less "inboxChanged" event:
+       re-fetch the list, and if a thread is open, re-fetch that too. ── */
+    (function initRealtime(){
+        if (typeof signalR === 'undefined') return;
+        var conn = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/inbox')
+            .withAutomaticReconnect()
+            .build();
+
+        conn.on('inboxChanged', function(){
+            fetch('/Inbox/GetAll',{headers:{'X-Requested-With':'XMLHttpRequest'}})
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    ALL_ITEMS = data;
+                    updateBadges();
+                    renderFeed();
+                    if (activeItemId !== null) {
+                        var item = ALL_ITEMS.find(function(x){ return x.id === activeItemId; });
+                        if (item && item.itemType === 'message') loadMergedThread(activeItemId);
+                        else if (item) loadDetailReplies(activeItemId, item.itemType);
+                    }
+                })
+                .catch(function(){});
+        });
+
+        conn.start().catch(function(err){ console.warn('SignalR connect failed, falling back to manual reload only', err); });
+    })();
 </script>
