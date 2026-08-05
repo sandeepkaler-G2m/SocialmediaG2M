@@ -788,8 +788,11 @@ namespace SocialMediaPanel.Controllers
                         }
 
                         var igId = ig.TryGetProperty("id", out var igid) ? igid.GetString() : null;
-                        var igUsr = ig.TryGetProperty("username", out var igun) ? igun.GetString() : username;
-                        var igNm = ig.TryGetProperty("name", out var ign) ? ign.GetString() : username;
+                        // Fall back to the IG id itself (never the FB login email) if Instagram's
+                        // Graph API response is missing username/name — this is a different
+                        // identity from the connecting user and must never be confused with it.
+                        var igUsr = ig.TryGetProperty("username", out var igun) && !string.IsNullOrEmpty(igun.GetString()) ? igun.GetString() : igId;
+                        var igNm = ig.TryGetProperty("name", out var ign) && !string.IsNullOrEmpty(ign.GetString()) ? ign.GetString() : igId;
                         var igPic = ig.TryGetProperty("profile_picture_url", out var igpic) ? igpic.GetString() : "";
 
                         if (string.IsNullOrEmpty(igId)) continue;

@@ -179,7 +179,7 @@ namespace SocialMediaPanel.Controllers
 
             // Direct Messenger messages (entry ke andar messaging array)
             if (entry.TryGetProperty("messaging", out var directMsg))
-                await HandleMessaging(directMsg, pageId, "messenger", context, logger);
+                await HandleMessaging(directMsg, pageId, "messenger", context, httpFactory, logger);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -209,7 +209,7 @@ namespace SocialMediaPanel.Controllers
                         // ── MESSENGER ──
                         case "messages":
                             if (entry.TryGetProperty("messaging", out var msg))
-                                await HandleMessaging(msg, pageId, "messenger", context, logger);
+                                await HandleMessaging(msg, pageId, "messenger", context, httpFactory, logger);
                             break;
 
                         // ── PAGE MENTION ──
@@ -249,7 +249,7 @@ namespace SocialMediaPanel.Controllers
 
             // Instagram Direct Messages
             if (entry.TryGetProperty("messaging", out var messaging))
-                await HandleMessaging(messaging, igId, "instagram_dm", context, logger);
+                await HandleMessaging(messaging, igId, "instagram_dm", context, httpFactory, logger);
 
             if (!entry.TryGetProperty("changes", out var changes)) return;
 
@@ -435,6 +435,7 @@ namespace SocialMediaPanel.Controllers
             string? pageId,
             string platform,
             AppDbContext context,
+            IHttpClientFactory httpFactory,
             ILogger logger)
         {
             foreach (var msgEvent in messaging.EnumerateArray())
@@ -464,11 +465,14 @@ namespace SocialMediaPanel.Controllers
                         continue;
                     }
 
+                    var senderName = await FetchSenderNameAsync(senderId, pageId, platform, context, httpFactory, logger);
+
                     context.PageMessages.Add(new PageMessage
                     {
                         MessageId = messageId!,
                         PageId = pageId,
                         SenderId = senderId,
+                        SenderName = senderName,
                         MessageText = text,
                         Platform = platform,
                         MessageTime = timestamp > 0
@@ -489,6 +493,52 @@ namespace SocialMediaPanel.Controllers
             }
 
             await context.SaveChangesAsync();
+        }
+
+        // Best-effort sender display name lookup. Messenger locks down PSID
+        // profile fields heavily (Meta restricted this after 2018), so a null
+        // result there is expected and the UI falls back to "User <id>".
+        // Instagram DM (IGSID) generally does return name/username.
+        private static async Task<string?> FetchSenderNameAsync(
+            string? senderId, string? pageId, string platform,
+            AppDbContext context, IHttpClientFactory httpFactory, ILogger logger)
+        {
+            if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(pageId)) return null;
+
+            var tokenPlatform = platform == "instagram_dm" ? "instagram" : "facebook";
+            var token = await ResolvePageTokenForHide(pageId, tokenPlatform, context, httpFactory);
+            if (string.IsNullOrEmpty(token)) return null;
+
+            try
+            {
+                var client = httpFactory.CreateClient();
+                var fields = platform == "instagram_dm" ? "name,username" : "first_name,last_name";
+                var url = $"https://graph.facebook.com/v19.0/{senderId}?fields={fields}&access_token={token}";
+                var body = await client.GetStringAsync(url);
+                using var doc = JsonDocument.Parse(body);
+                var root = doc.RootElement;
+
+                if (platform == "instagram_dm")
+                {
+                    if (root.TryGetProperty("username", out var un) && un.GetString() is string username)
+                        return username;
+                    if (root.TryGetProperty("name", out var nm) && nm.GetString() is string name)
+                        return name;
+                }
+                else
+                {
+                    var first = root.TryGetProperty("first_name", out var f) ? f.GetString() : null;
+                    var last = root.TryGetProperty("last_name", out var l) ? l.GetString() : null;
+                    var full = $"{first} {last}".Trim();
+                    if (!string.IsNullOrWhiteSpace(full)) return full;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogInformation("Sender name lookup failed for {SenderId}: {Msg}", senderId, ex.Message);
+            }
+
+            return null;
         }
 
         // ══════════════════════════════════════════════════════

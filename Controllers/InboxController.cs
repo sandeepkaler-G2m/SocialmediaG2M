@@ -112,14 +112,14 @@ namespace SocialMediaPanel.Controllers
 
                     if (req.Platform == "facebook" || req.Platform == "messenger")
                     {
-                        var result = await SendFacebookCommentReplyAsync(comment.CommentId ?? "", req.Message, comment.PostId ?? "");
+                        var result = await SendFacebookCommentReplyAsync(comment.CommentId ?? "", req.Message, comment.PageId ?? "");
 
                         apiSuccess = result.Success;
                         apiError = result.Error;
                     }
                     else if (req.Platform == "instagram" || req.Platform == "instagram_dm")
                     {
-                        var result = await SendFacebookCommentReplyAsync(comment.CommentId ?? "", req.Message, comment.PostId ?? "");
+                        var result = await SendInstagramCommentReplyAsync(comment.CommentId ?? "", req.Message, comment.PageId ?? "");
                         apiSuccess = result.Success;
                         apiError = result.Error;
                     }
