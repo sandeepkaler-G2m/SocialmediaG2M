@@ -21,12 +21,14 @@ namespace SocialMediaPanel.Services
         private readonly ActivePageService _activePages;
         private readonly IConfiguration _config;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly NativeInstagramService _nativeInstagram;
 
-        public PostPublishingService(ActivePageService activePages, IConfiguration config, IHttpClientFactory httpClientFactory)
+        public PostPublishingService(ActivePageService activePages, IConfiguration config, IHttpClientFactory httpClientFactory, NativeInstagramService nativeInstagram)
         {
             _activePages = activePages;
             _config = config;
             _httpClientFactory = httpClientFactory;
+            _nativeInstagram = nativeInstagram;
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -141,11 +143,28 @@ namespace SocialMediaPanel.Services
             if (igAccount == null)
                 return new PublishResult { Success = false, Message = "No Instagram account connected." };
 
-            var fbPage = await _activePages.GetLinkedPageForInstagramAsync(userId, igAccount.InstagramUserId);
-            if (fbPage == null)
-                return new PublishResult { Success = false, Message = "Instagram not linked with a Facebook page." };
+            // Native-login accounts (direct "Instagram API with Instagram Login")
+            // carry their own token and use graph.instagram.com — no Facebook
+            // Page to resolve a token from at all.
+            bool isNative = !string.IsNullOrEmpty(igAccount.NativeAccessToken);
+            string igToken;
+            string apiBase;
 
-            string igToken = fbPage.page_access_token ?? "";
+            if (isNative)
+            {
+                igToken = igAccount.NativeAccessToken!;
+                apiBase = "https://graph.instagram.com/v21.0";
+            }
+            else
+            {
+                var fbPage = await _activePages.GetLinkedPageForInstagramAsync(userId, igAccount.InstagramUserId);
+                if (fbPage == null)
+                    return new PublishResult { Success = false, Message = "Instagram not linked with a Facebook page." };
+
+                igToken = fbPage.page_access_token ?? "";
+                apiBase = "https://graph.facebook.com/v19.0";
+            }
+
             string igUserId = igAccount.InstagramUserId;
 
             using var http = _httpClientFactory.CreateClient();
@@ -189,7 +208,7 @@ namespace SocialMediaPanel.Services
                 if (savedFullUrls.Count == 1)
                 {
                     var createRes = await http.PostAsync(
-                        $"https://graph.facebook.com/v19.0/{igUserId}/media" +
+                        $"{apiBase}/{igUserId}/media" +
                         $"?image_url={Uri.EscapeDataString(savedFullUrls[0])}" +
                         $"&caption={Uri.EscapeDataString(message ?? "")}" +
                         $"&access_token={igToken}", null);
@@ -201,7 +220,7 @@ namespace SocialMediaPanel.Services
                     var creationId = JsonDocument.Parse(createBody).RootElement.GetProperty("id").GetString() ?? "";
 
                     var publishRes = await http.PostAsync(
-                        $"https://graph.facebook.com/v19.0/{igUserId}/media_publish" +
+                        $"{apiBase}/{igUserId}/media_publish" +
                         $"?creation_id={creationId}&access_token={igToken}", null);
 
                     var publishBody = await publishRes.Content.ReadAsStringAsync();
@@ -216,7 +235,7 @@ namespace SocialMediaPanel.Services
                     foreach (var url in savedFullUrls)
                     {
                         var childRes = await http.PostAsync(
-                            $"https://graph.facebook.com/v19.0/{igUserId}/media" +
+                            $"{apiBase}/{igUserId}/media" +
                             $"?image_url={Uri.EscapeDataString(url)}" +
                             $"&is_carousel_item=true" +
                             $"&access_token={igToken}", null);
@@ -230,7 +249,7 @@ namespace SocialMediaPanel.Services
                     }
 
                     var carouselRes = await http.PostAsync(
-                        $"https://graph.facebook.com/v19.0/{igUserId}/media" +
+                        $"{apiBase}/{igUserId}/media" +
                         $"?media_type=CAROUSEL" +
                         $"&children={Uri.EscapeDataString(string.Join(",", childIds))}" +
                         $"&caption={Uri.EscapeDataString(message ?? "")}" +
@@ -243,7 +262,7 @@ namespace SocialMediaPanel.Services
                     var carouselId = JsonDocument.Parse(carouselBody).RootElement.GetProperty("id").GetString() ?? "";
 
                     var publishRes = await http.PostAsync(
-                        $"https://graph.facebook.com/v19.0/{igUserId}/media_publish" +
+                        $"{apiBase}/{igUserId}/media_publish" +
                         $"?creation_id={carouselId}&access_token={igToken}", null);
 
                     var publishBody = await publishRes.Content.ReadAsStringAsync();

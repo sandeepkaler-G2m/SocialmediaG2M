@@ -438,6 +438,7 @@ namespace SocialMediaPanel.Controllers
         private readonly IDataProtector _protector;
         private readonly AppDbContext _context;
         private readonly InstagramService _instagram;
+        private readonly NativeInstagramService _nativeInstagram;
         private readonly LinkedInService _linkedInService;
         private readonly ActivePageService _activePages;
         private readonly GmailIntegrationService _gmailIntegration;
@@ -447,6 +448,7 @@ namespace SocialMediaPanel.Controllers
             GmailService gmail,
             AppDbContext context,
             InstagramService instagramService,
+            NativeInstagramService nativeInstagramService,
             IDataProtectionProvider dataProtection,
             LinkedInService linkedInService,
             ActivePageService activePages,
@@ -456,6 +458,7 @@ namespace SocialMediaPanel.Controllers
             _gmail = gmail;
             _facebook = facebook;
             _instagram = instagramService;
+            _nativeInstagram = nativeInstagramService;
             _protector = dataProtection.CreateProtector("Integrations.Facebook.OAuthState");
             _linkedInService = linkedInService;
             _activePages = activePages;
@@ -486,6 +489,86 @@ namespace SocialMediaPanel.Controllers
                 activeFacebookPageId = activeFb?.page_id,
                 activeInstagramId = activeIg?.InstagramUserId
             });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // NATIVE INSTAGRAM LOGIN — direct connect, no Facebook Page needed
+        // ══════════════════════════════════════════════════════════════
+        [HttpGet]
+        [Route("Integrations/ConnectInstagramNative")]
+        public IActionResult ConnectInstagramNative()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return RedirectToAction("Login", "Account");
+
+            var raw = $"ignative|{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+            var state = _protector.Protect(raw);
+            var url = _nativeInstagram.BuildOAuthUrl(state);
+            return Redirect(url);
+        }
+
+        [HttpGet]
+        [Route("Integrations/Callback/instagram-native")]
+        public async Task<IActionResult> InstagramNativeCallback(string? code, string? error, string? error_description)
+        {
+            if (error != null)
+            {
+                TempData["IntegrationError"] = $"Instagram access denied: {error_description}";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            if (string.IsNullOrEmpty(code))
+            {
+                TempData["IntegrationError"] = "No authorisation code received from Instagram.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            try
+            {
+                var userid = HttpContext.Session.GetInt32("UserId");
+                if (userid == null)
+                {
+                    TempData["IntegrationError"] = "Session expired. Please login again.";
+                    return RedirectToAction("Login", "Account");
+                }
+
+                var (shortToken, igUserId) = await _nativeInstagram.ExchangeCodeAsync(code);
+                var longToken = await _nativeInstagram.GetLongLivedTokenAsync(shortToken);
+                var profile = await _nativeInstagram.GetProfileAsync(longToken);
+
+                var existing = await _context.InstagramAccounts
+                    .FirstOrDefaultAsync(a => a.UserId == userid.ToString() && a.InstagramUserId == igUserId);
+
+                if (existing != null)
+                {
+                    existing.Username = profile.Username;
+                    existing.Name = profile.Username;
+                    existing.ProfilePictureUrl = profile.ProfilePictureUrl;
+                    existing.NativeAccessToken = longToken;
+                }
+                else
+                {
+                    _context.InstagramAccounts.Add(new InstagramAccount
+                    {
+                        UserId = userid.ToString(),
+                        InstagramUserId = igUserId,
+                        Username = profile.Username,
+                        Name = profile.Username,
+                        ProfilePictureUrl = profile.ProfilePictureUrl,
+                        NativeAccessToken = longToken,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["IntegrationSuccess"] = $"Instagram account @{profile.Username} connected directly (no Facebook Page needed).";
+            }
+            catch (Exception ex)
+            {
+                TempData["IntegrationError"] = $"Instagram native connect failed: {ex.Message}";
+            }
+
+            return RedirectToAction("Index", "Dashboard");
         }
 
         public async Task<IActionResult> ConnectedAccounts()
@@ -918,5 +1001,10 @@ namespace SocialMediaPanel.Controllers
         public string Name { get; set; } = "";
         public string ProfilePictureUrl { get; set; } = "";
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        // Set only for accounts connected via the native "Instagram API with
+        // Instagram Login" flow — those have no linked Facebook Page to
+        // resolve a token from, so they carry their own directly.
+        public string? NativeAccessToken { get; set; }
     }
 }

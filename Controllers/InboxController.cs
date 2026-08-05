@@ -12,11 +12,24 @@ namespace SocialMediaPanel.Controllers
     {
         private readonly AppDbContext _db;
         private readonly ActivePageService _activePages;
+        private readonly NativeInstagramService _nativeInstagram;
 
-        public InboxController(AppDbContext db, ActivePageService activePages)
+        public InboxController(AppDbContext db, ActivePageService activePages, NativeInstagramService nativeInstagram)
         {
             _db = db;
             _activePages = activePages;
+            _nativeInstagram = nativeInstagram;
+        }
+
+        // Native-login IG accounts (direct "Instagram API with Instagram
+        // Login") carry their own token — check that before falling back to
+        // the Facebook-Page-linked resolution used everywhere else.
+        private async Task<string?> GetNativeInstagramTokenAsync(string? igUserId)
+        {
+            if (string.IsNullOrEmpty(igUserId)) return null;
+            var account = await _db.InstagramAccounts
+                .FirstOrDefaultAsync(a => a.InstagramUserId == igUserId && a.NativeAccessToken != null);
+            return account?.NativeAccessToken;
         }
 
         // ── Index — renders the Smart Inbox page ─────────────────────
@@ -262,6 +275,11 @@ namespace SocialMediaPanel.Controllers
         private async Task<(bool Success, string Error)> SendInstagramCommentReplyAsync(
             string commentId, string message, string pageId)
         {
+            // Native-login accounts (own token, no linked Facebook Page) take priority.
+            var nativeToken = await GetNativeInstagramTokenAsync(pageId);
+            if (!string.IsNullOrEmpty(nativeToken))
+                return await _nativeInstagram.ReplyToCommentAsync(commentId, message, nativeToken);
+
             var token = await GetPageAccessTokenAsync(pageId, "instagram");
             if (string.IsNullOrEmpty(token))
                 return (false, "No Instagram access token found for this page.");
@@ -286,6 +304,10 @@ namespace SocialMediaPanel.Controllers
         private async Task<(bool Success, string Error)> SendInstagramDMAsync(
             string recipientId, string message, string pageId)
         {
+            var nativeToken = await GetNativeInstagramTokenAsync(pageId);
+            if (!string.IsNullOrEmpty(nativeToken))
+                return await _nativeInstagram.SendDMAsync(recipientId, message, nativeToken);
+
             var token = await GetPageAccessTokenAsync(pageId, "instagram");
             if (string.IsNullOrEmpty(token))
                 return (false, "No Instagram access token found for this page.");

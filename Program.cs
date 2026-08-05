@@ -27,6 +27,7 @@ builder.Services.AddDataProtection()
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<FacebookService>();
 builder.Services.AddScoped<InstagramService>();
+builder.Services.AddScoped<NativeInstagramService>();
 builder.Services.AddScoped<PostService>();
 builder.Services.AddScoped<LinkedInService>();
 builder.Services.AddScoped<ActivePageService>();
@@ -111,6 +112,23 @@ using (var scope = app.Services.CreateScope())
             using var alterCmd = conn.CreateCommand();
             alterCmd.CommandText = "ALTER TABLE `SocialPosts` ADD COLUMN `scheduled_at` DATETIME NULL";
             alterCmd.ExecuteNonQuery();
+        }
+
+        // ── One-time additive schema patch: native Instagram Login token ──
+        // Accounts connected via the direct "Instagram API with Instagram
+        // Login" flow carry their own access token (no linked Facebook Page
+        // to resolve one from), unlike the existing Facebook-linked rows.
+        using var checkCmd2 = conn.CreateCommand();
+        checkCmd2.CommandText =
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'InstagramAccounts' AND COLUMN_NAME = 'NativeAccessToken'";
+        var existsIg = Convert.ToInt32(checkCmd2.ExecuteScalar()) > 0;
+
+        if (!existsIg)
+        {
+            using var alterCmd2 = conn.CreateCommand();
+            alterCmd2.CommandText = "ALTER TABLE `InstagramAccounts` ADD COLUMN `NativeAccessToken` VARCHAR(512) NULL";
+            alterCmd2.ExecuteNonQuery();
         }
     }
     finally
