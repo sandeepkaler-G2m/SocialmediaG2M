@@ -449,20 +449,44 @@ namespace SocialMediaPanel.Controllers
                     if (message.TryGetProperty("is_echo", out var echo) && echo.GetBoolean())
                         continue;
 
+                    // Reactions/edits/deletes on an EXISTING message reuse that
+                    // message's own "mid" — without this check they'd collide
+                    // with the original message's unique message_id and, worse,
+                    // abort the whole batch's save for every other real message
+                    // in the same webhook delivery. Only a genuine new message
+                    // (has text or an attachment, no reaction payload) counts.
+                    var hasReaction = message.TryGetProperty("reaction", out _);
+                    var hasText = message.TryGetProperty("text", out var txt) && !string.IsNullOrEmpty(txt.GetString());
+                    var hasAttachments = message.TryGetProperty("attachments", out _);
+                    if (hasReaction || (!hasText && !hasAttachments))
+                    {
+                        logger.LogInformation("Skipping non-content messaging sub-event (reaction/seen/edit)");
+                        continue;
+                    }
+
                     var senderId = msgEvent.TryGetProperty("sender", out var s)
                         && s.TryGetProperty("id", out var sid) ? sid.GetString() : null;
                     var messageId = message.TryGetProperty("mid", out var mid)
                         ? mid.GetString() : Guid.NewGuid().ToString();
-                    var text = message.TryGetProperty("text", out var txt)
-                        ? txt.GetString() : null;
+                    var text = hasText ? txt.GetString() : null;
                     var timestamp = msgEvent.TryGetProperty("timestamp", out var ts)
                         ? ts.GetInt64() : 0;
 
-                    // Duplicate check
-                    if (await context.PageMessages.AnyAsync(m => m.MessageId == messageId))
+                    // Duplicate check — some Instagram messaging deliveries have
+                    // reused the same "mid" across genuinely different messages
+                    // in the same conversation (observed live). Only treat it as
+                    // a true duplicate if the text also matches; otherwise keep
+                    // the real new message under a uniquified id instead of
+                    // silently dropping it.
+                    var existingWithId = await context.PageMessages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+                    if (existingWithId != null)
                     {
-                        logger.LogInformation("Message already exists — skip: {MsgId}", messageId);
-                        continue;
+                        if (existingWithId.MessageText == text)
+                        {
+                            logger.LogInformation("Message already exists — skip: {MsgId}", messageId);
+                            continue;
+                        }
+                        messageId = $"{messageId}_{timestamp}";
                     }
 
                     var senderName = await FetchSenderNameAsync(senderId, pageId, platform, context, httpFactory, logger);
@@ -482,6 +506,11 @@ namespace SocialMediaPanel.Controllers
                         CreatedAt = DateTime.UtcNow
                     });
 
+                    // Saved per-item (not batched at the end) so one bad/duplicate
+                    // event in a webhook delivery can never take the rest of that
+                    // delivery's real messages down with it.
+                    await context.SaveChangesAsync();
+
                     logger.LogInformation(
                         "Message saved ✅ — platform={P} sender={S} text={T}",
                         platform, senderId, text?[..Math.Min(30, text?.Length ?? 0)]);
@@ -491,8 +520,6 @@ namespace SocialMediaPanel.Controllers
                     logger.LogError("Message save error: {Msg}", ex.Message);
                 }
             }
-
-            await context.SaveChangesAsync();
         }
 
         // Best-effort sender display name lookup. Messenger locks down PSID
