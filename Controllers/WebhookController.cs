@@ -482,89 +482,33 @@ namespace SocialMediaPanel.Controllers
                     var timestamp = msgEvent.TryGetProperty("timestamp", out var ts)
                         ? ts.GetInt64() : 0;
 
-                    // Duplicate check — some Instagram messaging deliveries have
-                    // reused the same "mid" across genuinely different messages
-                    // in the same conversation (observed live). Only treat it as
-                    // a true duplicate if the text also matches; otherwise keep
-                    // the real new message under a uniquified id instead of
-                    // silently dropping it.
-                    // AsNoTracking — this is a read-only lookup. Attaching it to
-                    // the change tracker (via FirstOrDefaultAsync without
-                    // NoTracking) confused MySql.EntityFrameworkCore's
-                    // SaveChanges on the very next Add() in this same context
-                    // ("Could not save changes. Please configure your entity
-                    // type accordingly."), silently dropping every new message.
-                    var existingWithId = await context.PageMessages.AsNoTracking()
-                        .FirstOrDefaultAsync(m => m.MessageId == messageId);
-                    if (existingWithId != null)
-                    {
-                        if (existingWithId.MessageText == text)
-                        {
-                            logger.LogInformation("Message already exists — skip: {MsgId}", messageId);
-                            continue;
-                        }
-                        messageId = $"{messageId}_{timestamp}";
-                    }
-
                     var senderName = await FetchSenderNameAsync(senderId, pageId, platform, context, httpFactory, logger);
+                    var messageTime = timestamp > 0
+                        ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime
+                        : DateTime.UtcNow;
 
-                    // Meta double-delivers webhook events (confirmed live —
-                    // two near-simultaneous POSTs for the same message,
-                    // each in its own DbContext/connection). The AsNoTracking
-                    // check above can't fully close that race: both requests
-                    // can pass it before either commits, and the DB's unique
-                    // key on message_id then rejects whichever one loses,
-                    // which MySql.EntityFrameworkCore surfaces as a generic
-                    // "Could not save changes" DbUpdateException. Rather than
-                    // lose that message's content, retry once under a
-                    // guaranteed-unique id instead of dropping it.
-                    async Task<PageMessage> SaveMessageAsync(string idToUse)
+                    // Meta double-delivers webhook events (confirmed live — two
+                    // near-simultaneous POSTs for the same message, each in its
+                    // own DbContext/connection). EF Core's Add()+SaveChanges()
+                    // can't survive that race cleanly: MySql.EntityFrameworkCore
+                    // wraps the loser's duplicate-key violation in an opaque
+                    // "Could not save changes" DbUpdateException, and once that's
+                    // thrown the same context's connection/transaction state is
+                    // unreliable for a same-context retry (tried that — still
+                    // failed). A raw "INSERT IGNORE" sidesteps EF's tracking
+                    // entirely and lets MySQL itself resolve the race atomically:
+                    // the loser is a silent no-op (0 rows affected) instead of an
+                    // exception, and the real message is never lost.
+                    var rowsAffected = await context.Database.ExecuteSqlInterpolatedAsync($@"
+                        INSERT IGNORE INTO page_messages
+                            (message_id, page_id, sender_id, sender_name, message_text, platform, message_time, is_replied, created_at)
+                        VALUES
+                            ({messageId}, {pageId}, {senderId}, {senderName}, {text}, {platform}, {messageTime}, 0, {DateTime.UtcNow})");
+
+                    if (rowsAffected == 0)
                     {
-                        var entity = new PageMessage
-                        {
-                            MessageId = idToUse,
-                            PageId = pageId,
-                            SenderId = senderId,
-                            SenderName = senderName,
-                            MessageText = text,
-                            Platform = platform,
-                            MessageTime = timestamp > 0
-                                ? DateTimeOffset.FromUnixTimeMilliseconds(timestamp).UtcDateTime
-                                : DateTime.UtcNow,
-                            IsReplied = false,
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        context.PageMessages.Add(entity);
-                        await context.SaveChangesAsync();
-                        return entity;
-                    }
-
-                    try
-                    {
-                        await SaveMessageAsync(messageId!);
-                    }
-                    catch (Microsoft.EntityFrameworkCore.DbUpdateException failedEx)
-                    {
-                        // The failed Add() stays tracked as "Added" — clear it
-                        // before touching this context again, or the retry's
-                        // SaveChanges would just re-attempt the same failed insert.
-                        foreach (var entry in context.ChangeTracker.Entries<PageMessage>().Where(e => e.State == Microsoft.EntityFrameworkCore.EntityState.Added).ToList())
-                            entry.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
-
-                        if (await context.PageMessages.AsNoTracking().AnyAsync(m => m.MessageId == messageId))
-                        {
-                            // The other concurrent delivery won the race and
-                            // already saved this exact message — genuinely a
-                            // duplicate now, safe to skip.
-                            logger.LogInformation("Message already exists (race) — skip: {MsgId}", messageId);
-                            continue;
-                        }
-
-                        // Some other save conflict (not a same-content duplicate)
-                        // — retry once under a guaranteed-unique id so the real
-                        // message content is never silently lost.
-                        logger.LogWarning("Save failed for {MsgId} ({Reason}), retrying under a unique id", messageId, failedEx.InnerException?.Message ?? failedEx.Message);
-                        await SaveMessageAsync($"{messageId}_{Guid.NewGuid():N}");
+                        logger.LogInformation("Message already exists — skip: {MsgId}", messageId);
+                        continue;
                     }
 
                     await hub.Clients.All.SendAsync("inboxChanged");
