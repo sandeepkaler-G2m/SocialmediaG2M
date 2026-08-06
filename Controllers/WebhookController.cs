@@ -488,7 +488,14 @@ namespace SocialMediaPanel.Controllers
                     // a true duplicate if the text also matches; otherwise keep
                     // the real new message under a uniquified id instead of
                     // silently dropping it.
-                    var existingWithId = await context.PageMessages.FirstOrDefaultAsync(m => m.MessageId == messageId);
+                    // AsNoTracking — this is a read-only lookup. Attaching it to
+                    // the change tracker (via FirstOrDefaultAsync without
+                    // NoTracking) confused MySql.EntityFrameworkCore's
+                    // SaveChanges on the very next Add() in this same context
+                    // ("Could not save changes. Please configure your entity
+                    // type accordingly."), silently dropping every new message.
+                    var existingWithId = await context.PageMessages.AsNoTracking()
+                        .FirstOrDefaultAsync(m => m.MessageId == messageId);
                     if (existingWithId != null)
                     {
                         if (existingWithId.MessageText == text)
