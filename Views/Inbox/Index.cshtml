@@ -1518,6 +1518,8 @@
     var currentSort   = 'newest';
     var activeFilters = { platforms:[], dateFrom:'', dateTo:'', types:[] };
     var activeItemId  = null;   // currently open detail
+    var activeItemType = null;  // 'message' | 'comment' | ... of the open detail
+    var activeThreadKey = null; // {senderId,platform,pageId} for the open message thread
     var tReplies      = {};     // id → [{sender,text,time,own,saved,failed,error}]
 
     /* ── Init ── */
@@ -1699,6 +1701,8 @@
 
         /* Highlight active card */
         activeItemId=id;
+        activeItemType=item.itemType;
+        activeThreadKey=(item.itemType==='message')?{senderId:item.senderId,platform:item.platform,pageId:item.pageId}:null;
         document.querySelectorAll('.msg-card').forEach(function(c){ c.classList.remove('active-card'); });
         var card=document.getElementById('card-'+id);
         if(card) card.classList.add('active-card');
@@ -1916,6 +1920,8 @@
     function closeDetail(){
         document.getElementById('inboxShell').classList.remove('detail-open');
         activeItemId=null;
+        activeItemType=null;
+        activeThreadKey=null;
         document.querySelectorAll('.msg-card').forEach(function(c){ c.classList.remove('active-card'); });
         document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
     }
@@ -2061,10 +2067,27 @@
                     ALL_ITEMS = data;
                     updateBadges();
                     renderFeed();
-                    if (activeItemId !== null) {
+                    if (activeItemId === null) return;
+                    if (activeItemType === 'message' && activeThreadKey) {
+                        /* The list shows one row per conversation (latest message as the
+                           anchor), so a new incoming message replaces the anchor's id —
+                           matching by senderId+platform+pageId instead of the old id keeps
+                           the open thread (and future replies) tracking the same conversation. */
+                        var match = ALL_ITEMS.find(function(x){
+                            return x.itemType === 'message'
+                                && x.senderId === activeThreadKey.senderId
+                                && x.platform === activeThreadKey.platform
+                                && x.pageId === activeThreadKey.pageId;
+                        });
+                        if (match) activeItemId = match.id;
+                        loadMergedThread(activeItemId);
+                        document.querySelectorAll('.msg-card').forEach(function(c){ c.classList.remove('active-card'); });
+                        document.querySelectorAll('.btn-thread').forEach(function(b){ b.classList.remove('active'); });
+                        var card = document.getElementById('card-'+activeItemId);
+                        if (card) { card.classList.add('active-card'); var b=card.querySelector('.btn-thread'); if(b) b.classList.add('active'); }
+                    } else {
                         var item = ALL_ITEMS.find(function(x){ return x.id === activeItemId; });
-                        if (item && item.itemType === 'message') loadMergedThread(activeItemId);
-                        else if (item) loadDetailReplies(activeItemId, item.itemType);
+                        if (item) loadDetailReplies(activeItemId, item.itemType);
                     }
                 })
                 .catch(function(){});
