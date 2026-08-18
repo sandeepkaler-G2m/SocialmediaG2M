@@ -561,7 +561,18 @@ namespace SocialMediaPanel.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                TempData["IntegrationSuccess"] = $"Instagram account @{profile.Username} connected directly (no Facebook Page needed).";
+
+                // IntegrationSuccess must stay the bare platform keyword — Dashboard's
+                // success script passes it straight into PlatformAuth.openSuccess(),
+                // which uses it both as a BANNERS[] lookup key and as the path segment
+                // for GET /Integrations/Modal/{platform}. Putting the descriptive
+                // sentence here instead (as this used to) turned that into
+                // /Integrations/Modal/Instagram account @user connected directly...
+                // — a 404, since routing takes it as a literal platform name. The
+                // human-readable text belongs in FacebookPageName, same as every other
+                // platform's success message.
+                TempData["IntegrationSuccess"] = "instagram";
+                TempData["FacebookPageName"] = $"@{profile.Username} (connected directly)";
             }
             catch (Exception ex)
             {
