@@ -31,14 +31,14 @@
 
 <div class="ca-header">
     <div class="ca-title">Connected Accounts</div>
-    <div class="ca-subtitle">Yeh saare Facebook Pages aur Instagram accounts hain jo aapke login se connect hain. Jo "Active" hai wahi Compose/Posts/Inbox mein default use hota hai.</div>
+    <div class="ca-subtitle">These are all the Facebook Pages and Instagram accounts connected to your login. Whichever one is "Active" is used by default in Compose/Posts/Inbox.</div>
 </div>
 
 <div class="ca-section">
     <div class="ca-sec-title">📘 Facebook Pages (@fbPages.Count)</div>
     @if (fbPages.Count == 0)
     {
-        <div class="ca-empty">Koi Facebook Page connected nahi hai. <a asp-controller="Dashboard" asp-action="Index">Dashboard</a> se connect karo.</div>
+        <div class="ca-empty">No Facebook Page connected. Connect one from the <a asp-controller="Dashboard" asp-action="Index">Dashboard</a>.</div>
     }
     else
     {
@@ -70,7 +70,7 @@
     <div class="ca-sec-title">📸 Instagram Accounts (@igAccounts.Count)</div>
     @if (igAccounts.Count == 0)
     {
-        <div class="ca-empty">Koi Instagram account connected nahi hai. <a asp-controller="Dashboard" asp-action="Index">Dashboard</a> se connect karo.</div>
+        <div class="ca-empty">No Instagram account connected. Connect one from the <a asp-controller="Dashboard" asp-action="Index">Dashboard</a>.</div>
     }
     else
     {
