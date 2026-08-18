@@ -971,11 +971,47 @@ namespace SocialMediaPanel.Controllers
         }
 
         // ── Disconnect ────────────────────────────────────────────────
+        // Was previously a stub that always returned success without touching
+        // the DB — the account stayed connected. Actually removes the row now.
+        // No [ValidateAntiForgeryToken] to match SetActivePage above (plain
+        // fetch() call, no Razor form/antiforgery cookie backing it).
         [HttpPost]
         [Route("Integrations/Disconnect/{platform}")]
-        [ValidateAntiForgeryToken]
-        public IActionResult Disconnect(string platform)
+        public async Task<IActionResult> Disconnect(string platform, [FromForm] string? pageId)
         {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null) return Json(new { success = false, message = "Not logged in" });
+            if (string.IsNullOrEmpty(pageId)) return Json(new { success = false, message = "pageId required" });
+
+            if (platform?.ToLower() == "instagram")
+            {
+                var acc = await _context.InstagramAccounts
+                    .FirstOrDefaultAsync(a => a.UserId == userId.ToString() && a.InstagramUserId == pageId);
+                if (acc == null) return Json(new { success = false, message = "Instagram account not found." });
+
+                _context.InstagramAccounts.Remove(acc);
+                await _context.SaveChangesAsync();
+
+                if (HttpContext.Session.GetString("ActiveIgAccountId") == pageId)
+                    HttpContext.Session.Remove("ActiveIgAccountId");
+            }
+            else if (platform?.ToLower() == "facebook")
+            {
+                var page = await _context.FacebookPages
+                    .FirstOrDefaultAsync(p => p.user_id == userId.ToString() && p.page_id == pageId);
+                if (page == null) return Json(new { success = false, message = "Facebook Page not found." });
+
+                _context.FacebookPages.Remove(page);
+                await _context.SaveChangesAsync();
+
+                if (HttpContext.Session.GetString("ActiveFbPageId") == pageId)
+                    HttpContext.Session.Remove("ActiveFbPageId");
+            }
+            else
+            {
+                return Json(new { success = false, message = "Unknown platform: " + platform });
+            }
+
             return Json(new { success = true });
         }
     }

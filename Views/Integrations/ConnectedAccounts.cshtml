@@ -16,13 +16,16 @@
     .ca-section { background:#fff; border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:18px; }
     .ca-sec-title { font-family:'Sora',sans-serif; font-size:14px; font-weight:700; color:var(--text); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
 
-    .ca-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:10px; }
+    .ca-row { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border); border-radius:10px; margin-bottom:10px; gap:10px; }
     .ca-row:last-child { margin-bottom:0; }
-    .ca-row-left { display:flex; flex-direction:column; gap:3px; }
+    .ca-row-left { display:flex; flex-direction:column; gap:3px; min-width:0; }
     .ca-name { font-size:13.5px; font-weight:600; color:var(--text); }
     .ca-meta { font-size:11.5px; color:var(--muted); }
-    .ca-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; }
+    .ca-row-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .ca-badge { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
     .ca-badge.active { background:rgba(75,181,67,.12); color:var(--green); }
+    .ca-disconnect-btn { font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; border:1px solid #f5c2c2; background:#fff5f5; color:#d33; cursor:pointer; }
+    .ca-disconnect-btn:hover { background:#ffe8e8; }
     .ca-empty { text-align:center; padding:24px 0; color:var(--muted); font-size:13px; }
 </style>
 
@@ -47,14 +50,17 @@
                     <div class="ca-name">@p.page_name</div>
                     <div class="ca-meta">Page ID: @p.page_id &middot; Connected: @p.created_at.ToString("dd MMM yyyy, hh:mm tt")</div>
                 </div>
-                @if (isActive)
-                {
-                    <span class="ca-badge active">● Active</span>
-                }
-                else
-                {
-                    <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('facebook','@p.page_id')">Make Active</button>
-                }
+                <div class="ca-row-right">
+                    @if (isActive)
+                    {
+                        <span class="ca-badge active">● Active</span>
+                    }
+                    else
+                    {
+                        <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('facebook','@p.page_id')">Make Active</button>
+                    }
+                    <button class="ca-disconnect-btn" onclick="disconnectAccount('facebook','@p.page_id','@p.page_name')">Disconnect</button>
+                </div>
             </div>
         }
     }
@@ -74,16 +80,25 @@
             <div class="ca-row">
                 <div class="ca-row-left">
                     <div class="ca-name">@@@a.Username</div>
-                    <div class="ca-meta">Account ID: @a.InstagramUserId &middot; Connected: @a.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
+                    <div class="ca-meta">
+                        Account ID: @a.InstagramUserId &middot; Connected: @a.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")
+                        @if (!string.IsNullOrEmpty(a.NativeAccessToken))
+                        {
+                            <span>&middot; Direct (no Facebook Page)</span>
+                        }
+                    </div>
                 </div>
-                @if (isActive)
-                {
-                    <span class="ca-badge active">● Active</span>
-                }
-                else
-                {
-                    <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('instagram','@a.InstagramUserId')">Make Active</button>
-                }
+                <div class="ca-row-right">
+                    @if (isActive)
+                    {
+                        <span class="ca-badge active">● Active</span>
+                    }
+                    else
+                    {
+                        <button class="ca-badge" style="border:1px solid var(--border);background:#fff;cursor:pointer" onclick="setActive('instagram','@a.InstagramUserId')">Make Active</button>
+                    }
+                    <button class="ca-disconnect-btn" onclick="disconnectAccount('instagram','@a.InstagramUserId','@@@a.Username')">Disconnect</button>
+                </div>
             </div>
         }
     }
@@ -98,6 +113,16 @@
             fetch('/Integrations/SetActivePage', { method: 'POST', body: fd, credentials: 'same-origin' })
                 .then(r => r.json())
                 .then(d => { if (d.success) location.reload(); else alert(d.message || 'Failed'); });
+        }
+
+        function disconnectAccount(platform, pageId, label) {
+            if (!confirm('Disconnect ' + label + '? This removes it from the panel — posts/comments/messages already synced stay in place, but new activity will stop until you reconnect.')) return;
+            var fd = new FormData();
+            fd.append('pageId', pageId);
+            fetch('/Integrations/Disconnect/' + platform, { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(d => { if (d.success) location.reload(); else alert(d.message || 'Disconnect failed'); })
+                .catch(() => alert('Disconnect failed — network error.'));
         }
     </script>
 }
