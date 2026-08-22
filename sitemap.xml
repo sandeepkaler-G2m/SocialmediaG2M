@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://social.go2market.in:8080/Account/Register</loc>
+  </url>
+  <url>
+    <loc>https://social.go2market.in:8080/Account/ForgotPassword</loc>
+  </url>
+  <url>
+    <loc>https://social.go2market.in:8080</loc>
+  </url>
+</urlset>

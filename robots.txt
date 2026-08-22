@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://social.go2market.in:8080/sitemap.xml
