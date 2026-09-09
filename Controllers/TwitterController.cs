@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NuGet.Protocol;
 using SocialMediaPanel.Data;
+using SocialMediaPanel.Hubs;
 using SocialMediaPanel.Models;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -19,17 +21,20 @@ namespace SocialMediaPanel.Controllers
         private readonly IConfiguration _config;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<TwitterController> _logger;
+        private readonly IHubContext<InboxHub> _hub;
 
         public TwitterController(
             AppDbContext context,
             IConfiguration config,
             IHttpClientFactory httpClientFactory,
-            ILogger<TwitterController> logger)
+            ILogger<TwitterController> logger,
+            IHubContext<InboxHub> hub)
         {
             _context = context;
             _config = config;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _hub = hub;
         }
 
         // ══════════════════════════════════════════════════════
@@ -743,6 +748,117 @@ namespace SocialMediaPanel.Controllers
 
             TempData["TwitterSuccess"] = "Twitter disconnected.";
             return RedirectToAction("Index");
+        }
+
+        // ══════════════════════════════════════════════════════
+        // GET /Twitter/SyncMentions — pull recent @mentions into the
+        // Smart Inbox (page_comments, same table Facebook/Instagram
+        // mentions already use — Platform is a free-text column, no
+        // schema change needed). Manual trigger (called from the Inbox's
+        // Reload button) rather than a background poll: X's mentions-
+        // timeline endpoint has a tight per-15-minute rate limit even on
+        // paid tiers, and there's no webhook equivalent to push these in
+        // real time the way Meta does for Facebook/Instagram.
+        // ══════════════════════════════════════════════════════
+        [HttpPost]
+        [Route("Twitter/SyncMentions")]
+        public async Task<IActionResult> SyncMentions()
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+                return Json(new { success = false, message = "Not logged in" });
+
+            var account = await _context.TwitterAccounts
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+            if (account == null || string.IsNullOrEmpty(account.TwitterUserId))
+                return Json(new { success = false, message = "Twitter not connected" });
+
+            var validToken = await GetValidToken(account);
+            if (string.IsNullOrEmpty(validToken))
+                return Json(new { success = false, message = "Twitter token expired — reconnect required" });
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", validToken);
+
+                var url = $"https://api.twitter.com/2/users/{account.TwitterUserId}/mentions" +
+                          "?max_results=25" +
+                          "&tweet.fields=created_at,author_id" +
+                          "&expansions=author_id&user.fields=username,name";
+
+                var resp = await client.GetAsync(url);
+                var json = await resp.Content.ReadAsStringAsync();
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Twitter mentions sync failed: {Status} {Body}", resp.StatusCode, json);
+                    return Json(new { success = false, message = "Twitter API error", detail = json });
+                }
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                var names = new Dictionary<string, string>();
+                if (root.TryGetProperty("includes", out var includes) &&
+                    includes.TryGetProperty("users", out var users))
+                {
+                    foreach (var u in users.EnumerateArray())
+                    {
+                        var uid = u.TryGetProperty("id", out var uidP) ? uidP.GetString() : null;
+                        var uname = u.TryGetProperty("username", out var unameP) ? unameP.GetString() : null;
+                        if (uid != null && uname != null) names[uid] = uname;
+                    }
+                }
+
+                int added = 0;
+                if (root.TryGetProperty("data", out var data))
+                {
+                    foreach (var tweet in data.EnumerateArray())
+                    {
+                        var tweetId = tweet.TryGetProperty("id", out var tid) ? tid.GetString() : null;
+                        if (string.IsNullOrEmpty(tweetId)) continue;
+
+                        // Dedup: skip if already synced from a previous call.
+                        var exists = await _context.PageComments.AnyAsync(c => c.CommentId == tweetId && c.Platform == "twitter");
+                        if (exists) continue;
+
+                        var authorId = tweet.TryGetProperty("author_id", out var aid) ? aid.GetString() : null;
+                        var text = tweet.TryGetProperty("text", out var t) ? t.GetString() : "";
+                        DateTime? createdAt = null;
+                        if (tweet.TryGetProperty("created_at", out var ca) && DateTime.TryParse(ca.GetString(), out var parsed))
+                            createdAt = parsed.ToUniversalTime();
+
+                        _context.PageComments.Add(new PageComment
+                        {
+                            CommentId = tweetId,
+                            PageId = account.TwitterUserId,
+                            PostId = "",
+                            SenderId = authorId ?? "",
+                            SenderName = authorId != null && names.TryGetValue(authorId, out var uname2) ? "@" + uname2 : "Unknown",
+                            Message = text,
+                            Platform = "twitter",
+                            CommentType = "mention",
+                            CommentTime = createdAt,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        added++;
+                    }
+                }
+
+                if (added > 0)
+                {
+                    await _context.SaveChangesAsync();
+                    await _hub.Clients.All.SendAsync("inboxChanged");
+                }
+
+                return Json(new { success = true, added });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Twitter mentions sync error: {Msg}", ex.Message);
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         // ══════════════════════════════════════════════════════

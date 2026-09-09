@@ -86,9 +86,10 @@ namespace SocialMediaPanel.Services
             });
 
             var r = await _http.PostAsync("https://oauth2.googleapis.com/token", body);
-            r.EnsureSuccessStatusCode();
-
             var json = await r.Content.ReadAsStringAsync();
+            if (!r.IsSuccessStatusCode)
+                throw new Exception($"Gmail code exchange failed ({(int)r.StatusCode}): {json}");
+
             var payload = JsonSerializer.Deserialize<GoogleTokenPayload>(json)
                           ?? throw new Exception("Empty token response from Google");
 
@@ -139,10 +140,11 @@ namespace SocialMediaPanel.Services
             });
 
             var r = await _http.PostAsync("https://oauth2.googleapis.com/token", body);
-            r.EnsureSuccessStatusCode();
+            var json = await r.Content.ReadAsStringAsync();
+            if (!r.IsSuccessStatusCode)
+                throw new Exception($"Gmail token refresh failed ({(int)r.StatusCode}): {json}");
 
-            var payload = JsonSerializer.Deserialize<GoogleTokenPayload>(
-                              await r.Content.ReadAsStringAsync());
+            var payload = JsonSerializer.Deserialize<GoogleTokenPayload>(json);
             return payload?.AccessToken ?? throw new Exception("Token refresh failed");
         }
 

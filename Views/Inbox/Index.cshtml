@@ -1484,6 +1484,7 @@
             <label class="fp-chk-item"><input type="checkbox" value="messenger"><div class="fp-plat-ico" style="background:#e7f0fd"><svg viewBox="0 0 24 24" fill="#0084FF" width="10" height="10"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8.1l3.131 3.26L19.752 8.1l-6.561 6.863z" /></svg></div>Messenger</label>
             <label class="fp-chk-item"><input type="checkbox" value="instagram"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig1" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig1)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram</label>
             <label class="fp-chk-item"><input type="checkbox" value="instagram_dm"><div class="fp-plat-ico" style="background:#fce4ec"><svg viewBox="0 0 24 24" fill="none" width="10" height="10"><defs><linearGradient id="ig2" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#ig2)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg></div>Instagram DM</label>
+            <label class="fp-chk-item"><input type="checkbox" value="twitter"><div class="fp-plat-ico" style="background:#eee"><svg viewBox="0 0 24 24" fill="#000" width="10" height="10"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg></div>Twitter / X</label>
         </div>
     </div>
     <div class="fp-sec">
@@ -1613,6 +1614,8 @@
             platSvg='<svg viewBox="0 0 24 24" fill="#1877F2" width="9" height="9"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
         } else if(item.platform==='instagram'||item.platform==='instagram_dm'){
             platSvg='<svg viewBox="0 0 24 24" fill="none" width="9" height="9"><defs><linearGradient id="igc'+item.id+'" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igc'+item.id+')"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>';
+        } else if(item.platform==='twitter'){
+            platSvg='<svg viewBox="0 0 24 24" fill="#000" width="9" height="9"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
         }
 
         var tLabel='Comment',tCls='tbadge-comment';
@@ -1633,6 +1636,8 @@
             ctx+=' On post: <a href="'+esc(buildPostUrl(item))+'" target="_blank">'+esc(item.postName.slice(0,40))+'</a>';
         } else if(item.postId&&item.postId.length>0){
             ctx+=' On post <a href="'+esc(buildPostUrl(item))+'" target="_blank">…'+esc(item.postId.slice(-10))+'</a>';
+        } else if(item.platform==='twitter'&&item.commentType==='mention'){
+            ctx+=' Mentioned you on <strong>X (Twitter)</strong>';
         } else if(item.pageId&&item.pageId.length>0){
             ctx+=' Wall of <strong>'+esc(item.pageId)+'</strong>';
         }
@@ -1948,6 +1953,7 @@
 
     /* ── URL helpers ── */
     function buildProfileUrl(item){
+        if(item.platform==='twitter'&&item.senderName&&item.senderName.charAt(0)==='@@') return 'https://x.com/'+item.senderName.slice(1);
         if(!item.senderId) return '#';
         if(item.platform==='facebook'||item.platform==='messenger') return 'https://www.facebook.com/'+item.senderId;
         if(item.platform==='instagram'||item.platform==='instagram_dm') return 'https://www.instagram.com/'+item.senderId;
@@ -1996,11 +2002,18 @@
     function reloadInbox(){
         var btn=document.getElementById('reloadBtn');
         btn.classList.add('spinning'); btn.disabled=true;
-        fetch('/Inbox/GetAll',{headers:{'X-Requested-With':'XMLHttpRequest'}})
-            .then(function(r){ return r.json(); })
-            .then(function(data){ ALL_ITEMS=data; updateBadges(); renderFeed(); })
-            .catch(function(){ alert('Reload failed.'); })
-            .finally(function(){ btn.classList.remove('spinning'); btn.disabled=false; });
+        /* Twitter has no webhook — pull recent mentions on manual reload only
+           (rate-limited API, not worth polling automatically). Best-effort:
+           if Twitter isn't connected or the call fails, just continue to the
+           normal GetAll reload below. */
+        fetch('/Twitter/SyncMentions',{method:'POST',headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(function(){})
+            .finally(function(){
+                fetch('/Inbox/GetAll',{headers:{'X-Requested-With':'XMLHttpRequest'}})
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){ ALL_ITEMS=data; updateBadges(); renderFeed(); })
+                    .catch(function(){ alert('Reload failed.'); })
+                    .finally(function(){ btn.classList.remove('spinning'); btn.disabled=false; });
+            });
     }
 
     /* ── Filter popup ── */

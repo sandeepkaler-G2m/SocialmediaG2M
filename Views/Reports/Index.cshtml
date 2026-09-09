@@ -131,12 +131,17 @@
                 }).join('') + '</div>'
                 : '<div class="rep-empty">No per-platform data yet.</div>';
 
-            // Twitter/LinkedIn don't have stored engagement numbers — show
-            // activity counts instead of fabricating engagement we don't have.
+            // LinkedIn doesn't have stored engagement numbers yet — show
+            // activity counts instead of fabricating engagement it doesn't have.
+            // Twitter DOES now — likes/retweets/replies fetched live from the API.
             if (d.twitterPostsThisMonth != null) {
+                var twStats = '<div class="rep-platform-stat">Tweets posted (30d): <b>' + fmt(d.twitterPostsThisMonth) + '</b></div>';
+                if (d.twitterEngagementThisMonth != null) {
+                    twStats += '<div class="rep-platform-stat">Engagement (30d): <b>' + fmt(d.twitterEngagementThisMonth) + '</b></div>' +
+                        '<div class="rep-platform-stat">❤ ' + fmt(d.twitterLikes) + ' &nbsp; 🔁 ' + fmt(d.twitterRetweets) + ' &nbsp; 💬 ' + fmt(d.twitterReplies) + '</div>';
+                }
                 platformHtml += '<div class="rep-platform-card" style="margin-top:14px;display:inline-block;margin-right:14px">' +
-                    '<div class="rep-platform-name">Twitter</div>' +
-                    '<div class="rep-platform-stat">Tweets posted (30d): <b>' + fmt(d.twitterPostsThisMonth) + '</b></div></div>';
+                    '<div class="rep-platform-name">Twitter</div>' + twStats + '</div>';
             }
             if (d.linkedInPostsThisMonth != null) {
                 platformHtml += '<div class="rep-platform-card" style="margin-top:14px;display:inline-block">' +

@@ -971,12 +971,40 @@ namespace SocialMediaPanel.Controllers
                 return RedirectToAction("Login", "Account");
             }
 
-            var token = await _gmail.ExchangeCodeAsync(code);
-            var profile = await _gmail.GetProfileAsync(token.AccessToken);
+            try
+            {
+                var token = await _gmail.ExchangeCodeAsync(code);
+                var profile = await _gmail.GetProfileAsync(token.AccessToken);
 
-            // Upsert via GmailIntegrationService instead of a raw Add() — the
-            // raw insert created a fresh duplicate row on every reconnect.
-            await _gmailIntegration.SaveAsync(userid.Value.ToString(), token, profile);
+                // Upsert via GmailIntegrationService instead of a raw Add() — the
+                // raw insert created a fresh duplicate row on every reconnect.
+                await _gmailIntegration.SaveAsync(userid.Value.ToString(), token, profile);
+
+                TempData["IntegrationSuccess"] = "gmail";
+                TempData["FacebookPageName"] = profile.Email;
+            }
+            catch (Exception ex)
+            {
+                // Google's authorization `code` is single-use. A duplicate callback
+                // request — browser prefetch, a double-click on the consent screen,
+                // back/forward-cache replay — resends the same `code`, and the
+                // SECOND attempt gets a 400 (invalid_grant) from Google even though
+                // the connection already succeeded on the first attempt. Before
+                // reporting failure, check whether this exact user already has a
+                // Gmail integration that was (re)connected in roughly the last
+                // minute — if so, this failed request was the redundant duplicate,
+                // not a real failure, so surface success instead of a scary error.
+                var recent = await _gmailIntegration.GetAsync(userid.Value.ToString());
+                if (recent != null && recent.ConnectedAt >= DateTime.UtcNow.AddMinutes(-1))
+                {
+                    TempData["IntegrationSuccess"] = "gmail";
+                    TempData["FacebookPageName"] = recent.EmailAddress;
+                }
+                else
+                {
+                    TempData["IntegrationError"] = "Gmail connection failed: " + ex.Message;
+                }
+            }
 
             return RedirectToAction("Index", "Dashboard");
         }

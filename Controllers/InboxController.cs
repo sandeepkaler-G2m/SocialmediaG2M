@@ -140,6 +140,12 @@ namespace SocialMediaPanel.Controllers
                         apiSuccess = result.Success;
                         apiError = result.Error;
                     }
+                    else if (req.Platform == "twitter")
+                    {
+                        var result = await SendTwitterReplyAsync(comment.CommentId ?? "", req.Message);
+                        apiSuccess = result.Success;
+                        apiError = result.Error;
+                    }
                 }
             }
             catch (Exception ex)
@@ -361,6 +367,36 @@ namespace SocialMediaPanel.Controllers
             return (true, "");
         }
 
+        // ══ Twitter API helper ═══════════════════════════════════════
+        // Replying to a mention on Twitter/X IS posting a new tweet, with
+        // reply.in_reply_to_tweet_id set to the mention's tweet ID — there
+        // is no separate "reply" endpoint like Facebook/Instagram comments.
+        // Uses tweet.write, which is already part of this app's granted
+        // Twitter scope (no reconnect needed, unlike DMs/likes/retweets).
+        private async Task<(bool Success, string Error)> SendTwitterReplyAsync(string tweetId, string message)
+        {
+            var userId = HttpContext.Session.GetInt32("UserId");
+            var account = await _db.TwitterAccounts
+                .FirstOrDefaultAsync(t => t.UserId == userId && t.IsActive);
+            if (account == null || string.IsNullOrEmpty(account.AccessToken))
+                return (false, "Twitter not connected.");
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", account.AccessToken);
+
+            var payload = new { text = message, reply = new { in_reply_to_tweet_id = tweetId } };
+            var content = new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
+
+            var resp = await client.PostAsync("https://api.twitter.com/2/tweets", content);
+            var json = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+                return (false, $"Twitter API error: {json}");
+
+            return (true, "");
+        }
+
         private async Task<(bool Success, string Error)> SendInstagramDMAsync(
             string recipientId, string message, string pageId)
         {
@@ -430,8 +466,18 @@ namespace SocialMediaPanel.Controllers
                 .Select(m => m.InstagramUserId)
                 .ToListAsync();
 
+            // Twitter mentions (Controllers/TwitterController.SyncMentions) are saved
+            // into this same page_comments table keyed by the account's own Twitter
+            // user ID as PageId — include it here so they show up in the merged feed.
+            var twitterId = await _db.TwitterAccounts
+                .Where(t => t.UserId == userId && t.IsActive)
+                .Select(t => t.TwitterUserId)
+                .FirstOrDefaultAsync();
+
             // Combine ALL page IDs into one list to avoid missing matches
-            var allPageIds = pageIds.Concat(pageIdsig).Distinct().ToList();
+            var allPageIds = pageIds.Concat(pageIdsig)
+                .Concat(twitterId != null ? new[] { twitterId } : Array.Empty<string>())
+                .Distinct().ToList();
 
             // ── Comments ──────────────────────────────────────────────────
             var comments = await _db.PageComments
