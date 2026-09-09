@@ -28,7 +28,7 @@
         display: flex;
         flex-direction: column;
         gap: 18px;
-        max-width: 760px;
+        max-width: 960px;
         margin: 0 auto;
     }
 
@@ -312,6 +312,78 @@
         line-height: 1.5;
     }
 
+    /* ── Dashboard-style stats bar ──────────────── */
+    .li-stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .li-stat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        transition: transform .15s, box-shadow .15s;
+    }
+
+        .li-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,.08);
+        }
+
+    .li-stat-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .li-stat-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .li-stat-icon.blue { background: rgba(10,102,194,.12); }
+        .li-stat-icon.blue svg { fill: #0A66C2; }
+
+        .li-stat-icon.green { background: rgba(75,181,67,.12); }
+        .li-stat-icon.green svg { stroke: var(--green); fill: none; }
+
+        .li-stat-icon.red { background: rgba(239,68,68,.12); }
+        .li-stat-icon.red svg { stroke: #ef4444; fill: none; }
+
+        .li-stat-icon.purple { background: rgba(108,92,231,.12); }
+        .li-stat-icon.purple svg { stroke: #6c5ce7; fill: none; }
+
+    .li-stat-info {
+        min-width: 0;
+    }
+
+    .li-stat-value {
+        font-family: 'Sora', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+        line-height: 1.2;
+    }
+
+    .li-stat-label {
+        font-size: 11.5px;
+        color: var(--muted);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     /* ── Cards ──────────────────────────────────── */
     .li-card {
         background: #fff;
@@ -447,7 +519,7 @@
         justify-content: center;
         gap: 7px;
         width: 100%;
-        padding: 11px;
+        padding: 12px;
         background: #0A66C2;
         border: none;
         border-radius: 9px;
@@ -456,11 +528,13 @@
         font-weight: 700;
         font-family: 'DM Sans',sans-serif;
         cursor: pointer;
-        transition: background .15s;
+        box-shadow: 0 4px 12px rgba(10,102,194,.28);
+        transition: transform .15s, box-shadow .15s;
     }
 
-        .li-post-btn:hover {
-            background: #085199;
+        .li-post-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(10,102,194,.36);
         }
 
         .li-post-btn:disabled {
@@ -498,15 +572,73 @@
             color: #c62828;
         }
 
-    /* ── Post history ────────────────────────────── */
-    .li-post-row {
-        padding: 14px 20px;
-        border-bottom: 1px solid var(--border);
+    /* ── Post history — individually elevated cards, not one boxed
+       list with divider lines, to match Reports/Inbox's card language ── */
+    .li-history-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
-        .li-post-row:last-child {
+        .li-history-wrap .li-card-head {
+            padding: 4px 4px 2px;
             border-bottom: none;
         }
+
+    .li-post-row {
+        padding: 16px 18px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.03);
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        transition: transform .12s, box-shadow .12s, border-color .12s;
+    }
+
+        .li-post-row:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0,0,0,.08);
+            border-color: rgba(10,102,194,.3);
+        }
+
+    .li-post-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .li-post-icon.posted {
+            background: rgba(10,102,194,.10);
+        }
+
+            .li-post-icon.posted svg {
+                fill: #0A66C2;
+            }
+
+        .li-post-icon.failed {
+            background: #fff0f0;
+        }
+
+            .li-post-icon.failed svg {
+                stroke: #c62828;
+                fill: none;
+            }
+
+        .li-post-icon svg {
+            width: 16px;
+            height: 16px;
+        }
+
+    .li-post-body {
+        flex: 1;
+        min-width: 0;
+    }
 
     .li-post-text {
         font-size: 13px;
@@ -527,10 +659,10 @@
     }
 
     .li-post-status {
-        font-size: 11px;
-        font-weight: 600;
-        padding: 2px 8px;
-        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 9px;
+        border-radius: 20px;
     }
 
         .li-post-status.posted {
@@ -844,6 +976,46 @@
 
     @if (connected)
     {
+        @* ── Dashboard-style stats bar ── *@
+        <div class="li-stats-bar">
+            <div class="li-stat-card">
+                <div class="li-stat-icon blue">
+                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                </div>
+                <div class="li-stat-info">
+                    <div class="li-stat-value">@posts.Count</div>
+                    <div class="li-stat-label">Total Posts</div>
+                </div>
+            </div>
+            <div class="li-stat-card">
+                <div class="li-stat-icon green">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+                <div class="li-stat-info">
+                    <div class="li-stat-value">@posts.Count(p => p.Status == "posted")</div>
+                    <div class="li-stat-label">Posted Successfully</div>
+                </div>
+            </div>
+            <div class="li-stat-card">
+                <div class="li-stat-icon red">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                </div>
+                <div class="li-stat-info">
+                    <div class="li-stat-value">@posts.Count(p => p.Status == "failed")</div>
+                    <div class="li-stat-label">Failed</div>
+                </div>
+            </div>
+            <div class="li-stat-card">
+                <div class="li-stat-icon purple">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                </div>
+                <div class="li-stat-info">
+                    <div class="li-stat-value">@organizations.Count</div>
+                    <div class="li-stat-label">Org Pages</div>
+                </div>
+            </div>
+        </div>
+
         @* ── Create Post — or a no-permission notice if posting isn't granted ── *@
         <div class="li-card">
             <div class="li-card-head"><h3>Create Post</h3></div>
@@ -906,7 +1078,7 @@
         </div>
 
         @* ── Post History — or no-permission notice ── *@
-        <div class="li-card">
+        <div class="li-history-wrap">
             <div class="li-card-head">
                 <h3>Post History</h3>
                 @if (hasPosting)
@@ -945,38 +1117,50 @@
                 @foreach (var post in posts)
                 {
                     <div class="li-post-row">
-                        <div class="li-post-text">@post.PostText</div>
-                        <div class="li-post-meta">
-                            <span class="li-post-status @post.Status">@post.Status</span>
-                            <span class="li-post-date">
-                                @(post.PostedAt.HasValue
-                                                    ? post.PostedAt.Value.ToString("MMM d, yyyy h:mm tt")
-                                                    : post.CreatedAt.ToString("MMM d, yyyy"))
-                </span>
-                @if (!string.IsNullOrEmpty(post.ArticleUrl))
+                        <div class="li-post-icon @post.Status">
+                            @if (post.Status == "posted")
                             {
-                                <a class="li-post-link" href="@post.ArticleUrl" target="_blank">
-                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                                    </svg>
-                                    Link
-                                </a>
+                                <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
                             }
-                            @if (!string.IsNullOrEmpty(post.PostId))
+                            else
                             {
-                                <a class="li-post-link" href="https://www.linkedin.com/feed/update/@post.PostId" target="_blank">
-                                    View on LinkedIn
-                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                                        <line x1="7" y1="17" x2="17" y2="7" />
-                                        <polyline points="7 7 17 7 17 17" />
-                                    </svg>
-                                </a>
+                                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                             }
-                            @if (post.Status == "failed" && !string.IsNullOrEmpty(post.ErrorMessage))
-                            {
-                                <span style="font-size:11px;color:#c62828;" title="@post.ErrorMessage">⚠️ Failed</span>
-                            }
+                        </div>
+                        <div class="li-post-body">
+                            <div class="li-post-text">@post.PostText</div>
+                            <div class="li-post-meta">
+                                <span class="li-post-status @post.Status">@post.Status</span>
+                                <span class="li-post-date">
+                                    @(post.PostedAt.HasValue
+                                                        ? post.PostedAt.Value.ToString("MMM d, yyyy h:mm tt")
+                                                        : post.CreatedAt.ToString("MMM d, yyyy"))
+                    </span>
+                    @if (!string.IsNullOrEmpty(post.ArticleUrl))
+                                {
+                                    <a class="li-post-link" href="@post.ArticleUrl" target="_blank">
+                                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                                        </svg>
+                                        Link
+                                    </a>
+                                }
+                                @if (!string.IsNullOrEmpty(post.PostId))
+                                {
+                                    <a class="li-post-link" href="https://www.linkedin.com/feed/update/@post.PostId" target="_blank">
+                                        View on LinkedIn
+                                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+                                            <line x1="7" y1="17" x2="17" y2="7" />
+                                            <polyline points="7 7 17 7 17 17" />
+                                        </svg>
+                                    </a>
+                                }
+                                @if (post.Status == "failed" && !string.IsNullOrEmpty(post.ErrorMessage))
+                                {
+                                    <span style="font-size:11px;color:#c62828;" title="@post.ErrorMessage">⚠️ Failed</span>
+                                }
+                            </div>
                         </div>
                     </div>
                 }
