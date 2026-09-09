@@ -9,11 +9,12 @@ using SocialMediaPanel.Services;
 namespace SocialMediaPanel.Controllers
 {
     /// <summary>
-    /// Real WhatsApp Business Cloud API integration. Self-service — the user
-    /// pastes their own Phone Number ID + access token (generated in Meta
-    /// Business Manager) instead of an OAuth flow, since WhatsApp Business
-    /// API has no per-user consent screen the way Facebook/Instagram/
-    /// Twitter/LinkedIn do.
+    /// Real WhatsApp Business Cloud API integration, onboarded through
+    /// Meta's WhatsApp Embedded Signup (G2M is the Tech Provider). Panel
+    /// users just click "Connect with Facebook" — G2M's own Meta app
+    /// handles the token exchange, phone number registration, and webhook
+    /// subscription server-side, so the end-user never sees/pastes a
+    /// Phone Number ID or access token.
     ///
     /// Deliberately has its own dedicated conversation view (contact list +
     /// thread, like WhatsApp itself) rather than feeding into the shared
@@ -33,12 +34,14 @@ namespace SocialMediaPanel.Controllers
         private readonly AppDbContext _db;
         private readonly WhatsAppBusinessService _wa;
         private readonly IHubContext<InboxHub> _hub;
+        private readonly IConfiguration _config;
 
-        public WhatsAppController(AppDbContext db, WhatsAppBusinessService wa, IHubContext<InboxHub> hub)
+        public WhatsAppController(AppDbContext db, WhatsAppBusinessService wa, IHubContext<InboxHub> hub, IConfiguration config)
         {
             _db = db;
             _wa = wa;
             _hub = hub;
+            _config = config;
         }
 
         private int? UserId => HttpContext.Session.GetInt32("UserId");
@@ -52,6 +55,8 @@ namespace SocialMediaPanel.Controllers
                 .FirstOrDefaultAsync(w => w.UserId == UserId && w.IsActive);
 
             ViewBag.Integration = integration;
+            ViewBag.WhatsAppAppId = _config["WhatsApp:AppId"] ?? "";
+            ViewBag.WhatsAppConfigId = _config["WhatsApp:ConfigurationId"] ?? "";
 
             if (integration != null)
             {
@@ -166,35 +171,46 @@ namespace SocialMediaPanel.Controllers
             return Json(new { success = true, contactName = incoming.LastOrDefault(m => !string.IsNullOrEmpty(m.SenderName))?.SenderName, messages = sorted });
         }
 
-        // ── Save credentials (connect) ──────────────────────────────────
+        // ── Embedded Signup callback ────────────────────────────────────
+        // The frontend runs FB.login with G2M's Configuration ID, gets a
+        // short-lived code + wabaId + phoneNumberId back via postMessage
+        // (30-second TTL), and POSTs them here immediately. This endpoint
+        // does the three required server-to-server calls — token exchange,
+        // phone number registration, webhook subscription — then verifies
+        // and saves, all using G2M's own App ID/Secret, never anything the
+        // end-user typed in.
         [HttpPost]
-        public async Task<IActionResult> Connect(string phoneNumberId, string accessToken, string? wabaId)
+        [Route("WhatsApp/EmbeddedSignupCallback")]
+        public async Task<IActionResult> EmbeddedSignupCallback(string code, string wabaId, string phoneNumberId)
         {
-            if (UserId == null) return RedirectToAction("Login", "Account");
+            if (UserId == null) return Json(new { success = false, message = "Not logged in" });
 
-            if (string.IsNullOrWhiteSpace(phoneNumberId) || string.IsNullOrWhiteSpace(accessToken))
-            {
-                TempData["WhatsAppError"] = "Phone Number ID and Access Token are both required.";
-                return RedirectToAction("Index");
-            }
+            if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(wabaId) || string.IsNullOrWhiteSpace(phoneNumberId))
+                return Json(new { success = false, message = "Signup did not return a code, WABA ID, and phone number ID — please try connecting again." });
 
-            var (success, displayNumber, verifiedName, error) =
-                await _wa.GetPhoneNumberInfoAsync(phoneNumberId.Trim(), accessToken.Trim());
+            var (exchanged, accessToken, exchangeError) = await _wa.ExchangeCodeForBusinessTokenAsync(code.Trim());
+            if (!exchanged || string.IsNullOrEmpty(accessToken))
+                return Json(new { success = false, message = "Could not exchange the signup code with Meta: " + exchangeError });
 
-            if (!success)
-            {
-                TempData["WhatsAppError"] = "Could not verify these credentials with Meta: " + error;
-                return RedirectToAction("Index");
-            }
+            var (registered, registerError) = await _wa.RegisterPhoneNumberAsync(phoneNumberId.Trim(), accessToken);
+            if (!registered)
+                return Json(new { success = false, message = "Phone number registration failed: " + registerError });
 
-            var existing = await _db.WhatsAppIntegrations
-                .FirstOrDefaultAsync(w => w.UserId == UserId);
+            var (subscribed, subscribeError) = await _wa.SubscribeToWebhooksAsync(wabaId.Trim(), accessToken);
+            if (!subscribed)
+                return Json(new { success = false, message = "Webhook subscription failed: " + subscribeError });
 
+            var (verified, displayNumber, verifiedName, verifyError) =
+                await _wa.GetPhoneNumberInfoAsync(phoneNumberId.Trim(), accessToken);
+            if (!verified)
+                return Json(new { success = false, message = "Connected, but could not fetch phone number details: " + verifyError });
+
+            var existing = await _db.WhatsAppIntegrations.FirstOrDefaultAsync(w => w.UserId == UserId);
             if (existing != null)
             {
                 existing.PhoneNumberId = phoneNumberId.Trim();
-                existing.WabaId = wabaId?.Trim();
-                existing.AccessToken = accessToken.Trim();
+                existing.WabaId = wabaId.Trim();
+                existing.AccessToken = accessToken;
                 existing.DisplayPhoneNumber = displayNumber;
                 existing.VerifiedName = verifiedName;
                 existing.IsActive = true;
@@ -205,8 +221,8 @@ namespace SocialMediaPanel.Controllers
                 {
                     UserId = UserId!.Value,
                     PhoneNumberId = phoneNumberId.Trim(),
-                    WabaId = wabaId?.Trim(),
-                    AccessToken = accessToken.Trim(),
+                    WabaId = wabaId.Trim(),
+                    AccessToken = accessToken,
                     DisplayPhoneNumber = displayNumber,
                     VerifiedName = verifiedName,
                     IsActive = true,
@@ -215,8 +231,7 @@ namespace SocialMediaPanel.Controllers
             }
 
             await _db.SaveChangesAsync();
-            TempData["WhatsAppSuccess"] = $"Connected {displayNumber ?? phoneNumberId} ({verifiedName ?? "verified"}).";
-            return RedirectToAction("Index");
+            return Json(new { success = true, message = $"Connected {displayNumber ?? phoneNumberId} ({verifiedName ?? "verified"})." });
         }
 
         [HttpPost]

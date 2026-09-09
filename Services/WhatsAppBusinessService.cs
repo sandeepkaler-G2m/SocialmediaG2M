@@ -10,12 +10,16 @@ namespace SocialMediaPanel.Services
     /// third-party relay (go2market.ai) used only by the standalone
     /// WhatsApp-PDF Mail-Merge feature.
     ///
-    /// There's no OAuth consent screen for this product the way there is
-    /// for Facebook/Instagram/Twitter/LinkedIn — a business generates its
-    /// own Phone Number ID and a permanent access token in Meta Business
-    /// Manager and provides them directly, so every method here takes the
-    /// caller's own accessToken/phoneNumberId rather than resolving one
-    /// from a stored app-level secret.
+    /// G2M is a Meta Tech Provider / Solution Partner — end-users onboard
+    /// through WhatsApp Embedded Signup (a "Connect with Facebook" button)
+    /// rather than pasting their own Phone Number ID/access token. The
+    /// frontend runs FB.login with G2M's own Configuration ID and hands
+    /// back a short-lived authorization code; ExchangeCodeForBusinessTokenAsync/
+    /// RegisterPhoneNumberAsync/SubscribeToWebhooksAsync below complete that
+    /// flow server-side using G2M's own App ID/Secret. The per-message
+    /// methods (SendTextMessageAsync etc.) still take a phoneNumberId/
+    /// accessToken per call since each onboarded customer gets their own
+    /// Business Integration System User token, scoped to their own WABA.
     /// </summary>
     public class WhatsAppBusinessService
     {
@@ -29,6 +33,72 @@ namespace SocialMediaPanel.Services
         }
 
         private string ApiVersion => _config["WhatsApp:GraphApiVersion"] ?? "v21.0";
+        private string AppId => _config["WhatsApp:AppId"] ?? "";
+        private string AppSecret => _config["WhatsApp:AppSecret"] ?? "";
+        public string ConfigurationId => _config["WhatsApp:ConfigurationId"] ?? "";
+
+        // ── Embedded Signup step 1: exchange the short-lived code the
+        // frontend received via postMessage for a Business Integration
+        // System User access token, scoped to the customer's assets.
+        // No redirect_uri — this isn't a redirect-based OAuth flow. ──────
+        public async Task<(bool Success, string? AccessToken, string Error)> ExchangeCodeForBusinessTokenAsync(string code)
+        {
+            var client = _httpFactory.CreateClient();
+            var url = $"https://graph.facebook.com/{ApiVersion}/oauth/access_token" +
+                      $"?client_id={Uri.EscapeDataString(AppId)}" +
+                      $"&client_secret={Uri.EscapeDataString(AppSecret)}" +
+                      $"&code={Uri.EscapeDataString(code)}";
+
+            var resp = await client.GetAsync(url);
+            var json = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+                return (false, null, json);
+
+            using var doc = JsonDocument.Parse(json);
+            var token = doc.RootElement.TryGetProperty("access_token", out var t) ? t.GetString() : null;
+            if (string.IsNullOrEmpty(token))
+                return (false, null, json);
+
+            return (true, token, "");
+        }
+
+        // ── Embedded Signup step 2: register the customer's phone number
+        // for Cloud API use. Required once per phone number before it can
+        // send/receive. A fixed 6-digit PIN is fine — it's only used for
+        // 2-step verification if the number is ever re-registered elsewhere. ──
+        public async Task<(bool Success, string Error)> RegisterPhoneNumberAsync(string phoneNumberId, string accessToken, string pin = "000000")
+        {
+            var payload = new { messaging_product = "whatsapp", pin };
+            var client = _httpFactory.CreateClient();
+            var url = $"https://graph.facebook.com/{ApiVersion}/{phoneNumberId}/register";
+            var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+            };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var resp = await client.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+            return resp.IsSuccessStatusCode ? (true, "") : (false, json);
+        }
+
+        // ── Embedded Signup step 3: subscribe G2M's app to webhook events
+        // on the customer's WABA (messages, statuses, etc.). Required once
+        // per WABA — without this, no webhook events arrive for it at all. ──
+        public async Task<(bool Success, string Error)> SubscribeToWebhooksAsync(string wabaId, string accessToken)
+        {
+            var client = _httpFactory.CreateClient();
+            var url = $"https://graph.facebook.com/{ApiVersion}/{wabaId}/subscribed_apps";
+            var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent("", Encoding.UTF8, "application/json")
+            };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var resp = await client.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+            return resp.IsSuccessStatusCode ? (true, "") : (false, json);
+        }
 
         // ── Verify credentials + fetch display info at connect time ──────
         public async Task<(bool Success, string? DisplayPhoneNumber, string? VerifiedName, string Error)>
