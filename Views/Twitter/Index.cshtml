@@ -235,68 +235,95 @@
         }
 
         /* ── CONNECT CARD ── */
-        .connect-card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            max-width: 500px;
-            margin: 0 auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        .connect-hero {
+            max-width: 780px;
+            margin: 24px auto 0;
         }
 
-        .connect-icon {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #1D9BF0, #1a8cd8);
+        .connect-card {
+            background: linear-gradient(180deg, #fff 0%, #fafbfd 100%);
+            border: 1px solid var(--border);
             border-radius: 20px;
+            padding: 52px 40px 44px;
+            text-align: center;
+            box-shadow: 0 8px 28px rgba(15,23,42,.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .connect-card::before {
+                content: '';
+                position: absolute;
+                top: -60px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 340px;
+                height: 200px;
+                background: radial-gradient(circle, rgba(29,155,240,.14) 0%, rgba(29,155,240,0) 70%);
+                pointer-events: none;
+            }
+
+        .connect-icon {
+            width: 76px;
+            height: 76px;
+            background: linear-gradient(135deg, #1D9BF0, #1a8cd8);
+            border-radius: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
+            margin: 0 auto 22px;
+            box-shadow: 0 10px 24px rgba(29,155,240,.30);
+            position: relative;
         }
 
             .connect-icon svg {
-                width: 36px;
-                height: 36px;
+                width: 38px;
+                height: 38px;
                 fill: white;
             }
 
         .connect-card h2 {
             font-family: 'Sora', sans-serif;
-            font-size: 22px;
+            font-size: 25px;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 10px;
+            position: relative;
         }
 
-        .connect-card p {
-            font-size: 14px;
+        .connect-card > p {
+            font-size: 14.5px;
             color: var(--muted);
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
         }
 
         .btn-connect-twitter {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 28px;
+            padding: 13px 30px;
             background: var(--twitter);
             border: none;
-            border-radius: 10px;
+            border-radius: 11px;
             color: #fff;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 700;
             font-family: 'DM Sans', sans-serif;
             cursor: pointer;
             text-decoration: none;
-            transition: opacity 0.15s;
+            transition: transform .15s, box-shadow .15s;
+            box-shadow: 0 6px 16px rgba(29,155,240,.32);
+            position: relative;
         }
 
             .btn-connect-twitter:hover {
-                opacity: 0.88;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 20px rgba(29,155,240,.4);
             }
 
             .btn-connect-twitter svg {
@@ -304,6 +331,55 @@
                 height: 18px;
                 fill: white;
             }
+
+        .connect-benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 36px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+
+        .connect-benefit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 8px;
+        }
+
+        .connect-benefit-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(29,155,240,.10);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+            .connect-benefit-icon svg {
+                width: 20px;
+                height: 20px;
+                stroke: var(--twitter);
+                fill: none;
+            }
+
+        .connect-benefit strong {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+        }
+
+        .connect-benefit span {
+            font-size: 11.5px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
 
         /* ── CONNECTED STATE ── */
         .twitter-grid {
@@ -916,16 +992,42 @@
             @if (!twitterConnected)
             {
                 <!-- CONNECT STATE -->
-                <div class="connect-card">
-                    <div class="connect-icon">
-                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                <div class="connect-hero">
+                    <div class="connect-card">
+                        <div class="connect-icon">
+                            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                        </div>
+                        <h2>Connect Twitter / X</h2>
+                        <p>Link your account to compose tweets, track mentions, and see real engagement — all without leaving this panel.</p>
+                        <a href="/Twitter/Connect" class="btn-connect-twitter">
+                            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                            Connect with Twitter
+                        </a>
+
+                        <div class="connect-benefits">
+                            <div class="connect-benefit">
+                                <div class="connect-benefit-icon">
+                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
+                                </div>
+                                <strong>Compose &amp; Post</strong>
+                                <span>Write and publish tweets with media, right from Compose.</span>
+                            </div>
+                            <div class="connect-benefit">
+                                <div class="connect-benefit-icon">
+                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                                </div>
+                                <strong>Mentions in one Inbox</strong>
+                                <span>@@mentions land in the same Smart Inbox as your other channels.</span>
+                            </div>
+                            <div class="connect-benefit">
+                                <div class="connect-benefit-icon">
+                                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
+                                </div>
+                                <strong>Real Engagement</strong>
+                                <span>Likes, retweets and replies tracked on your Reports page.</span>
+                            </div>
+                        </div>
                     </div>
-                    <h2>Connect Twitter / X</h2>
-                    <p>Connect your Twitter account and post tweets directly from this panel.</p>
-                    <a href="/Twitter/Connect" class="btn-connect-twitter">
-                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                        Connect with Twitter
-                    </a>
                 </div>
             }
             else
