@@ -474,6 +474,12 @@ namespace SocialMediaPanel.Controllers
                 .Select(t => t.TwitterUserId)
                 .FirstOrDefaultAsync();
 
+            // WhatsApp deliberately does NOT feed into this shared Inbox — it
+            // gets its own dedicated conversation view on the WhatsApp page
+            // instead (contact list + chat thread), since it's a distinct,
+            // often higher-volume channel that reads better as its own
+            // WhatsApp-style UI than mixed into the generic comment/mention feed.
+
             // Combine ALL page IDs into one list to avoid missing matches
             var allPageIds = pageIds.Concat(pageIdsig)
                 .Concat(twitterId != null ? new[] { twitterId } : Array.Empty<string>())

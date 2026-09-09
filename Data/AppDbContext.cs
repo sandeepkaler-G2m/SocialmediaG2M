@@ -158,5 +158,11 @@ namespace SocialMediaPanel.Data
         public DbSet<InstagramAccount> InstagramAccounts { get; set; }
         public DbSet<LinkedInIntegration> LinkedInIntegrations { get; set; }
         public DbSet<LinkedinPosts> LinkedInPosts { get; set; }
+        public DbSet<WhatsAppIntegration> WhatsAppIntegrations { get; set; }
+
+        // ── WhatsApp-PDF Mail-Merge (Areas/WhatsAppPdf) — standalone feature, own tables ──
+        public DbSet<PdfMergeUser> PdfMergeUsers { get; set; }
+        public DbSet<PdfMergeBatch> PdfMergeBatches { get; set; }
+        public DbSet<PdfMergeRecord> PdfMergeRecords { get; set; }
     }
 }

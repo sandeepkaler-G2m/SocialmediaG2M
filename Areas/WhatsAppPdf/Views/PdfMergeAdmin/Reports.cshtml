@@ -1,0 +1,62 @@
+@model PdfMergeAdminController.ReportsViewModel
+@{
+    ViewData["Title"] = "Admin Reports";
+    var usersById = (Dictionary<int, string>)ViewBag.UsersById;
+}
+
+<h2 style="font-size:20px;font-weight:800;margin-bottom:18px;">Admin Reports</h2>
+
+<div class="pm-tiles">
+    <div class="pm-tile"><div class="pm-tile-label">Total users</div><div class="pm-tile-val">@Model.TotalUsers</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Total batches</div><div class="pm-tile-val">@Model.TotalBatches</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Total PDFs generated</div><div class="pm-tile-val">@Model.TotalPdfsGenerated</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Avg PDFs / batch</div><div class="pm-tile-val">@(Model.TotalBatches == 0 ? 0 : Model.TotalPdfsGenerated / Model.TotalBatches)</div></div>
+</div>
+
+<div class="pm-card">
+    <h2>Per-user breakdown</h2>
+    @if (Model.PerUser.Count == 0)
+    {
+        <div class="pm-empty">Koi user nahi hai.</div>
+    }
+    else
+    {
+        <table class="pm-table">
+            <thead><tr><th>Username</th><th>Batches</th><th>PDFs generated</th></tr></thead>
+            <tbody>
+                @foreach (var u in Model.PerUser)
+                {
+                    <tr><td>@u.Username</td><td>@u.BatchCount</td><td>@u.RecordCount</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="pm-card">
+    <h2>Recent batches (all users)</h2>
+    @if (Model.RecentBatches.Count == 0)
+    {
+        <div class="pm-empty">Abhi tak koi batch nahi hui.</div>
+    }
+    else
+    {
+        <table class="pm-table">
+            <thead><tr><th>Batch</th><th>User</th><th>Excel</th><th>PDFs</th><th>Status</th><th>Created</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var b in Model.RecentBatches)
+                {
+                    <tr>
+                        <td>#@b.Id</td>
+                        <td>@(usersById.TryGetValue(b.UserId, out var uname) ? uname : "—")</td>
+                        <td>@b.ExcelFileName</td>
+                        <td>@b.TotalRecords</td>
+                        <td>@b.Status</td>
+                        <td>@b.CreatedAt.ToString("dd MMM yyyy, HH:mm")</td>
+                        <td><a href="/whatsapppdf/batch/@b.Id">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

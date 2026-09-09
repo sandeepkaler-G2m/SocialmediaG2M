@@ -1,0 +1,37 @@
+@{
+    var isAdmin = Context.Session.GetString("WaPdf_Role") == "admin";
+    var username = Context.Session.GetString("WaPdf_Username");
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — WhatsApp PDF" : "WhatsApp PDF")</title>
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="/pdfmerge/css/pdfmerge.css" />
+</head>
+<body class="pm-body">
+    @if (username != null)
+    {
+        <div class="pm-topbar">
+            <a class="pm-brand" href="/whatsapppdf">WhatsApp PDF</a>
+            <div class="pm-nav">
+                <a href="/whatsapppdf">Dashboard</a>
+                @if (isAdmin)
+                {
+                    <a href="/whatsapppdf/admin">Admin Reports</a>
+                    <a href="/whatsapppdf/admin/users">Users</a>
+                }
+                <span style="color:var(--pm-muted);font-size:13px;margin-left:20px;">@username</span>
+                <form method="post" action="/whatsapppdf/logout" style="display:inline">
+                    <button type="submit" class="pm-btn" style="background:transparent;color:var(--pm-muted);border:1px solid var(--pm-border);margin-left:12px;">Logout</button>
+                </form>
+            </div>
+        </div>
+    }
+    <div class="pm-container">
+        @RenderBody()
+    </div>
+</body>
+</html>

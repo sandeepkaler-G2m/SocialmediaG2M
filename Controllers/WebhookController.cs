@@ -157,6 +157,10 @@ namespace SocialMediaPanel.Controllers
                             await HandleAdAccountEvent(entry, context, httpFactory, logger);
                             break;
 
+                        case "whatsapp_business_account":
+                            await HandleWhatsAppEvent(entry, context, logger, hub);
+                            break;
+
                         default:
                             logger.LogInformation("Unhandled object type: {Obj}", obj);
                             break;
@@ -520,6 +524,97 @@ namespace SocialMediaPanel.Controllers
                 catch (Exception ex)
                 {
                     logger.LogError("Message save error: {Msg}", ex.Message);
+                }
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // WHATSAPP BUSINESS API — incoming messages
+        // Payload shape is different from Messenger/Instagram's "messaging[]"
+        // array: entry.changes[].value.messages[], with the recipient phone
+        // number's Phone Number ID in value.metadata.phone_number_id (this
+        // is what's stored as page_id for WhatsApp rows, same PageId-column
+        // reuse pattern as every other platform) and the sender's WhatsApp
+        // ID + profile name in value.contacts[].
+        // ══════════════════════════════════════════════════════
+        private static async Task HandleWhatsAppEvent(
+            JsonElement entry,
+            AppDbContext context,
+            ILogger logger,
+            IHubContext<InboxHub> hub)
+        {
+            if (!entry.TryGetProperty("changes", out var changes)) return;
+
+            foreach (var change in changes.EnumerateArray())
+            {
+                if (!change.TryGetProperty("value", out var value)) continue;
+                var field = change.TryGetProperty("field", out var f) ? f.GetString() : null;
+                if (field != "messages") continue; // ignore statuses/delivery-receipts for now
+
+                var phoneNumberId = value.TryGetProperty("metadata", out var meta) &&
+                                     meta.TryGetProperty("phone_number_id", out var pnid)
+                    ? pnid.GetString() : null;
+
+                var namesByWaId = new Dictionary<string, string>();
+                if (value.TryGetProperty("contacts", out var contacts))
+                {
+                    foreach (var c in contacts.EnumerateArray())
+                    {
+                        var waId = c.TryGetProperty("wa_id", out var wid) ? wid.GetString() : null;
+                        var name = c.TryGetProperty("profile", out var prof) && prof.TryGetProperty("name", out var n)
+                            ? n.GetString() : null;
+                        if (waId != null && name != null) namesByWaId[waId] = name;
+                    }
+                }
+
+                if (!value.TryGetProperty("messages", out var messages)) continue;
+
+                foreach (var msg in messages.EnumerateArray())
+                {
+                    try
+                    {
+                        var messageId = msg.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+                        var senderId = msg.TryGetProperty("from", out var fromProp) ? fromProp.GetString() : null;
+                        if (string.IsNullOrEmpty(messageId) || string.IsNullOrEmpty(senderId)) continue;
+
+                        var type = msg.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : "text";
+                        string? text = type == "text" && msg.TryGetProperty("text", out var textProp) &&
+                                       textProp.TryGetProperty("body", out var bodyProp)
+                            ? bodyProp.GetString()
+                            : $"[{type}]"; // media/location/etc. — placeholder until media download is built
+
+                        var timestamp = msg.TryGetProperty("timestamp", out var tsProp) &&
+                                         long.TryParse(tsProp.GetString(), out var tsVal)
+                            ? tsVal : 0;
+                        var messageTime = timestamp > 0
+                            ? DateTimeOffset.FromUnixTimeSeconds(timestamp).UtcDateTime
+                            : DateTime.UtcNow;
+
+                        var senderName = namesByWaId.TryGetValue(senderId, out var n2) ? n2 : null;
+
+                        // Same double-delivery-safe INSERT IGNORE pattern used for
+                        // Messenger/Instagram — see HandleMessaging above for why.
+                        var rowsAffected = await context.Database.ExecuteSqlInterpolatedAsync($@"
+                            INSERT IGNORE INTO page_messages
+                                (message_id, page_id, sender_id, sender_name, message_text, platform, message_time, is_replied, created_at)
+                            VALUES
+                                ({messageId}, {phoneNumberId}, {senderId}, {senderName}, {text}, {"whatsapp"}, {messageTime}, 0, {DateTime.UtcNow})");
+
+                        if (rowsAffected == 0)
+                        {
+                            logger.LogInformation("WhatsApp message already exists — skip: {MsgId}", messageId);
+                            continue;
+                        }
+
+                        // Its own event, not "inboxChanged" — WhatsApp has a dedicated
+                        // conversation view rather than feeding the shared Smart Inbox.
+                        await hub.Clients.All.SendAsync("whatsappChanged");
+                        logger.LogInformation("WhatsApp message saved ✅ — sender={S} text={T}", senderId, text?[..Math.Min(30, text?.Length ?? 0)]);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError("WhatsApp message save error: {Msg}", ex.Message);
+                    }
                 }
             }
         }

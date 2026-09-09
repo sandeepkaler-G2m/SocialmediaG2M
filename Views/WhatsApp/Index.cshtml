@@ -1,0 +1,375 @@
+@using SocialMediaPanel.Models
+@using SocialMediaPanel.Controllers
+@{
+    ViewData["Title"] = "WhatsApp";
+    ViewData["PageTitle"] = "WhatsApp";
+    var integration = ViewBag.Integration as WhatsAppIntegration;
+    var conversations = ViewBag.Conversations as List<WhatsAppConversationItem> ?? new();
+    var success = TempData["WhatsAppSuccess"] as string;
+    var error = TempData["WhatsAppError"] as string;
+}
+
+<style>
+    .wa-page-wrap { max-width: 1160px; margin: 0 auto; }
+
+    .wa-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wa-alert.success { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.3); color: #1a8a45; }
+    .wa-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
+    .wa-alert button { background: none; border: none; cursor: pointer; color: inherit; font-size: 16px; }
+
+    /* ── Disconnected hero (matches Twitter/LinkedIn pattern) ── */
+    .wa-hero { max-width: 780px; margin: 24px auto 0; }
+    .wa-hero-card { background: linear-gradient(180deg, #fff 0%, #fafbfd 100%); border: 1px solid var(--border); border-radius: 20px; padding: 52px 40px 44px; text-align: center; box-shadow: 0 8px 28px rgba(15,23,42,.06); position: relative; overflow: hidden; }
+    .wa-hero-card::before { content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%); width:340px; height:200px; background: radial-gradient(circle, rgba(37,211,102,.16) 0%, rgba(37,211,102,0) 70%); pointer-events:none; }
+    .wa-hero-icon { width: 76px; height: 76px; background: linear-gradient(135deg, #25D366, #128C7E); border-radius: 22px; display:flex; align-items:center; justify-content:center; margin: 0 auto 22px; box-shadow: 0 10px 24px rgba(37,211,102,.30); position:relative; }
+    .wa-hero-icon svg { width: 38px; height: 38px; fill: white; }
+    .wa-hero-card h2 { font-family:'Sora',sans-serif; font-size:25px; font-weight:700; color:var(--text); margin-bottom:10px; position:relative; }
+    .wa-hero-card > p { font-size:14.5px; color:var(--muted); line-height:1.6; margin:0 auto 28px; max-width:440px; position:relative; }
+
+    .wa-form { text-align:left; position:relative; }
+    .wa-form label { display:block; font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .wa-form-row { margin-bottom:16px; }
+    .wa-form input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); outline:none; transition:border-color .15s; }
+    .wa-form input:focus { border-color:#25D366; }
+    .wa-form-hint { font-size:11px; color:var(--muted); margin-top:5px; line-height:1.5; }
+    .wa-form-hint a { color:#25D366; font-weight:600; text-decoration:none; }
+
+    .btn-connect-whatsapp { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:13px 30px; background:#25D366; border:none; border-radius:11px; color:#fff; font-size:15px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; box-shadow:0 6px 16px rgba(37,211,102,.32); transition:transform .15s, box-shadow .15s; margin-top:6px; }
+    .btn-connect-whatsapp:hover { transform:translateY(-1px); box-shadow:0 8px 20px rgba(37,211,102,.4); }
+
+    .wa-hero-benefits { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:36px; padding-top:32px; border-top:1px solid var(--border); position:relative; }
+    .wa-hero-benefit { display:flex; flex-direction:column; align-items:center; gap:10px; padding:4px 8px; }
+    .wa-hero-benefit-icon { width:42px; height:42px; border-radius:12px; background:rgba(37,211,102,.10); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .wa-hero-benefit-icon svg { width:20px; height:20px; stroke:#128C7E; fill:none; }
+    .wa-hero-benefit strong { font-size:12.5px; font-weight:700; color:var(--text); font-family:'Sora',sans-serif; }
+    .wa-hero-benefit span { font-size:11.5px; color:var(--muted); line-height:1.5; }
+
+    /* ── Dashboard stats bar (connected) ── */
+    .wa-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+    .wa-stat-card { background:#fff; border:1px solid var(--border); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,.04); transition:transform .15s, box-shadow .15s; }
+    .wa-stat-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
+    .wa-stat-icon { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .wa-stat-icon svg { width:22px; height:22px; }
+    .wa-stat-icon.green { background:rgba(37,211,102,.12); } .wa-stat-icon.green svg { fill:#25D366; }
+    .wa-stat-icon.blue { background:rgba(29,155,240,.12); } .wa-stat-icon.blue svg { stroke:#1D9BF0; fill:none; }
+    .wa-stat-icon.red { background:rgba(239,68,68,.12); } .wa-stat-icon.red svg { stroke:#ef4444; fill:none; }
+    .wa-stat-icon.purple { background:rgba(108,92,231,.12); } .wa-stat-icon.purple svg { stroke:#6c5ce7; fill:none; }
+    .wa-stat-value { font-family:'Sora',sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1.2; }
+    .wa-stat-label { font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── Chat shell (contact list + thread) ── */
+    .wa-chat-shell { display:flex; height:calc(100vh - 340px); min-height:480px; background:#fff; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+
+    .wa-contacts { width:320px; min-width:280px; border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
+    .wa-contacts-head { padding:14px 18px; border-bottom:1px solid var(--border); font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:var(--text); display:flex; align-items:center; gap:8px; }
+    .wa-contacts-head svg { width:16px; height:16px; fill:#25D366; }
+
+    .wa-contact-row { display:flex; align-items:center; gap:11px; padding:12px 16px; cursor:pointer; border-bottom:1px solid #f4f5f7; transition:background .12s; }
+    .wa-contact-row:hover { background:#f8f9fb; }
+    .wa-contact-row.active { background:rgba(37,211,102,.07); border-left:3px solid #25D366; padding-left:13px; }
+    .wa-contact-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#25D366,#128C7E); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+    .wa-contact-info { flex:1; min-width:0; }
+    .wa-contact-name { font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wa-contact-preview { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .wa-contact-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+    .wa-contact-time { font-size:10px; color:var(--muted); }
+    .wa-unread-badge { background:#25D366; color:#fff; font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; min-width:16px; text-align:center; }
+
+    .wa-contacts-empty { padding:40px 20px; text-align:center; color:var(--muted); font-size:12.5px; }
+
+    .wa-thread { flex:1; display:flex; flex-direction:column; background:#f6f7f4; min-width:0; }
+    .wa-thread-head { padding:13px 20px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+    .wa-thread-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); gap:10px; }
+    .wa-thread-empty svg { width:40px; height:40px; stroke:#ccc; fill:none; }
+
+    .wa-messages { flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:8px; }
+    .wa-bubble-row { display:flex; }
+    .wa-bubble-row.own { justify-content:flex-end; }
+    .wa-bubble { max-width:64%; padding:9px 13px; font-size:13px; line-height:1.5; border-radius:4px 12px 12px 12px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08); word-break:break-word; }
+    .wa-bubble-row.own .wa-bubble { background:#d9fdd3; border-radius:12px 4px 12px 12px; }
+    .wa-bubble.failed { background:#fff0f0; }
+    .wa-bubble-time { font-size:9.5px; color:var(--muted); margin-top:4px; text-align:right; }
+    .wa-bubble-error { font-size:10px; color:#c62828; margin-top:3px; }
+
+    .wa-composer { padding:12px 18px; background:#fff; border-top:1px solid var(--border); display:flex; gap:10px; align-items:flex-end; flex-shrink:0; }
+    .wa-composer textarea { flex:1; padding:10px 14px; border:1.5px solid var(--border); border-radius:20px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); resize:none; outline:none; max-height:100px; min-height:40px; line-height:1.5; }
+    .wa-composer textarea:focus { border-color:#25D366; }
+    .wa-send-btn { width:40px; height:40px; border-radius:50%; background:#25D366; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:opacity .15s; }
+    .wa-send-btn:hover { opacity:.88; }
+    .wa-send-btn:disabled { opacity:.4; cursor:not-allowed; }
+    .wa-send-btn svg { width:17px; height:17px; fill:#fff; margin-left:2px; }
+
+    .wa-disconnect-bar { display:flex; justify-content:flex-end; margin-top:12px; }
+    .btn-wa-disconnect { padding:7px 16px; background:#fff5f5; border:1px solid #f5c2c2; border-radius:8px; color:#d33; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; }
+    .btn-wa-disconnect:hover { background:#ffe8e8; }
+</style>
+
+<div class="wa-page-wrap">
+
+    @if (success != null)
+    {
+        <div class="wa-alert success"><span>✅ @success</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+    @if (error != null)
+    {
+        <div class="wa-alert error"><span>⚠️ @error</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+
+    @if (integration == null)
+    {
+        <div class="wa-hero">
+            <div class="wa-hero-card">
+                <div class="wa-hero-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
+                </div>
+                <h2>Connect WhatsApp Business</h2>
+                <p>Paste your WhatsApp Business Cloud API credentials from Meta Business Manager to start sending and receiving messages right from this panel.</p>
+
+                <form class="wa-form" asp-action="Connect" asp-controller="WhatsApp" method="post">
+                    <div class="wa-form-row">
+                        <label>Phone Number ID</label>
+                        <input type="text" name="phoneNumberId" placeholder="e.g. 109876543210987" required />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>WhatsApp Business Account ID (optional)</label>
+                        <input type="text" name="wabaId" placeholder="e.g. 123456789012345" />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>Access Token</label>
+                        <input type="password" name="accessToken" placeholder="Permanent system-user access token" required />
+                        <div class="wa-form-hint">Generate a permanent token in Meta Business Manager → System Users, with <strong>whatsapp_business_messaging</strong> permission. <a href="https://business.facebook.com/wa/manage/phone-numbers/" target="_blank">Find your Phone Number ID →</a></div>
+                    </div>
+                    <button type="submit" class="btn-connect-whatsapp">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg>
+                        Connect WhatsApp
+                    </button>
+                </form>
+
+                <div class="wa-hero-benefits">
+                    <div class="wa-hero-benefit">
+                        <div class="wa-hero-benefit-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+                        <strong>Real-Time Chat</strong>
+                        <span>Incoming messages land here instantly via Meta's webhook.</span>
+                    </div>
+                    <div class="wa-hero-benefit">
+                        <div class="wa-hero-benefit-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /><path d="M1 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></div>
+                        <strong>Full Contact History</strong>
+                        <span>Every conversation organized by contact, like WhatsApp itself.</span>
+                    </div>
+                    <div class="wa-hero-benefit">
+                        <div class="wa-hero-benefit-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9z" /></svg></div>
+                        <strong>Direct Replies</strong>
+                        <span>Reply straight from here using the official Cloud API.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="wa-stats-bar">
+            <div class="wa-stat-card">
+                <div class="wa-stat-icon green"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg></div>
+                <div><div class="wa-stat-value">@ViewBag.TotalContacts</div><div class="wa-stat-label">Contacts</div></div>
+            </div>
+            <div class="wa-stat-card">
+                <div class="wa-stat-icon blue"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+                <div><div class="wa-stat-value">@ViewBag.TotalReceived</div><div class="wa-stat-label">Messages Received</div></div>
+            </div>
+            <div class="wa-stat-card">
+                <div class="wa-stat-icon purple"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9z" /></svg></div>
+                <div><div class="wa-stat-value">@ViewBag.TotalSent</div><div class="wa-stat-label">Sent Successfully</div></div>
+            </div>
+            <div class="wa-stat-card">
+                <div class="wa-stat-icon red"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg></div>
+                <div><div class="wa-stat-value">@ViewBag.TotalFailed</div><div class="wa-stat-label">Failed</div></div>
+            </div>
+        </div>
+
+        <div class="wa-chat-shell">
+            <div class="wa-contacts" id="waContacts">
+                <div class="wa-contacts-head">
+                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg>
+                    Conversations
+                </div>
+                <div id="waContactsList">
+                    @if (!conversations.Any())
+                    {
+                        <div class="wa-contacts-empty">No conversations yet. Once a customer messages your WhatsApp number, they'll show up here.</div>
+                    }
+                    else
+                    {
+                        @foreach (var c in conversations)
+                        {
+                            var initials = string.IsNullOrEmpty(c.ContactName) ? c.ContactId.Substring(Math.Max(0, c.ContactId.Length - 2)) : c.ContactName.Substring(0, 1).ToUpper();
+                            <div class="wa-contact-row" data-contact="@c.ContactId" data-name="@(c.ContactName ?? c.ContactId)" onclick="openWaThread('@c.ContactId', this)">
+                                <div class="wa-contact-avatar">@initials</div>
+                                <div class="wa-contact-info">
+                                    <div class="wa-contact-name">@(c.ContactName ?? c.ContactId)</div>
+                                    <div class="wa-contact-preview">@(c.LastMessageWasOwn ? "You: " : "")@c.LastMessage</div>
+                                </div>
+                                <div class="wa-contact-meta">
+                                    <div class="wa-contact-time">@c.LastMessageTime.ToString("hh:mm tt")</div>
+                                    @if (c.UnreadCount > 0)
+                                    {
+                                        <div class="wa-unread-badge">@c.UnreadCount</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="wa-thread">
+                <div id="waThreadEmpty" class="wa-thread-empty">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                    <span>Select a conversation to view messages</span>
+                </div>
+                <div id="waThreadActive" style="display:none; flex:1; flex-direction:column; min-height:0;">
+                    <div class="wa-thread-head">
+                        <div class="wa-contact-avatar" id="waThreadAvatar" style="width:34px;height:34px;font-size:12px;"></div>
+                        <div>
+                            <div style="font-size:13.5px;font-weight:700;color:var(--text)" id="waThreadName"></div>
+                            <div style="font-size:11px;color:var(--muted)" id="waThreadNumber"></div>
+                        </div>
+                    </div>
+                    <div class="wa-messages" id="waMessages"></div>
+                    <div class="wa-composer">
+                        <textarea id="waMsgText" rows="1" placeholder="Type a message…" oninput="autoGrowWa(this)"></textarea>
+                        <button class="wa-send-btn" id="waSendBtn" onclick="sendWaMessage()">
+                            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wa-disconnect-bar">
+            <form asp-action="Disconnect" asp-controller="WhatsApp" method="post" onsubmit="return confirm('Disconnect @(integration.DisplayPhoneNumber ?? integration.PhoneNumberId)?');">
+                <button type="submit" class="btn-wa-disconnect">Disconnect WhatsApp</button>
+            </form>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script>
+        var activeContactId = null;
+
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function autoGrowWa(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+
+        function openWaThread(contactId, el) {
+            activeContactId = contactId;
+            document.querySelectorAll('.wa-contact-row').forEach(function (r) { r.classList.remove('active'); });
+            if (el) el.classList.add('active');
+
+            var name = el ? el.dataset.name : contactId;
+            document.getElementById('waThreadEmpty').style.display = 'none';
+            var active = document.getElementById('waThreadActive');
+            active.style.display = 'flex';
+            document.getElementById('waThreadName').textContent = name;
+            document.getElementById('waThreadNumber').textContent = contactId;
+            document.getElementById('waThreadAvatar').textContent = (name || contactId).substring(0, 1).toUpperCase();
+
+            loadWaThread(contactId);
+        }
+
+        function loadWaThread(contactId) {
+            var box = document.getElementById('waMessages');
+            box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Loading…</div>';
+            fetch('/WhatsApp/GetThread?contactId=' + encodeURIComponent(contactId))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Could not load conversation.</div>'; return; }
+                    renderWaMessages(data.messages);
+                })
+                .catch(function () { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Could not load conversation.</div>'; });
+        }
+
+        function renderWaMessages(messages) {
+            var box = document.getElementById('waMessages');
+            if (!messages.length) { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">No messages yet.</div>'; return; }
+            box.innerHTML = messages.map(function (m) {
+                var time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                var failTag = m.failed ? '<div class="wa-bubble-error">⚠ ' + esc(m.error || 'Failed to send') + '</div>' : '';
+                return '<div class="wa-bubble-row' + (m.own ? ' own' : '') + '">' +
+                    '<div class="wa-bubble' + (m.failed ? ' failed' : '') + '">' +
+                        esc(m.text) + failTag +
+                        '<div class="wa-bubble-time">' + time + '</div>' +
+                    '</div></div>';
+            }).join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function sendWaMessage() {
+            var text = document.getElementById('waMsgText').value.trim();
+            if (!text || !activeContactId) return;
+
+            var btn = document.getElementById('waSendBtn');
+            var ta = document.getElementById('waMsgText');
+            btn.disabled = true; ta.disabled = true;
+
+            var fd = new FormData();
+            fd.append('to', activeContactId);
+            fd.append('message', text);
+
+            fetch('/WhatsApp/SendMessage', { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) { alert(data.message || 'Send failed'); }
+                    ta.value = ''; autoGrowWa(ta);
+                    loadWaThread(activeContactId);
+                    refreshWaConversations();
+                })
+                .catch(function () { alert('Network error — message not sent.'); })
+                .finally(function () { btn.disabled = false; ta.disabled = false; ta.focus(); });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var ta = document.getElementById('waMsgText');
+            if (ta) ta.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendWaMessage(); }
+            });
+        });
+
+        function refreshWaConversations() {
+            fetch('/WhatsApp/GetConversations', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) return;
+                    var list = document.getElementById('waContactsList');
+                    if (!list) return;
+                    if (!data.conversations.length) {
+                        list.innerHTML = '<div class="wa-contacts-empty">No conversations yet. Once a customer messages your WhatsApp number, they\'ll show up here.</div>';
+                        return;
+                    }
+                    list.innerHTML = data.conversations.map(function (c) {
+                        var name = c.contactName || c.contactId;
+                        var initials = (c.contactName ? c.contactName.substring(0, 1) : c.contactId.slice(-2)).toUpperCase();
+                        var isActive = c.contactId === activeContactId;
+                        var time = new Date(c.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        var unread = c.unreadCount > 0 ? '<div class="wa-unread-badge">' + c.unreadCount + '</div>' : '';
+                        return '<div class="wa-contact-row' + (isActive ? ' active' : '') + '" data-contact="' + esc(c.contactId) + '" data-name="' + esc(name) + '" onclick="openWaThread(\'' + esc(c.contactId) + '\', this)">' +
+                            '<div class="wa-contact-avatar">' + esc(initials) + '</div>' +
+                            '<div class="wa-contact-info"><div class="wa-contact-name">' + esc(name) + '</div>' +
+                            '<div class="wa-contact-preview">' + (c.lastMessageWasOwn ? 'You: ' : '') + esc(c.lastMessage) + '</div></div>' +
+                            '<div class="wa-contact-meta"><div class="wa-contact-time">' + time + '</div>' + unread + '</div></div>';
+                    }).join('');
+                })
+                .catch(function () {});
+        }
+
+        (function initWaRealtime() {
+            if (typeof signalR === 'undefined') return;
+            var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/inbox').withAutomaticReconnect().build();
+            conn.on('whatsappChanged', function () {
+                refreshWaConversations();
+                if (activeContactId) loadWaThread(activeContactId);
+            });
+            conn.start().catch(function () {});
+        })();
+    </script>
+}

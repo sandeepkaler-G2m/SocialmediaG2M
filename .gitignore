@@ -6,3 +6,11 @@ obj/
 
 bin/
 obj/
+# WhatsApp-PDF relay: generated files are transient, do not commit
+wwwroot/pdf-relay/*.pdf
+
+# WhatsApp-PDF Mail-Merge: generated PDFs and uploaded samples are transient, do not commit
+wwwroot/pdfmerge-generated/
+
+# local publish output (build artifact, not source)
+publish/

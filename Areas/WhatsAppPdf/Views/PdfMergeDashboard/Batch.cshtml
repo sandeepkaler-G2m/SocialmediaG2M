@@ -1,0 +1,49 @@
+@model List<PdfMergeRecord>
+@{
+    var batch = (PdfMergeBatch)ViewBag.Batch;
+    ViewData["Title"] = $"Batch #{batch.Id}";
+}
+
+<h2 style="font-size:20px;font-weight:800;margin-bottom:18px;">
+    Batch #@batch.Id
+    <a href="/whatsapppdf" style="font-size:13px;font-weight:600;margin-left:10px;">&larr; back to dashboard</a>
+</h2>
+
+<div class="pm-tiles">
+    <div class="pm-tile"><div class="pm-tile-label">PDFs generated</div><div class="pm-tile-val">@batch.TotalRecords</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Excel file</div><div class="pm-tile-val" style="font-size:14px;">@batch.ExcelFileName</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Phone column</div><div class="pm-tile-val" style="font-size:14px;">@batch.PhoneColumn</div></div>
+    <div class="pm-tile"><div class="pm-tile-label">Status</div><div class="pm-tile-val" style="font-size:14px;">@batch.Status</div></div>
+</div>
+
+<div class="pm-card">
+    <h2>Generated PDFs</h2>
+    @if (Model.Count == 0)
+    {
+        <div class="pm-empty">Koi record nahi mila.</div>
+    }
+    else
+    {
+        <table class="pm-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Phone</th>
+                    <th>File</th>
+                    <th>Public URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@(r.RowIndex + 1)</td>
+                        <td>@r.PhoneNumber</td>
+                        <td>@r.GeneratedFileName</td>
+                        <td><a href="@r.GeneratedUrl" target="_blank">Open PDF</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

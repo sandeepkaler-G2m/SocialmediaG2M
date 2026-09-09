@@ -1,0 +1,56 @@
+@model List<PdfMergeUser>
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h2 style="font-size:20px;font-weight:800;margin-bottom:18px;">Users</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="pm-alert pm-alert-error">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="pm-alert pm-alert-success">@TempData["Success"]</div>
+}
+
+<div class="pm-card">
+    <h2>Create account</h2>
+    <form method="post" action="/whatsapppdf/admin/users" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Username</label>
+            <input type="text" name="username" class="form-control" required />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" required />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Role</label>
+            <select name="role" class="form-select">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+            </select>
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="pm-btn w-100">Add</button>
+        </div>
+    </form>
+</div>
+
+<div class="pm-card">
+    <h2>Existing accounts</h2>
+    <table class="pm-table">
+        <thead><tr><th>Username</th><th>Role</th><th>Created</th></tr></thead>
+        <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td>@u.Username</td>
+                    <td>@u.Role</td>
+                    <td>@u.CreatedAt.ToString("dd MMM yyyy, HH:mm")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

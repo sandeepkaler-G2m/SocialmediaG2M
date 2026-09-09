@@ -24,6 +24,11 @@
 		    <PackageReference Include="MySql.Data" Version="9.6.0" />
 		    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.22" />
 		    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+		    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+		    <PackageReference Include="ClosedXML" Version="0.104.2" />
+		    <PackageReference Include="PdfSharp" Version="6.1.1" />
+		    <PackageReference Include="PdfPig" Version="0.1.9" />
+		    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="wwwroot\images\" />
@@ -31,5 +36,10 @@
 	<ItemGroup>
 	  <None Include="wwwroot\images\g2m_logo.png" />
 	  <None Include="wwwroot\images\logo_main.png" />
+	</ItemGroup>
+	<ItemGroup>
+	  <!-- WhatsApp-PDF Mail-Merge font (PdfMergeFontResolver) — not auto-included via
+	       implicit globbing, so it needs an explicit publish-copy entry. -->
+	  <None Include="App_Data\Fonts\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
 	</ItemGroup>
 </Project>

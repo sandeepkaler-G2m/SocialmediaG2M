@@ -1,0 +1,75 @@
+@model List<PdfMergeBatch>
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h2 style="font-size:20px;font-weight:800;margin-bottom:18px;">Dashboard</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="pm-alert pm-alert-error">@TempData["Error"]</div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="pm-alert pm-alert-warning">@TempData["Warning"]</div>
+}
+
+<div class="pm-card">
+    <h2>Generate PDFs from Excel</h2>
+    <p style="font-size:13px;color:var(--pm-muted);margin-top:-8px;margin-bottom:10px;">
+        Sample PDF ek normal/flat PDF honi chahiye — jo asli notice bhejni hai, real example values
+        ke saath (koi fillable form field nahi chahiye).
+    </p>
+    <p style="font-size:13px;color:var(--pm-muted);margin-top:0;margin-bottom:16px;">
+        Excel ki <b>pehli row</b> "anchor" hai — usme wahi values likho jo <b>abhi is PDF mein maujood hain</b>
+        (system unhi ko PDF mein dhoondega). Uske baad ki har row ek asli record hai — utni hi PDFs banengi.
+        Ek phone-number wala column zaroori hai (jaise "phone", "mobile", "whatsapp").
+    </p>
+    <form method="post" action="/whatsapppdf/generate" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">Excel file (.xlsx) — pehli row = PDF ki current values</label>
+            <input type="file" name="excelFile" class="form-control" accept=".xlsx" required />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Sample PDF (plain/flat — jaisi bhejni hai waisi)</label>
+            <input type="file" name="samplePdfFile" class="form-control" accept=".pdf" required />
+        </div>
+        <button type="submit" class="pm-btn">Generate</button>
+    </form>
+</div>
+
+<div class="pm-card">
+    <h2>Your batches</h2>
+    @if (Model.Count == 0)
+    {
+        <div class="pm-empty">Abhi tak koi batch generate nahi hui.</div>
+    }
+    else
+    {
+        <table class="pm-table">
+            <thead>
+                <tr>
+                    <th>Batch</th>
+                    <th>Excel</th>
+                    <th>PDFs</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>#@b.Id</td>
+                        <td>@b.ExcelFileName</td>
+                        <td>@b.TotalRecords</td>
+                        <td>@b.Status</td>
+                        <td>@b.CreatedAt.ToString("dd MMM yyyy, HH:mm")</td>
+                        <td><a href="/whatsapppdf/batch/@b.Id">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
