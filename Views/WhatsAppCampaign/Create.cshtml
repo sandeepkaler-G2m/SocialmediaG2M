@@ -1,0 +1,404 @@
+@using SocialMediaPanel.Models
+@{
+    ViewData["Title"] = "Create Campaign";
+    ViewData["PageTitle"] = "Create Campaign";
+    var integrations = ViewBag.Integrations as List<WhatsAppIntegration> ?? new();
+    var templates = ViewBag.Templates as List<WhatsAppTemplate> ?? new();
+}
+
+<style>
+    .wacc-wrap { max-width: 780px; margin: 0 auto; }
+    .wacc-back { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); text-decoration: none; margin-bottom: 14px; font-weight: 600; }
+    .wacc-back:hover { color: #128C7E; }
+
+    .wacc-panel { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 18px; }
+    .wacc-panel h3 { font-family:'Sora',sans-serif; font-size: 14.5px; font-weight: 700; color: var(--text); margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+
+    .wacc-row { margin-bottom: 16px; }
+    .wacc-row label { display: block; font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .wacc-row select, .wacc-row input[type="text"], .wacc-row input[type="datetime-local"], .wacc-row textarea {
+        width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px;
+        font-family: 'DM Sans',sans-serif; color: var(--text); outline: none; box-sizing: border-box; transition: border-color .15s;
+    }
+    .wacc-row select:focus, .wacc-row input:focus, .wacc-row textarea:focus { border-color: #25D366; }
+    .wacc-row textarea { min-height: 90px; resize: vertical; }
+    .wacc-hint { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+
+    .wacc-radio-group { display: flex; gap: 10px; }
+    .wacc-radio-option { flex: 1; border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: border-color .15s, background .15s; }
+    .wacc-radio-option:hover { border-color: #25D366; }
+    .wacc-radio-option.selected { border-color: #25D366; background: rgba(37,211,102,.06); }
+    .wacc-radio-option input { margin-right: 8px; }
+    .wacc-radio-option span { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .wacc-mode-panel { display: none; }
+    .wacc-mode-panel.active { display: block; }
+
+    .wacc-upload-box { border: 2px dashed var(--border); border-radius: 12px; padding: 26px; text-align: center; cursor: pointer; transition: border-color .15s; }
+    .wacc-upload-box:hover { border-color: #25D366; }
+    .wacc-upload-box.has-file { border-color: #25D366; background: rgba(37,211,102,.04); }
+    .wacc-upload-box svg { width: 30px; height: 30px; stroke: var(--muted); margin-bottom: 8px; }
+    .wacc-upload-box p { font-size: 12.5px; color: var(--muted); margin: 0; }
+    .wacc-upload-status { font-size: 12px; color: #128C7E; font-weight: 700; margin-top: 10px; }
+
+    .wacc-preview-table-wrap { max-height: 160px; overflow: auto; margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; }
+    .wacc-preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .wacc-preview-table th { background: #f6f8f7; padding: 6px 8px; text-align: left; position: sticky; top: 0; }
+    .wacc-preview-table td { padding: 6px 8px; border-top: 1px solid #f4f5f7; white-space: nowrap; }
+
+    .wacc-var-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .wacc-var-row .wacc-var-label { font-size: 11.5px; font-weight: 700; color: var(--muted); width: 64px; flex-shrink: 0; }
+    .wacc-var-row select, .wacc-var-row input { flex: 1; padding: 8px 10px; font-size: 12px; border: 1.5px solid var(--border); border-radius: 8px; }
+    .wacc-var-remove { background: none; border: none; color: #c62828; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+    .btn-wacc-add-var { background: none; border: 1.5px dashed var(--border); border-radius: 8px; padding: 7px 12px; font-size: 11.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+    .btn-wacc-add-var:hover { border-color: #25D366; color: #128C7E; }
+
+    .wacc-schedule-field { display: none; margin-top: 12px; }
+    .wacc-schedule-field.active { display: block; }
+
+    .wacc-send-buttons { display: flex; gap: 12px; margin-top: 6px; }
+    .btn-wacc-send { flex: 1; padding: 13px; border-radius: 11px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans',sans-serif; border: none; }
+    .btn-wacc-sendnow { background: #25D366; color: #fff; box-shadow: 0 6px 16px rgba(37,211,102,.28); }
+    .btn-wacc-sendnow:hover { transform: translateY(-1px); }
+    .btn-wacc-schedule { background: var(--surface, #fff); border: 1.5px solid #25D366; color: #128C7E; }
+    .btn-wacc-schedule:hover { background: rgba(37,211,102,.06); }
+    .btn-wacc-send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .wacc-count-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(37,211,102,.12); color: #1a8a45; margin-left: 8px; }
+</style>
+
+<div class="wacc-wrap">
+    <a href="/WhatsApp/Campaigns" class="wacc-back">← Back to Campaigns</a>
+
+    <div class="wacc-panel">
+        <h3>1. Campaign Details</h3>
+        <div class="wacc-row">
+            <label>Campaign Name</label>
+            <input type="text" id="waccName" placeholder="e.g. September Offer Blast" />
+        </div>
+        <div class="wacc-row">
+            <label>Template</label>
+            @if (!templates.Any())
+            {
+                <div class="wacc-hint">No saved templates yet — <a href="/WhatsApp/Templates" style="color:#25D366;font-weight:700;">add one first →</a></div>
+            }
+            else
+            {
+                <select id="waccTemplate" onchange="waccOnTemplateChange()">
+                    <option value="">Select a template…</option>
+                    @foreach (var t in templates)
+                    {
+                        var isUsable = t.UsableAt == null || t.UsableAt <= DateTime.UtcNow;
+                        var label = isUsable
+                            ? $"{t.Name} ({t.LanguageCode} · {t.TemplateType})"
+                            : $"{t.Name} — usable from {t.UsableAt:hh:mm tt}";
+                        <option value="@t.Name" data-lang="@t.LanguageCode" data-type="@t.TemplateType" disabled="@(!isUsable ? "disabled" : null)">@label</option>
+                    }
+                </select>
+                <div class="wacc-hint">Newly-created templates need Meta's ~1 hour review before they can be used in a campaign — greyed-out ones aren't ready yet.</div>
+            }
+        </div>
+        @if (integrations.Count > 1)
+        {
+            <div class="wacc-row">
+                <label>Send From</label>
+                <select id="waccIntegration">
+                    @foreach (var i in integrations)
+                    {
+                        <option value="@i.Id" selected="@(i.IsDefault ? "selected" : null)">@(i.DisplayPhoneNumber ?? i.PhoneNumberId) @(i.IsDefault ? "(Default)" : "")</option>
+                    }
+                </select>
+            </div>
+        }
+    </div>
+
+    <div class="wacc-panel">
+        <h3>2. Recipients</h3>
+        <div class="wacc-radio-group">
+            <label class="wacc-radio-option selected" id="waccModeUploadLabel">
+                <input type="radio" name="waccMode" value="upload" checked onchange="waccSwitchMode('upload')" />
+                <span>📁 Upload File</span>
+            </label>
+            <label class="wacc-radio-option" id="waccModeManualLabel">
+                <input type="radio" name="waccMode" value="manual" onchange="waccSwitchMode('manual')" />
+                <span>✍️ Manual Entry</span>
+            </label>
+        </div>
+
+        <div class="wacc-mode-panel active" id="waccUploadPanel" style="margin-top:16px;">
+            <div class="wacc-upload-box" id="waccUploadBox" onclick="document.getElementById('waccFileInput').click()">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                <p>Click to upload a CSV or XLSX file</p>
+                <input type="file" id="waccFileInput" accept=".csv,.xlsx" style="display:none;" onchange="waccUploadFile()" />
+            </div>
+            <div class="wacc-upload-status" id="waccUploadStatus"></div>
+            <div class="wacc-preview-table-wrap" id="waccPreviewWrap" style="display:none;">
+                <table class="wacc-preview-table" id="waccPreviewTable"></table>
+            </div>
+
+            <div class="wacc-row" style="margin-top:14px; display:none;" id="waccPhoneColRow">
+                <label>Phone Number Column</label>
+                <select id="waccPhoneCol"></select>
+            </div>
+        </div>
+
+        <div class="wacc-mode-panel" id="waccManualPanel" style="margin-top:16px;">
+            <div class="wacc-row">
+                <label>Phone Numbers (comma-separated)</label>
+                <textarea id="waccManualNumbers" placeholder="919876543210, 919876543211, 919876543212"></textarea>
+                <div class="wacc-hint">Include country code, digits only (spaces/dashes stripped automatically).</div>
+            </div>
+        </div>
+
+        <div id="waccRecipientCountWrap" style="margin-top:10px; display:none;">
+            <span class="wacc-count-badge" id="waccRecipientCount">0 recipients</span>
+        </div>
+    </div>
+
+    <div class="wacc-panel">
+        <h3>3. Template Variables <span style="font-weight:400;color:var(--muted);font-size:11px;">(optional — for templates with {{1}}, {{2}}, … placeholders)</span></h3>
+        <div id="waccVarRows"></div>
+        <button type="button" class="btn-wacc-add-var" onclick="waccAddVarRow()">+ Add Variable</button>
+    </div>
+
+    <div class="wacc-panel">
+        <h3>4. Send</h3>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;cursor:pointer;">
+            <input type="checkbox" id="waccScheduleToggle" onchange="waccToggleSchedule()" />
+            Schedule for later instead of sending now
+        </label>
+        <div class="wacc-schedule-field" id="waccScheduleField">
+            <div class="wacc-row" style="margin-top:12px;margin-bottom:0;">
+                <label>Scheduled Date &amp; Time</label>
+                <input type="datetime-local" id="waccScheduledAt" />
+            </div>
+        </div>
+
+        <div class="wacc-send-buttons" style="margin-top:16px;">
+            <button type="button" class="btn-wacc-send btn-wacc-sendnow" id="waccSendBtn" onclick="waccSubmit()">Send Now</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var waccUploadedHeaders = [];
+        var waccUploadedRows = [];
+
+        function waccSwitchMode(mode) {
+            document.getElementById('waccModeUploadLabel').classList.toggle('selected', mode === 'upload');
+            document.getElementById('waccModeManualLabel').classList.toggle('selected', mode === 'manual');
+            document.getElementById('waccUploadPanel').classList.toggle('active', mode === 'upload');
+            document.getElementById('waccManualPanel').classList.toggle('active', mode === 'manual');
+            waccUpdateRecipientCount();
+            waccRebuildVarRows();
+        }
+
+        function waccOnTemplateChange() {
+            // Nothing structural needed yet — language/type are read at submit time.
+        }
+
+        function waccToggleSchedule() {
+            var on = document.getElementById('waccScheduleToggle').checked;
+            document.getElementById('waccScheduleField').classList.toggle('active', on);
+            var btn = document.getElementById('waccSendBtn');
+            btn.textContent = on ? 'Schedule Campaign' : 'Send Now';
+            btn.className = 'btn-wacc-send ' + (on ? 'btn-wacc-schedule' : 'btn-wacc-sendnow');
+        }
+
+        function waccUploadFile() {
+            var input = document.getElementById('waccFileInput');
+            var file = input.files[0];
+            if (!file) return;
+
+            var box = document.getElementById('waccUploadBox');
+            var status = document.getElementById('waccUploadStatus');
+            status.textContent = 'Uploading…';
+            box.classList.add('has-file');
+
+            var fd = new FormData();
+            fd.append('file', file);
+
+            fetch('/WhatsApp/Campaigns/UploadRecipients', { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) { status.textContent = '⚠ ' + data.message; box.classList.remove('has-file'); return; }
+                    waccUploadedHeaders = data.headers;
+                    waccUploadedRows = data.rows;
+                    status.textContent = '✓ ' + file.name + ' — ' + data.rowCount + ' row(s) loaded';
+                    waccRenderPreview();
+                    waccRenderPhoneColPicker();
+                    waccUpdateRecipientCount();
+                    waccRebuildVarRows();
+                })
+                .catch(function () { status.textContent = '⚠ Upload failed — try again.'; box.classList.remove('has-file'); });
+        }
+
+        function waccRenderPreview() {
+            var wrap = document.getElementById('waccPreviewWrap');
+            var table = document.getElementById('waccPreviewTable');
+            if (!waccUploadedHeaders.length) { wrap.style.display = 'none'; return; }
+
+            var thead = '<thead><tr>' + waccUploadedHeaders.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') + '</tr></thead>';
+            var tbody = '<tbody>' + waccUploadedRows.slice(0, 5).map(function (row) {
+                return '<tr>' + row.map(function (c) { return '<td>' + esc(c) + '</td>'; }).join('') + '</tr>';
+            }).join('') + '</tbody>';
+            table.innerHTML = thead + tbody;
+            wrap.style.display = 'block';
+        }
+
+        function waccRenderPhoneColPicker() {
+            var row = document.getElementById('waccPhoneColRow');
+            var select = document.getElementById('waccPhoneCol');
+            select.innerHTML = waccUploadedHeaders.map(function (h, i) { return '<option value="' + i + '">' + esc(h) + '</option>'; }).join('');
+            row.style.display = 'block';
+        }
+
+        function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // ── Variable mapping rows ──
+        var waccVarCount = 0;
+        function waccAddVarRow() {
+            waccVarCount++;
+            var mode = document.querySelector('input[name="waccMode"]:checked').value;
+            var wrap = document.getElementById('waccVarRows');
+            var div = document.createElement('div');
+            div.className = 'wacc-var-row';
+            div.dataset.varIndex = waccVarCount;
+
+            var sourceControl = mode === 'upload' && waccUploadedHeaders.length
+                ? '<select class="wacc-var-source">' +
+                    '<option value="static">Static text</option>' +
+                    waccUploadedHeaders.map(function (h, i) { return '<option value="col:' + i + '">Column: ' + esc(h) + '</option>'; }).join('') +
+                  '</select>'
+                : '<select class="wacc-var-source"><option value="static">Static text</option></select>';
+
+            div.innerHTML =
+                '<span class="wacc-var-label">Var ' + waccVarCount + '</span>' +
+                sourceControl +
+                '<input type="text" class="wacc-var-static" placeholder="Static value" />' +
+                '<button type="button" class="wacc-var-remove" onclick="this.parentElement.remove()">✕</button>';
+
+            wrap.appendChild(div);
+
+            var sourceSelect = div.querySelector('.wacc-var-source');
+            var staticInput = div.querySelector('.wacc-var-static');
+            sourceSelect.addEventListener('change', function () {
+                staticInput.style.display = sourceSelect.value === 'static' ? '' : 'none';
+            });
+        }
+
+        function waccRebuildVarRows() {
+            // Refresh existing rows' column-source options when the file
+            // changes (upload finishes after rows were already added).
+            document.querySelectorAll('.wacc-var-row').forEach(function (div) {
+                var current = div.querySelector('.wacc-var-source').value;
+                var mode = document.querySelector('input[name="waccMode"]:checked').value;
+                var select = div.querySelector('.wacc-var-source');
+                var options = '<option value="static">Static text</option>';
+                if (mode === 'upload' && waccUploadedHeaders.length) {
+                    options += waccUploadedHeaders.map(function (h, i) { return '<option value="col:' + i + '">Column: ' + esc(h) + '</option>'; }).join('');
+                }
+                select.innerHTML = options;
+                select.value = (current.indexOf('col:') === 0 && mode === 'upload') ? current : 'static';
+                div.querySelector('.wacc-var-static').style.display = select.value === 'static' ? '' : 'none';
+            });
+        }
+
+        function waccGetManualNumbers() {
+            var raw = document.getElementById('waccManualNumbers').value;
+            return raw.split(/[\n,]/).map(function (n) { return n.replace(/[^\d]/g, ''); }).filter(function (n) { return n.length >= 8; });
+        }
+
+        function waccUpdateRecipientCount() {
+            var mode = document.querySelector('input[name="waccMode"]:checked').value;
+            var count = mode === 'upload' ? waccUploadedRows.length : waccGetManualNumbers().length;
+            var wrap = document.getElementById('waccRecipientCountWrap');
+            if (count > 0) {
+                wrap.style.display = 'block';
+                document.getElementById('waccRecipientCount').textContent = count + ' recipient' + (count === 1 ? '' : 's');
+            } else {
+                wrap.style.display = 'none';
+            }
+        }
+
+        document.getElementById('waccManualNumbers')?.addEventListener('input', waccUpdateRecipientCount);
+
+        function waccBuildVariablesForRow(row) {
+            var varRows = document.querySelectorAll('.wacc-var-row');
+            var values = [];
+            varRows.forEach(function (div) {
+                var source = div.querySelector('.wacc-var-source').value;
+                if (source === 'static') {
+                    values.push(div.querySelector('.wacc-var-static').value || '');
+                } else if (row) {
+                    var colIndex = parseInt(source.split(':')[1], 10);
+                    values.push(row[colIndex] || '');
+                } else {
+                    values.push('');
+                }
+            });
+            return values;
+        }
+
+        function waccSubmit() {
+            var name = document.getElementById('waccName').value.trim();
+            var templateSelect = document.getElementById('waccTemplate');
+            if (!name) { alert('Enter a campaign name.'); return; }
+            if (!templateSelect || !templateSelect.value) { alert('Select a template.'); return; }
+
+            var mode = document.querySelector('input[name="waccMode"]:checked').value;
+            var recipients = [];
+
+            if (mode === 'upload') {
+                if (!waccUploadedRows.length) { alert('Upload a file first.'); return; }
+                var phoneColIndex = parseInt(document.getElementById('waccPhoneCol').value, 10);
+                waccUploadedRows.forEach(function (row) {
+                    recipients.push({ phoneNumber: row[phoneColIndex] || '', variables: waccBuildVariablesForRow(row) });
+                });
+            } else {
+                var numbers = waccGetManualNumbers();
+                if (!numbers.length) { alert('Enter at least one phone number.'); return; }
+                var staticVars = waccBuildVariablesForRow(null);
+                numbers.forEach(function (n) { recipients.push({ phoneNumber: n, variables: staticVars }); });
+            }
+
+            var isScheduled = document.getElementById('waccScheduleToggle').checked;
+            var scheduledAt = isScheduled ? document.getElementById('waccScheduledAt').value : null;
+            if (isScheduled && !scheduledAt) { alert('Pick a scheduled date/time.'); return; }
+
+            var opt = templateSelect.options[templateSelect.selectedIndex];
+            var integrationEl = document.getElementById('waccIntegration');
+
+            var payload = {
+                integrationId: integrationEl ? parseInt(integrationEl.value, 10) : null,
+                name: name,
+                templateName: templateSelect.value,
+                languageCode: opt.dataset.lang || 'en',
+                templateType: opt.dataset.type || null,
+                scheduledAt: scheduledAt,
+                recipients: recipients
+            };
+
+            var btn = document.getElementById('waccSendBtn');
+            btn.disabled = true; btn.textContent = 'Working…';
+
+            fetch('/WhatsApp/Campaigns/Create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        window.location.href = '/WhatsApp/Campaigns';
+                    } else {
+                        alert(data.message || 'Could not create campaign.');
+                        btn.disabled = false; waccToggleSchedule();
+                    }
+                })
+                .catch(function () { alert('Network error — campaign not created.'); btn.disabled = false; waccToggleSchedule(); });
+        }
+    </script>
+}

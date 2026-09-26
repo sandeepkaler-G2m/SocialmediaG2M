@@ -23,7 +23,7 @@
         width: 42px;
         height: 42px;
         border-radius: 50%;
-        background: linear-gradient(135deg,var(--green),var(--teal));
+        background: linear-gradient(135deg,var(--accent, var(--green)),var(--teal));
         color: #fff;
         font-size: 18px;
         font-weight: 800;
@@ -92,7 +92,7 @@
         align-items: center;
         gap: 4px;
         font-size: 11px;
-        color: var(--green);
+        color: var(--accent, var(--green));
         text-decoration: none;
         margin-top: 2px;
     }
@@ -181,7 +181,7 @@
         }
 
         .pm-action-btn.active-like {
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
     /* Toast */
@@ -220,7 +220,7 @@
         width: 26px;
         height: 26px;
         border-radius: 50%;
-        background: linear-gradient(135deg,var(--green),var(--teal));
+        background: linear-gradient(135deg,var(--accent, var(--green)),var(--teal));
         color: #fff;
         font-size: 11px;
         font-weight: 800;
@@ -252,7 +252,7 @@
     }
 
         .pm-send-btn:hover {
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
         .pm-send-btn svg {
@@ -286,7 +286,7 @@
         height: 30px;
         border-radius: 50%;
         flex-shrink: 0;
-        background: linear-gradient(135deg,var(--green),var(--teal));
+        background: linear-gradient(135deg,var(--accent, var(--green)),var(--teal));
         color: #fff;
         font-size: 11px;
         font-weight: 800;
@@ -339,7 +339,7 @@
     }
 
         .pm-cmt-action:hover {
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
     .pm-cmt-likes {
@@ -367,7 +367,7 @@
     }
 
     .pm-reply-item {
-        background: #fff;
+        background: var(--surface, #fff);
         border-radius: 8px;
         padding: 8px 10px;
     }
@@ -387,7 +387,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        background: #fff;
+        background: var(--surface, #fff);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 5px 10px;
@@ -470,7 +470,7 @@
         }
 
         .pm-stat-val.hi {
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
     .pm-rate-row {
@@ -489,7 +489,7 @@
         }
 
         .pm-rate-val.pos {
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
     .pm-no-data {
@@ -533,7 +533,7 @@
 
     .pm-dist-fill {
         height: 100%;
-        background: linear-gradient(90deg,var(--green),var(--teal));
+        background: linear-gradient(90deg,var(--accent, var(--green)),var(--teal));
         border-radius: 4px;
     }
 </style>
@@ -794,7 +794,7 @@
         <div class="pm-stats-section" id="pmBoostSection" data-post-id="@Model.PostId" data-page-id="@Model.PageId">
             <div class="pm-stats-title">BOOST THIS POST</div>
             <div id="pmBoostBody">
-                <button class="pm-cmt-action" style="color:var(--green);font-weight:700" onclick="loadBoostWidget()">Load ad accounts…</button>
+                <button class="pm-cmt-action" style="color:var(--accent, var(--green));font-weight:700" onclick="loadBoostWidget()">Load ad accounts…</button>
             </div>
         </div>
     }

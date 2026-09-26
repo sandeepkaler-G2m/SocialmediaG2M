@@ -4,24 +4,25 @@
     ViewData["Title"] = "WhatsApp";
     ViewData["PageTitle"] = "WhatsApp";
     var integration = ViewBag.Integration as WhatsAppIntegration;
-    var conversations = ViewBag.Conversations as List<WhatsAppConversationItem> ?? new();
+    var integrations = ViewBag.Integrations as List<WhatsAppIntegration> ?? new();
     var success = TempData["WhatsAppSuccess"] as string;
+    var warning = TempData["WhatsAppWarning"] as string;
     var error = TempData["WhatsAppError"] as string;
 }
 
 <style>
-    .wa-page-wrap { max-width: 1160px; margin: 0 auto; }
+    .wa-page-wrap { max-width: 1280px; margin: 0 auto; }
 
     .wa-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .wa-alert.success { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.3); color: #1a8a45; }
+    .wa-alert.warning { background: #fff8e6; border: 1px solid #ffe4a1; color: #93650a; }
     .wa-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
     .wa-alert button { background: none; border: none; cursor: pointer; color: inherit; font-size: 16px; }
 
-    /* ── Disconnected hero (matches Twitter/LinkedIn pattern) ── */
+    /* ── Disconnected hero ── */
     .wa-hero { max-width: 780px; margin: 24px auto 0; }
-    .wa-hero-card { background: linear-gradient(180deg, #fff 0%, #fafbfd 100%); border: 1px solid var(--border); border-radius: 20px; padding: 52px 40px 44px; text-align: center; box-shadow: 0 8px 28px rgba(15,23,42,.06); position: relative; overflow: hidden; }
-    .wa-hero-card::before { content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%); width:340px; height:200px; background: radial-gradient(circle, rgba(37,211,102,.16) 0%, rgba(37,211,102,0) 70%); pointer-events:none; }
-    .wa-hero-icon { width: 76px; height: 76px; background: linear-gradient(135deg, #25D366, #128C7E); border-radius: 22px; display:flex; align-items:center; justify-content:center; margin: 0 auto 22px; box-shadow: 0 10px 24px rgba(37,211,102,.30); position:relative; }
+    .wa-hero-card { background: var(--surface, #fff); border: 1px solid var(--shell-border, var(--border)); border-radius: 10px; padding: 52px 40px 44px; text-align: center; position: relative; overflow: hidden; }
+    .wa-hero-icon { width: 76px; height: 76px; background: #25D366; border-radius: 16px; display:flex; align-items:center; justify-content:center; margin: 0 auto 22px; position:relative; }
     .wa-hero-icon svg { width: 38px; height: 38px; fill: white; }
     .wa-hero-card h2 { font-family:'Sora',sans-serif; font-size:25px; font-weight:700; color:var(--text); margin-bottom:10px; position:relative; }
     .wa-hero-card > p { font-size:14.5px; color:var(--muted); line-height:1.6; margin:0 auto 28px; max-width:440px; position:relative; }
@@ -29,13 +30,11 @@
     .wa-form { text-align:left; position:relative; }
     .wa-form label { display:block; font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px; }
     .wa-form-row { margin-bottom:16px; }
-    .wa-form input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); outline:none; transition:border-color .15s; }
+    .wa-form input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:10px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); outline:none; transition:border-color .15s; box-sizing: border-box; }
     .wa-form input:focus { border-color:#25D366; }
     .wa-form-hint { font-size:11px; color:var(--muted); margin-top:5px; line-height:1.5; }
-    .wa-form-hint a { color:#25D366; font-weight:600; text-decoration:none; }
 
-    .btn-connect-whatsapp { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:13px 30px; background:#25D366; border:none; border-radius:11px; color:#fff; font-size:15px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; box-shadow:0 6px 16px rgba(37,211,102,.32); transition:transform .15s, box-shadow .15s; margin-top:6px; }
-    .btn-connect-whatsapp:hover { transform:translateY(-1px); box-shadow:0 8px 20px rgba(37,211,102,.4); }
+    .btn-connect-whatsapp { width:100%; display:flex; align-items:center; justify-content:center; gap:10px; padding:13px 30px; background:#25D366; border:none; border-radius:9px; color:#fff; font-size:15px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; margin-top:6px; }
 
     .wa-hero-benefits { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:36px; padding-top:32px; border-top:1px solid var(--border); position:relative; }
     .wa-hero-benefit { display:flex; flex-direction:column; align-items:center; gap:10px; padding:4px 8px; }
@@ -44,71 +43,82 @@
     .wa-hero-benefit strong { font-size:12.5px; font-weight:700; color:var(--text); font-family:'Sora',sans-serif; }
     .wa-hero-benefit span { font-size:11.5px; color:var(--muted); line-height:1.5; }
 
-    /* ── Dashboard stats bar (connected) ── */
+    /* ── Dashboard layout ── */
+    .wa-dash-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+    .wa-number-switch { display: flex; gap: 8px; flex-wrap: wrap; }
+    .wa-number-pill { display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--shell-border, var(--border)); background: var(--surface, #fff); font-size: 12.5px; font-weight: 600; color: var(--text); text-decoration: none; transition: border-color .15s, background .15s; }
+    .wa-number-pill:hover { border-color: #25D366; }
+    .wa-number-pill.active { background: rgba(37,211,102,.10); border-color: #25D366; color: #128C7E; }
+    .wa-number-pill .wa-default-dot { width: 6px; height: 6px; border-radius: 50%; background: #25D366; }
+
+    .wa-dash-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+    @@media (max-width: 980px) { .wa-dash-layout { grid-template-columns: 1fr; } }
+
     .wa-stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
-    .wa-stat-card { background:#fff; border:1px solid var(--border); border-radius:16px; padding:18px 20px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 8px rgba(0,0,0,.04); transition:transform .15s, box-shadow .15s; }
-    .wa-stat-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
+    @@media (max-width: 700px) { .wa-stats-bar { grid-template-columns: repeat(2,1fr); } }
+    .wa-stat-card { background:var(--surface, #fff); border:1px solid var(--shell-border, var(--border)); border-radius:10px; padding:16px 18px; display:flex; align-items:center; gap:14px; }
     .wa-stat-icon { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .wa-stat-icon svg { width:22px; height:22px; }
-    .wa-stat-icon.green { background:rgba(37,211,102,.12); } .wa-stat-icon.green svg { fill:#25D366; }
+    .wa-stat-icon.green { background:rgba(37,211,102,.12); } .wa-stat-icon.green svg { stroke:#128C7E; fill:none; }
     .wa-stat-icon.blue { background:rgba(29,155,240,.12); } .wa-stat-icon.blue svg { stroke:#1D9BF0; fill:none; }
-    .wa-stat-icon.red { background:rgba(239,68,68,.12); } .wa-stat-icon.red svg { stroke:#ef4444; fill:none; }
     .wa-stat-icon.purple { background:rgba(108,92,231,.12); } .wa-stat-icon.purple svg { stroke:#6c5ce7; fill:none; }
+    .wa-stat-icon.teal { background:rgba(18,140,126,.12); } .wa-stat-icon.teal svg { stroke:#128C7E; fill:none; }
     .wa-stat-value { font-family:'Sora',sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1.2; }
     .wa-stat-label { font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    /* ── Chat shell (contact list + thread) ── */
-    .wa-chat-shell { display:flex; height:calc(100vh - 340px); min-height:480px; background:#fff; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+    .wa-panel { background: var(--surface, #fff); border: 1px solid var(--shell-border, var(--border)); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+    .wa-panel h3 { font-family:'Sora',sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 16px; display:flex; align-items:center; gap:8px; }
 
-    .wa-contacts { width:320px; min-width:280px; border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; flex-shrink:0; }
-    .wa-contacts-head { padding:14px 18px; border-bottom:1px solid var(--border); font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:var(--text); display:flex; align-items:center; gap:8px; }
-    .wa-contacts-head svg { width:16px; height:16px; fill:#25D366; }
+    /* ── Chart ── */
+    .wa-chart-legend { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .wa-chart-legend span { display: flex; align-items: center; gap: 6px; }
+    .wa-chart-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    #waTrendChart { width: 100%; height: 220px; overflow: visible; }
+    .wa-chart-tooltip { position: absolute; background: #1f2937; color: #fff; font-size: 11.5px; padding: 7px 10px; border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 5; }
 
-    .wa-contact-row { display:flex; align-items:center; gap:11px; padding:12px 16px; cursor:pointer; border-bottom:1px solid #f4f5f7; transition:background .12s; }
-    .wa-contact-row:hover { background:#f8f9fb; }
-    .wa-contact-row.active { background:rgba(37,211,102,.07); border-left:3px solid #25D366; padding-left:13px; }
-    .wa-contact-avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#25D366,#128C7E); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
-    .wa-contact-info { flex:1; min-width:0; }
-    .wa-contact-name { font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .wa-contact-preview { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
-    .wa-contact-meta { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
-    .wa-contact-time { font-size:10px; color:var(--muted); }
-    .wa-unread-badge { background:#25D366; color:#fff; font-size:10px; font-weight:700; border-radius:20px; padding:1px 7px; min-width:16px; text-align:center; }
+    /* ── Campaigns table ── */
+    .wa-camp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .wa-camp-table th { text-align: left; padding: 8px 10px; color: var(--muted); font-weight: 600; border-bottom: 1.5px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+    .wa-camp-table td { padding: 10px; border-bottom: 1px solid #f4f5f7; color: var(--text); }
+    .wa-camp-empty { text-align: center; padding: 30px; color: var(--muted); font-size: 12.5px; }
+    .wa-camp-status { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; }
+    .wa-camp-status.running { background: rgba(255,180,0,.12); color: #a06800; }
+    .wa-camp-status.completed { background: rgba(37,211,102,.12); color: #1a8a45; }
 
-    .wa-contacts-empty { padding:40px 20px; text-align:center; color:var(--muted); font-size:12.5px; }
+    /* ── Sidebar cards: Profile / QR / Website Widget (stacked, like the reference) ── */
+    .wa-side-card { text-align: center; }
+    .wa-profile-avatar { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg,#25D366,#128C7E); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size: 22px; margin: 0 auto 12px; }
+    .wa-profile-name { font-family:'Sora',sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+    .wa-profile-number { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
 
-    .wa-thread { flex:1; display:flex; flex-direction:column; background:#f6f7f4; min-width:0; }
-    .wa-thread-head { padding:13px 20px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
-    .wa-thread-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--muted); gap:10px; }
-    .wa-thread-empty svg { width:40px; height:40px; stroke:#ccc; fill:none; }
+    .wa-default-toggle { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 14px; padding: 9px; border-radius: 10px; font-size: 12px; font-weight: 700; font-family: 'DM Sans',sans-serif; cursor: pointer; border: none; }
+    .wa-default-toggle.is-default { background: rgba(37,211,102,.12); color: #1a8a45; cursor: default; }
+    .wa-default-toggle.not-default { background: #fff; border: 1.5px solid #25D366; color: #128C7E; }
+    .wa-default-toggle.not-default:hover { background: rgba(37,211,102,.08); }
 
-    .wa-messages { flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:8px; }
-    .wa-bubble-row { display:flex; }
-    .wa-bubble-row.own { justify-content:flex-end; }
-    .wa-bubble { max-width:64%; padding:9px 13px; font-size:13px; line-height:1.5; border-radius:4px 12px 12px 12px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08); word-break:break-word; }
-    .wa-bubble-row.own .wa-bubble { background:#d9fdd3; border-radius:12px 4px 12px 12px; }
-    .wa-bubble.failed { background:#fff0f0; }
-    .wa-bubble-time { font-size:9.5px; color:var(--muted); margin-top:4px; text-align:right; }
-    .wa-bubble-error { font-size:10px; color:#c62828; margin-top:3px; }
+    .wa-side-card h4 { font-family:'Sora',sans-serif; font-size: 13.5px; font-weight: 700; color: var(--text); margin: 0 0 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .wa-side-card p.wa-side-hint { font-size: 11px; color: var(--muted); margin: 0 0 14px; line-height: 1.5; }
+    #waQrCode { display: flex; justify-content: center; margin-bottom: 10px; }
+    .wa-profile-link { font-size: 11.5px; color: #25D366; word-break: break-all; text-decoration: none; font-weight: 600; display: block; margin-bottom: 12px; }
 
-    .wa-composer { padding:12px 18px; background:#fff; border-top:1px solid var(--border); display:flex; gap:10px; align-items:flex-end; flex-shrink:0; }
-    .wa-composer textarea { flex:1; padding:10px 14px; border:1.5px solid var(--border); border-radius:20px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); resize:none; outline:none; max-height:100px; min-height:40px; line-height:1.5; }
-    .wa-composer textarea:focus { border-color:#25D366; }
-    .wa-send-btn { width:40px; height:40px; border-radius:50%; background:#25D366; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:opacity .15s; }
-    .wa-send-btn:hover { opacity:.88; }
-    .wa-send-btn:disabled { opacity:.4; cursor:not-allowed; }
-    .wa-send-btn svg { width:17px; height:17px; fill:#fff; margin-left:2px; }
-
-    .wa-disconnect-bar { display:flex; justify-content:flex-end; margin-top:12px; }
-    .btn-wa-disconnect { padding:7px 16px; background:#fff5f5; border:1px solid #f5c2c2; border-radius:8px; color:#d33; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; }
-    .btn-wa-disconnect:hover { background:#ffe8e8; }
+    .wa-widget-btn { width: 100%; padding: 10px; border: 1.5px solid var(--border); border-radius: 10px; background: #fff; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s; }
+    .wa-widget-btn:hover { border-color: #25D366; color: #128C7E; }
+    .wa-widget-panel { display: none; text-align: left; margin-top: 10px; padding: 10px; background: #f8f9fb; border-radius: 10px; }
+    .wa-widget-panel.open { display: block; }
+    .wa-widget-panel textarea { width: 100%; font-size: 10.5px; font-family: monospace; border: 1px solid var(--border); border-radius: 6px; padding: 8px; resize: none; height: 70px; box-sizing: border-box; }
+    .wa-widget-panel button { margin-top: 6px; width: 100%; padding: 6px; border: none; border-radius: 6px; background: #25D366; color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
 </style>
 
 <div class="wa-page-wrap">
+    @await Html.PartialAsync("_SubNav")
 
     @if (success != null)
     {
         <div class="wa-alert success"><span>✅ @success</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+    @if (warning != null)
+    {
+        <div class="wa-alert warning"><span>⚠️ @warning</span><button onclick="this.parentElement.remove()">✕</button></div>
     }
     @if (error != null)
     {
@@ -123,20 +133,34 @@
                     <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
                 </div>
                 <h2>Connect WhatsApp Business</h2>
-                <p>Connect through Facebook — Go2Market handles all the technical setup with Meta. You'll just pick your business and confirm your WhatsApp number.</p>
+                <p>Enter your WhatsApp API credentials from Go2Market to start sending and receiving messages right from this panel.</p>
 
-                @if (string.IsNullOrEmpty(ViewBag.WhatsAppAppId as string) || string.IsNullOrEmpty(ViewBag.WhatsAppConfigId as string))
-                {
-                    <div class="wa-form-hint" style="text-align:center;">WhatsApp onboarding isn't configured on this server yet. Please check back shortly.</div>
-                }
-                else
-                {
-                    <button type="button" id="waConnectBtn" class="btn-connect-whatsapp" onclick="launchWhatsAppSignup()">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M22.675 0h-21.35C.595 0 0 .595 0 1.325v21.351C0 23.406.595 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12V24h6.116C23.406 24 24 23.406 24 22.674V1.325C24 .595 23.406 0 22.675 0" /></svg>
-                        Connect with Facebook
+                <form class="wa-form" asp-action="Connect" asp-controller="WhatsApp" method="post">
+                    <div class="wa-form-row">
+                        <label>Phone Number</label>
+                        <input type="text" name="phoneNumberId" placeholder="e.g. 919876543210" required />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>Access Token</label>
+                        <input type="password" name="accessToken" placeholder="G2M WhatsApp API key" required />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>Username (optional)</label>
+                        <input type="text" name="username" placeholder="Username" />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>Password (optional)</label>
+                        <input type="password" name="password" placeholder="Password" />
+                    </div>
+                    <div class="wa-form-row">
+                        <label>User ID (optional)</label>
+                        <input type="text" name="userId" placeholder="User ID" />
+                    </div>
+                    <button type="submit" class="btn-connect-whatsapp">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg>
+                        Connect WhatsApp
                     </button>
-                    <div class="wa-form-hint" style="text-align:center; margin-top:10px;">You'll be asked to log into Facebook and select (or create) your WhatsApp Business Account — no tokens or IDs to copy-paste.</div>
-                }
+                </form>
 
                 <div class="wa-hero-benefits">
                     <div class="wa-hero-benefit">
@@ -146,13 +170,13 @@
                     </div>
                     <div class="wa-hero-benefit">
                         <div class="wa-hero-benefit-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /><path d="M1 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></div>
-                        <strong>Full Contact History</strong>
-                        <span>Every conversation organized by contact, like WhatsApp itself.</span>
+                        <strong>Multiple Numbers</strong>
+                        <span>Connect as many WhatsApp numbers as you need, switch anytime.</span>
                     </div>
                     <div class="wa-hero-benefit">
                         <div class="wa-hero-benefit-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9z" /></svg></div>
-                        <strong>Direct Replies</strong>
-                        <span>Reply straight from here using the official Cloud API.</span>
+                        <strong>Bulk Campaigns</strong>
+                        <span>Broadcast to your whole list, track delivery in real time.</span>
                     </div>
                 </div>
             </div>
@@ -160,290 +184,236 @@
     }
     else
     {
-        <div class="wa-stats-bar">
-            <div class="wa-stat-card">
-                <div class="wa-stat-icon green"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg></div>
-                <div><div class="wa-stat-value">@ViewBag.TotalContacts</div><div class="wa-stat-label">Contacts</div></div>
-            </div>
-            <div class="wa-stat-card">
-                <div class="wa-stat-icon blue"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
-                <div><div class="wa-stat-value">@ViewBag.TotalReceived</div><div class="wa-stat-label">Messages Received</div></div>
-            </div>
-            <div class="wa-stat-card">
-                <div class="wa-stat-icon purple"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9z" /></svg></div>
-                <div><div class="wa-stat-value">@ViewBag.TotalSent</div><div class="wa-stat-label">Sent Successfully</div></div>
-            </div>
-            <div class="wa-stat-card">
-                <div class="wa-stat-icon red"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg></div>
-                <div><div class="wa-stat-value">@ViewBag.TotalFailed</div><div class="wa-stat-label">Failed</div></div>
+        <div class="wa-dash-top">
+            <div class="wa-number-switch">
+                @foreach (var i in integrations)
+                {
+                    <a href="/WhatsApp/Index?id=@i.Id" class="wa-number-pill @(i.Id == integration.Id ? "active" : "")">
+                        @if (i.IsDefault) { <span class="wa-default-dot"></span> }
+                        @(i.DisplayPhoneNumber ?? i.PhoneNumberId)
+                    </a>
+                }
             </div>
         </div>
 
-        <div class="wa-chat-shell">
-            <div class="wa-contacts" id="waContacts">
-                <div class="wa-contacts-head">
-                    <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" /></svg>
-                    Conversations
+        <div class="wa-dash-layout">
+            <div>
+                <div class="wa-stats-bar">
+                    <div class="wa-stat-card">
+                        <div class="wa-stat-icon green"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M22 2 11 13" /><path d="M22 2 15 22 11 13 2 9z" /></svg></div>
+                        <div><div class="wa-stat-value">@ViewBag.TotalOutgoing</div><div class="wa-stat-label">Total Outgoing</div></div>
+                    </div>
+                    <div class="wa-stat-card">
+                        <div class="wa-stat-icon teal"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 6 9 17l-5-5" /></svg></div>
+                        <div><div class="wa-stat-value">@ViewBag.TotalDelivered</div><div class="wa-stat-label">Total Delivered</div></div>
+                    </div>
+                    <div class="wa-stat-card">
+                        <div class="wa-stat-icon purple"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9 17H4v5" /><path d="M4 17a9 9 0 0 1 15-6.7L20 13" /></svg></div>
+                        <div><div class="wa-stat-value">@ViewBag.ReplyCount</div><div class="wa-stat-label">Reply Count</div></div>
+                    </div>
+                    <div class="wa-stat-card">
+                        <div class="wa-stat-icon blue"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></div>
+                        <div><div class="wa-stat-value">@ViewBag.TotalIncoming</div><div class="wa-stat-label">Total Incoming</div></div>
+                    </div>
                 </div>
-                <div id="waContactsList">
-                    @if (!conversations.Any())
+
+                <div class="wa-panel">
+                    <h3>📈 Message Activity — Last 7 Days</h3>
+                    <div class="wa-chart-legend">
+                        <span><i style="background:#6c5ce7"></i>Incoming</span>
+                        <span><i style="background:#25D366"></i>Outgoing</span>
+                    </div>
+                    <div style="position:relative;">
+                        <svg id="waTrendChart" viewBox="0 0 640 220" preserveAspectRatio="none"></svg>
+                        <div class="wa-chart-tooltip" id="waChartTooltip"></div>
+                    </div>
+                </div>
+
+                <div class="wa-panel">
+                    <h3>📢 Campaigns — Last 7 Days</h3>
+                    @{ var campaigns = ViewBag.RecentCampaigns as List<WhatsAppCampaign> ?? new(); }
+                    @if (!campaigns.Any())
                     {
-                        <div class="wa-contacts-empty">No conversations yet. Once a customer messages your WhatsApp number, they'll show up here.</div>
+                        <div class="wa-camp-empty">No campaigns in the last 7 days. <a href="/WhatsApp/Campaigns" style="color:#25D366;font-weight:700;text-decoration:none;">Create one →</a></div>
                     }
                     else
                     {
-                        @foreach (var c in conversations)
-                        {
-                            var initials = string.IsNullOrEmpty(c.ContactName) ? c.ContactId.Substring(Math.Max(0, c.ContactId.Length - 2)) : c.ContactName.Substring(0, 1).ToUpper();
-                            <div class="wa-contact-row" data-contact="@c.ContactId" data-name="@(c.ContactName ?? c.ContactId)" onclick="openWaThread('@c.ContactId', this)">
-                                <div class="wa-contact-avatar">@initials</div>
-                                <div class="wa-contact-info">
-                                    <div class="wa-contact-name">@(c.ContactName ?? c.ContactId)</div>
-                                    <div class="wa-contact-preview">@(c.LastMessageWasOwn ? "You: " : "")@c.LastMessage</div>
-                                </div>
-                                <div class="wa-contact-meta">
-                                    <div class="wa-contact-time">@c.LastMessageTime.ToString("hh:mm tt")</div>
-                                    @if (c.UnreadCount > 0)
+                        <div style="overflow-x:auto;">
+                            <table class="wa-camp-table">
+                                <thead><tr><th>Name</th><th>Type</th><th>Sent</th><th>Failed</th><th>Status</th><th>Created</th></tr></thead>
+                                <tbody>
+                                    @foreach (var c in campaigns)
                                     {
-                                        <div class="wa-unread-badge">@c.UnreadCount</div>
+                                        <tr>
+                                            <td>@c.Name</td>
+                                            <td>@c.MessageType@(c.MessageType == "template" ? $" ({c.TemplateName})" : "")</td>
+                                            <td>@c.SentCount</td>
+                                            <td>@c.FailedCount</td>
+                                            <td><span class="wa-camp-status @c.Status">@c.Status</span></td>
+                                            <td>@c.CreatedAt.ToString("dd MMM, hh:mm tt")</td>
+                                        </tr>
                                     }
-                                </div>
-                            </div>
-                        }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
 
-            <div class="wa-thread">
-                <div id="waThreadEmpty" class="wa-thread-empty">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                    <span>Select a conversation to view messages</span>
+            <div>
+                <div class="wa-panel wa-side-card">
+                    <div class="wa-profile-avatar">@((integration.Username ?? integration.VerifiedName ?? "W").Substring(0,1).ToUpper())</div>
+                    <div class="wa-profile-name">@(integration.Username ?? integration.VerifiedName ?? "WhatsApp Business")</div>
+                    <div class="wa-profile-number">@(integration.DisplayPhoneNumber ?? integration.PhoneNumberId)</div>
+
+                    @if (integration.IsDefault)
+                    {
+                        <div class="wa-default-toggle is-default">⭐ Default Number</div>
+                    }
+                    else
+                    {
+                        <form asp-action="SetDefault" asp-controller="WhatsApp" method="post">
+                            <input type="hidden" name="id" value="@integration.Id" />
+                            <button type="submit" class="wa-default-toggle not-default">☆ Set as Default</button>
+                        </form>
+                    }
                 </div>
-                <div id="waThreadActive" style="display:none; flex:1; flex-direction:column; min-height:0;">
-                    <div class="wa-thread-head">
-                        <div class="wa-contact-avatar" id="waThreadAvatar" style="width:34px;height:34px;font-size:12px;"></div>
-                        <div>
-                            <div style="font-size:13.5px;font-weight:700;color:var(--text)" id="waThreadName"></div>
-                            <div style="font-size:11px;color:var(--muted)" id="waThreadNumber"></div>
-                        </div>
-                    </div>
-                    <div class="wa-messages" id="waMessages"></div>
-                    <div class="wa-composer">
-                        <textarea id="waMsgText" rows="1" placeholder="Type a message…" oninput="autoGrowWa(this)"></textarea>
-                        <button class="wa-send-btn" id="waSendBtn" onclick="sendWaMessage()">
-                            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z" /></svg>
-                        </button>
+
+                <div class="wa-panel wa-side-card" style="margin-top:16px;">
+                    <h4>📱 WhatsApp QR</h4>
+                    <p class="wa-side-hint">Anyone who scans this opens a chat with your number directly — great for storefronts, packaging, or social bios.</p>
+                    <div id="waQrCode"></div>
+                    <a href="@ViewBag.WaLink" target="_blank" class="wa-profile-link">@ViewBag.WaLink</a>
+                    <button type="button" class="wa-widget-btn" onclick="waDownloadQr()">Download QR</button>
+                </div>
+
+                <div class="wa-panel wa-side-card" style="margin-top:16px;">
+                    <h4>🔗 Website Chat Button</h4>
+                    <p class="wa-side-hint">Paste this on your website — it adds a floating WhatsApp button that opens a chat with your number.</p>
+                    <button type="button" class="wa-widget-btn" onclick="waToggleWidget('waEmbedPanel')">Get Embed Code</button>
+                    <div class="wa-widget-panel" id="waEmbedPanel">
+                        <textarea id="waEmbedCode" readonly></textarea>
+                        <button type="button" onclick="waCopyEmbed()">Copy Embed Code</button>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="wa-disconnect-bar">
-            <form asp-action="Disconnect" asp-controller="WhatsApp" method="post" onsubmit="return confirm('Disconnect @(integration.DisplayPhoneNumber ?? integration.PhoneNumberId)?');">
-                <button type="submit" class="btn-wa-disconnect">Disconnect WhatsApp</button>
-            </form>
         </div>
     }
 </div>
 
 @section Scripts {
-    @if (integration == null)
-    {
-        <div id="fb-root"></div>
-        <script>
-            window.fbAsyncInit = function () {
-                FB.init({ appId: '@ViewBag.WhatsAppAppId', autoLogAppEvents: true, xfbml: true, version: 'v21.0' });
-            };
-        </script>
-        <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
-    }
-    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        // ── WhatsApp Embedded Signup (G2M is the Tech Provider) ──
-        // Two independent channels have to both report in before we can
-        // call the backend: FB.login's own callback hands back the
-        // short-lived auth `code`, while Meta's separate WA_EMBEDDED_SIGNUP
-        // postMessage events hand back which WABA/phone number the user
-        // picked. The code is only valid for ~30 seconds, so we post to
-        // the backend the instant both pieces are in.
-        var waSignupCode = null, waSignupWabaId = null, waSignupPhoneId = null;
+        function waToggleWidget(id) {
+            document.getElementById(id).classList.toggle('open');
+        }
 
-        function launchWhatsAppSignup() {
-            if (typeof FB === 'undefined') { showWaConnectError('Facebook SDK is still loading — please try again in a moment.'); return; }
-            waSignupCode = null; waSignupWabaId = null; waSignupPhoneId = null;
-            FB.login(function (response) {
-                if (response.authResponse && response.authResponse.code) {
-                    waSignupCode = response.authResponse.code;
-                    tryCompleteWaSignup();
+        // The qrcodejs library renders either a <canvas> or an <img> inside
+        // #waQrCode depending on browser support — handle both so the
+        // download button actually works everywhere.
+        function waDownloadQr() {
+            var box = document.getElementById('waQrCode');
+            var canvas = box.querySelector('canvas');
+            var dataUrl = canvas ? canvas.toDataURL('image/png') : (box.querySelector('img') || {}).src;
+            if (!dataUrl) { alert('QR code not ready yet — try again in a moment.'); return; }
+
+            var a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = 'whatsapp-qr.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function waCopyEmbed() {
+            var ta = document.getElementById('waEmbedCode');
+            ta.select();
+            document.execCommand('copy');
+            event.target.textContent = 'Copied!';
+            setTimeout(function () { event.target.textContent = 'Copy Embed Code'; }, 1500);
+        }
+
+        @if (integration != null)
+        {
+            <text>
+            (function () {
+                var waLink = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.WaLink as string));
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(document.getElementById('waQrCode'), { text: waLink, width: 128, height: 128, colorDark: '#128C7E', colorLight: '#ffffff' });
                 }
-            }, {
-                config_id: '@ViewBag.WhatsAppConfigId',
-                response_type: 'code',
-                override_default_response_type: true,
-                extras: { setup: {} }
-            });
+
+                var embed = '<a href="' + waLink + '" target="_blank" style="position:fixed;bottom:24px;right:24px;background:#25D366;color:#fff;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:9999;text-decoration:none;font-size:28px;">💬</a>';
+                document.getElementById('waEmbedCode').value = embed;
+
+                // ── 7-day trend chart — plain inline SVG, thin lines, hover crosshair+tooltip ──
+                var labels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TrendLabels));
+                var incoming = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TrendIncoming));
+                var outgoing = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TrendOutgoing));
+                renderWaTrendChart(labels, incoming, outgoing);
+            })();
+            </text>
         }
 
-        window.addEventListener('message', function (event) {
-            if (!event.origin || event.origin.indexOf('facebook.com') === -1) return;
-            var data;
-            try { data = JSON.parse(event.data); } catch (e) { return; }
-            if (!data || data.type !== 'WA_EMBEDDED_SIGNUP') return;
+        function renderWaTrendChart(labels, incoming, outgoing) {
+            var svg = document.getElementById('waTrendChart');
+            if (!svg) return;
+            var W = 640, H = 220, padL = 30, padR = 10, padT = 12, padB = 26;
+            var maxVal = Math.max(1, Math.max.apply(null, incoming.concat(outgoing)));
+            var n = labels.length;
+            var stepX = (W - padL - padR) / Math.max(1, n - 1);
 
-            if (data.event === 'FINISH') {
-                waSignupWabaId = data.data && data.data.waba_id;
-                waSignupPhoneId = data.data && data.data.phone_number_id;
-                tryCompleteWaSignup();
-            } else if (data.event === 'CANCEL') {
-                var step = data.data && data.data.current_step;
-                showWaConnectError('Signup was cancelled' + (step ? (' at step: ' + step) : '') + '.');
-                resetWaConnectBtn();
-            } else if (data.event === 'ERROR') {
-                showWaConnectError('Meta reported an error during signup: ' + ((data.data && data.data.error_message) || 'unknown error'));
-                resetWaConnectBtn();
+            function x(i) { return padL + stepX * i; }
+            function y(v) { return H - padB - (v / maxVal) * (H - padT - padB); }
+
+            function pathFor(vals) {
+                return vals.map(function (v, i) { return (i === 0 ? 'M' : 'L') + x(i) + ',' + y(v); }).join(' ');
             }
-        });
 
-        function tryCompleteWaSignup() {
-            if (!waSignupCode || !waSignupWabaId || !waSignupPhoneId) return;
-            var btn = document.getElementById('waConnectBtn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
+            var gridLines = '';
+            for (var g = 0; g <= 2; g++) {
+                var gy = padT + (H - padT - padB) * (g / 2);
+                gridLines += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="#eef0f2" stroke-width="1" />';
+            }
 
-            var fd = new FormData();
-            fd.append('code', waSignupCode);
-            fd.append('wabaId', waSignupWabaId);
-            fd.append('phoneNumberId', waSignupPhoneId);
-
-            fetch('/WhatsApp/EmbeddedSignupCallback', { method: 'POST', body: fd, credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.success) { location.reload(); }
-                    else { showWaConnectError(data.message || 'Connection failed.'); resetWaConnectBtn(); }
-                })
-                .catch(function () { showWaConnectError('Network error while connecting.'); resetWaConnectBtn(); });
-        }
-
-        function resetWaConnectBtn() {
-            var btn = document.getElementById('waConnectBtn');
-            if (btn) { btn.disabled = false; btn.textContent = 'Connect with Facebook'; }
-        }
-
-        function showWaConnectError(msg) { alert(msg); }
-
-        var activeContactId = null;
-
-        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-        function autoGrowWa(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
-
-        function openWaThread(contactId, el) {
-            activeContactId = contactId;
-            document.querySelectorAll('.wa-contact-row').forEach(function (r) { r.classList.remove('active'); });
-            if (el) el.classList.add('active');
-
-            var name = el ? el.dataset.name : contactId;
-            document.getElementById('waThreadEmpty').style.display = 'none';
-            var active = document.getElementById('waThreadActive');
-            active.style.display = 'flex';
-            document.getElementById('waThreadName').textContent = name;
-            document.getElementById('waThreadNumber').textContent = contactId;
-            document.getElementById('waThreadAvatar').textContent = (name || contactId).substring(0, 1).toUpperCase();
-
-            loadWaThread(contactId);
-        }
-
-        function loadWaThread(contactId) {
-            var box = document.getElementById('waMessages');
-            box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Loading…</div>';
-            fetch('/WhatsApp/GetThread?contactId=' + encodeURIComponent(contactId))
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success) { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Could not load conversation.</div>'; return; }
-                    renderWaMessages(data.messages);
-                })
-                .catch(function () { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">Could not load conversation.</div>'; });
-        }
-
-        function renderWaMessages(messages) {
-            var box = document.getElementById('waMessages');
-            if (!messages.length) { box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:20px">No messages yet.</div>'; return; }
-            box.innerHTML = messages.map(function (m) {
-                var time = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                var failTag = m.failed ? '<div class="wa-bubble-error">⚠ ' + esc(m.error || 'Failed to send') + '</div>' : '';
-                return '<div class="wa-bubble-row' + (m.own ? ' own' : '') + '">' +
-                    '<div class="wa-bubble' + (m.failed ? ' failed' : '') + '">' +
-                        esc(m.text) + failTag +
-                        '<div class="wa-bubble-time">' + time + '</div>' +
-                    '</div></div>';
+            var axisLabels = labels.map(function (l, i) {
+                return '<text x="' + x(i) + '" y="' + (H - 6) + '" font-size="9.5" fill="#94a3ac" text-anchor="middle">' + l + '</text>';
             }).join('');
-            box.scrollTop = box.scrollHeight;
+
+            var dotsIncoming = incoming.map(function (v, i) { return '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="3" fill="#6c5ce7" />'; }).join('');
+            var dotsOutgoing = outgoing.map(function (v, i) { return '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="3" fill="#25D366" />'; }).join('');
+
+            svg.innerHTML =
+                gridLines +
+                '<path d="' + pathFor(incoming) + '" fill="none" stroke="#6c5ce7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />' +
+                '<path d="' + pathFor(outgoing) + '" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />' +
+                dotsIncoming + dotsOutgoing + axisLabels +
+                '<g id="waHoverLayer"></g>';
+
+            var hoverLayer = document.getElementById('waHoverLayer');
+            var tooltip = document.getElementById('waChartTooltip');
+
+            for (var i = 0; i < n; i++) {
+                (function (idx) {
+                    var hitX = x(idx);
+                    var hit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    hit.setAttribute('x', hitX - stepX / 2);
+                    hit.setAttribute('y', 0);
+                    hit.setAttribute('width', stepX);
+                    hit.setAttribute('height', H);
+                    hit.setAttribute('fill', 'transparent');
+                    hit.style.cursor = 'pointer';
+                    hit.addEventListener('mousemove', function (e) {
+                        var rect = svg.getBoundingClientRect();
+                        var scaleX = rect.width / W;
+                        tooltip.style.left = (hitX * scaleX) + 'px';
+                        tooltip.style.top = (Math.min(y(incoming[idx]), y(outgoing[idx])) - 10) + 'px';
+                        tooltip.style.opacity = 1;
+                        tooltip.innerHTML = labels[idx] + '<br>Incoming: ' + incoming[idx] + ' · Outgoing: ' + outgoing[idx];
+                    });
+                    hit.addEventListener('mouseleave', function () { tooltip.style.opacity = 0; });
+                    hoverLayer.appendChild(hit);
+                })(i);
+            }
         }
-
-        function sendWaMessage() {
-            var text = document.getElementById('waMsgText').value.trim();
-            if (!text || !activeContactId) return;
-
-            var btn = document.getElementById('waSendBtn');
-            var ta = document.getElementById('waMsgText');
-            btn.disabled = true; ta.disabled = true;
-
-            var fd = new FormData();
-            fd.append('to', activeContactId);
-            fd.append('message', text);
-
-            fetch('/WhatsApp/SendMessage', { method: 'POST', body: fd, credentials: 'same-origin' })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success) { alert(data.message || 'Send failed'); }
-                    ta.value = ''; autoGrowWa(ta);
-                    loadWaThread(activeContactId);
-                    refreshWaConversations();
-                })
-                .catch(function () { alert('Network error — message not sent.'); })
-                .finally(function () { btn.disabled = false; ta.disabled = false; ta.focus(); });
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var ta = document.getElementById('waMsgText');
-            if (ta) ta.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendWaMessage(); }
-            });
-        });
-
-        function refreshWaConversations() {
-            fetch('/WhatsApp/GetConversations', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (!data.success) return;
-                    var list = document.getElementById('waContactsList');
-                    if (!list) return;
-                    if (!data.conversations.length) {
-                        list.innerHTML = '<div class="wa-contacts-empty">No conversations yet. Once a customer messages your WhatsApp number, they\'ll show up here.</div>';
-                        return;
-                    }
-                    list.innerHTML = data.conversations.map(function (c) {
-                        var name = c.contactName || c.contactId;
-                        var initials = (c.contactName ? c.contactName.substring(0, 1) : c.contactId.slice(-2)).toUpperCase();
-                        var isActive = c.contactId === activeContactId;
-                        var time = new Date(c.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        var unread = c.unreadCount > 0 ? '<div class="wa-unread-badge">' + c.unreadCount + '</div>' : '';
-                        return '<div class="wa-contact-row' + (isActive ? ' active' : '') + '" data-contact="' + esc(c.contactId) + '" data-name="' + esc(name) + '" onclick="openWaThread(\'' + esc(c.contactId) + '\', this)">' +
-                            '<div class="wa-contact-avatar">' + esc(initials) + '</div>' +
-                            '<div class="wa-contact-info"><div class="wa-contact-name">' + esc(name) + '</div>' +
-                            '<div class="wa-contact-preview">' + (c.lastMessageWasOwn ? 'You: ' : '') + esc(c.lastMessage) + '</div></div>' +
-                            '<div class="wa-contact-meta"><div class="wa-contact-time">' + time + '</div>' + unread + '</div></div>';
-                    }).join('');
-                })
-                .catch(function () {});
-        }
-
-        (function initWaRealtime() {
-            if (typeof signalR === 'undefined') return;
-            var conn = new signalR.HubConnectionBuilder().withUrl('/hubs/inbox').withAutomaticReconnect().build();
-            conn.on('whatsappChanged', function () {
-                refreshWaConversations();
-                if (activeContactId) loadWaThread(activeContactId);
-            });
-            conn.start().catch(function () {});
-        })();
     </script>
 }

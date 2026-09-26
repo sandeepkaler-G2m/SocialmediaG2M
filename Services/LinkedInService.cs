@@ -17,31 +17,35 @@ namespace SocialMediaPanel.Services
 
         // ── OAuth helpers ─────────────────────────────────────────────
 
-        // Only the scopes granted by LinkedIn's two self-serve, auto-approved
-        // products are requested here — "Sign In with LinkedIn using OpenID
-        // Connect" (openid, profile, email) and "Share on LinkedIn"
-        // (w_member_social). r_liteprofile/r_profile_basicinfo/r_verify were
-        // never valid current scope names (LinkedIn migrated profile access
-        // to OpenID Connect years ago), and the organization/ads/leadgen
-        // scopes below all require LinkedIn to separately approve this app
-        // for a restricted product (Community Management API for
-        // organization posting, Marketing Developer Platform for ads,
-        // Lead Sync API for lead forms) — requesting them before that
-        // approval risks LinkedIn rejecting the whole authorization request,
-        // the same way Facebook rejected an unrecognized scope name.
-        // Add them back here ONLY after the corresponding product shows
-        // "Approved" (not just "Requested") in the LinkedIn Developer Portal.
+        // Scopes actually approved for this app (per the Developer Portal's
+        // Products tab — confirmed 2026-09-22): Sign In with OpenID Connect
+        // (openid/profile/email), Share on LinkedIn (w_member_social),
+        // Lead Sync API (r_marketing_leadgen_automation, plus the
+        // r_organization_admin/r_ads it bundles per LinkedIn's own "Getting
+        // Access to Lead Sync" doc), Conversions API (rw_conversions, r_ads),
+        // Events Management API (r_events, rw_events).
+        //
+        // Community Management API scopes (r_organization_social,
+        // w_organization_social, rw_organization_admin) are NOT approved —
+        // do not add them here until that product actually shows approved
+        // in the Portal, for the same reason as before: an unrecognized/
+        // unapproved scope can cause LinkedIn to reject the whole
+        // authorization request.
+        //
+        // NOTE: adding scopes here forces every already-connected LinkedIn
+        // user to reconnect — LinkedIn invalidates a token's authorization
+        // when the requested scope set changes.
         private const string RestrictedScopesPendingApproval =
-            "r_organization_social w_organization_social rw_organization_admin " // Community Management API
-          + "r_ads rw_ads r_ads_reporting "                                       // Marketing Developer Platform (Advertising)
-          + "r_marketing_leadgen_automation";                                     // Lead Sync API
+            "r_organization_social w_organization_social rw_organization_admin"; // Community Management API — not yet approved
 
         public string BuildOAuthUrl(string state)
         {
             var clientId = _config["LinkedIn:ClientId"];
             var redirectUri = _config["LinkedIn:RedirectUri"];
 
-            var scopes = "openid profile email w_member_social";
+            var scopes = "openid profile email w_member_social "
+                       + "r_marketing_leadgen_automation r_organization_admin r_ads "
+                       + "rw_conversions r_events rw_events";
 
             return "https://www.linkedin.com/oauth/v2/authorization"
                 + "?response_type=code"
@@ -100,17 +104,29 @@ namespace SocialMediaPanel.Services
             return (id, name, picture, email);
         }
 
+        // Every /rest/ call needs these two headers — LinkedIn-Version
+        // pinned to a fixed month so behavior doesn't silently shift.
+        private const string ApiVersion = "202601";
+        private HttpRequestMessage _RestRequest(HttpMethod method, string url, string accessToken, object? body = null)
+        {
+            var req = new HttpRequestMessage(method, url);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            req.Headers.Add("Linkedin-Version", ApiVersion);
+            req.Headers.Add("X-Restli-Protocol-Version", "2.0.0");
+            if (body != null)
+                req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+            return req;
+        }
+
         // ── Organization pages (needs r_organization_admin) ──
         public async Task<List<(string Urn, string Name, string? LogoUrl)>> GetOrganizationsAsync(string accessToken)
         {
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            var resp = await _http.GetAsync(
-                "https://api.linkedin.com/v2/organizationalEntityAcls?q=roleAssignee");
+            var req = _RestRequest(HttpMethod.Get, "https://api.linkedin.com/rest/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED", accessToken);
+            var resp = await _http.SendAsync(req);
             var json = await resp.Content.ReadAsStringAsync();
 
             if (!resp.IsSuccessStatusCode)
-                throw new Exception($"LinkedIn organizations fetch failed: {json}");
+                throw new Exception($"LinkedIn organizations fetch failed ({(int)resp.StatusCode}): {json}");
 
             var results = new List<(string, string, string?)>();
             using var doc = JsonDocument.Parse(json);
@@ -118,25 +134,46 @@ namespace SocialMediaPanel.Services
             {
                 foreach (var el in elements.EnumerateArray())
                 {
-                    var orgUrn = el.TryGetProperty("organizationalTarget", out var t) ? t.GetString() ?? "" : "";
+                    var orgUrn = el.TryGetProperty("organization", out var t) ? t.GetString() ?? "" : "";
                     if (string.IsNullOrEmpty(orgUrn)) continue;
-                    results.Add((orgUrn, orgUrn, null)); // name/logo needs a follow-up call per org id
+
+                    string name = orgUrn;
+                    try
+                    {
+                        var orgId = orgUrn.Split(':').Last();
+                        var nameReq = _RestRequest(HttpMethod.Get, $"https://api.linkedin.com/rest/organizations/{orgId}", accessToken);
+                        var nameResp = await _http.SendAsync(nameReq);
+                        if (nameResp.IsSuccessStatusCode)
+                        {
+                            using var nameDoc = JsonDocument.Parse(await nameResp.Content.ReadAsStringAsync());
+                            if (nameDoc.RootElement.TryGetProperty("localizedName", out var ln))
+                                name = ln.GetString() ?? orgUrn;
+                        }
+                    }
+                    catch { /* fall back to URN as the display name */ }
+
+                    results.Add((orgUrn, name, null));
                 }
             }
             return results;
         }
 
-        // ── Lead Gen Forms leads (needs r_marketing_leadgen_automation / r_ads_leadgen_automation) ──
-        public async Task<List<Dictionary<string, JsonElement>>> GetLeadsAsync(string accessToken, string organizationUrn)
+        // ── Lead Gen Forms leads (needs r_marketing_leadgen_automation) ──
+        // Uses the current /rest/leadFormResponses endpoint (the old
+        // /v2/leadFormResponses?q=owner shape this previously called is
+        // retired) — owner must be parenthesized per Restli 2.0 query syntax.
+        public async Task<List<Dictionary<string, JsonElement>>> GetLeadsAsync(string accessToken, string organizationUrn, string leadType = "SPONSORED")
         {
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var url = "https://api.linkedin.com/rest/leadFormResponses"
+                     + $"?q=owner&owner=(organization:{Uri.EscapeDataString(organizationUrn)})"
+                     + $"&leadType=(leadType:{leadType})";
 
-            var url = $"https://api.linkedin.com/v2/leadFormResponses?q=owner&owner={Uri.EscapeDataString(organizationUrn)}";
-            var resp = await _http.GetAsync(url);
+            var req = _RestRequest(HttpMethod.Get, url, accessToken);
+            var resp = await _http.SendAsync(req);
             var json = await resp.Content.ReadAsStringAsync();
 
             if (!resp.IsSuccessStatusCode)
-                throw new Exception($"LinkedIn leads fetch failed: {json}");
+                throw new Exception($"LinkedIn leads fetch failed ({(int)resp.StatusCode}): {json}");
 
             var results = new List<Dictionary<string, JsonElement>>();
             using var doc = JsonDocument.Parse(json);
@@ -151,6 +188,184 @@ namespace SocialMediaPanel.Services
                 }
             }
             return results;
+        }
+
+        // ── Fetch one lead's full form response by id (called after a
+        // leadNotifications webhook delivery — see LinkedInWebhookController) ──
+        public async Task<string> GetLeadFormResponseAsync(string accessToken, string leadResponseId)
+        {
+            var url = $"https://api.linkedin.com/rest/leadFormResponses/{Uri.EscapeDataString(leadResponseId)}";
+            var req = _RestRequest(HttpMethod.Get, url, accessToken);
+            var resp = await _http.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn lead form response fetch failed ({(int)resp.StatusCode}): {json}");
+
+            return json; // raw — caller stores it; LinkedIn's answers are questionId-keyed, not named fields
+        }
+
+        // ── Register a webhook to receive real-time lead notifications ──
+        // ownerUrn: "urn:li:organization:{id}" or "urn:li:sponsoredAccount:{id}".
+        // Returns the subscription id LinkedIn assigns (needed to delete it later).
+        public async Task<string> RegisterLeadNotificationAsync(string accessToken, string ownerUrn, string webhookUrl, string leadType = "SPONSORED")
+        {
+            var ownerKey = ownerUrn.Contains(":organization:") ? "organization" : "sponsoredAccount";
+            var body = new Dictionary<string, object>
+            {
+                ["webhook"] = webhookUrl,
+                ["owner"] = new Dictionary<string, string> { [ownerKey] = ownerUrn },
+                ["leadType"] = leadType
+            };
+
+            var req = _RestRequest(HttpMethod.Post, "https://api.linkedin.com/rest/leadNotifications", accessToken, body);
+            var resp = await _http.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn lead notification registration failed ({(int)resp.StatusCode}): {json}");
+
+            if (resp.Headers.TryGetValues("x-restli-id", out var vals))
+                return vals.FirstOrDefault() ?? "";
+            return "";
+        }
+
+        // ── Events Management API (r_events / rw_events) ──────────────
+        // Creates an event, then posts it (an event isn't visible/fetchable
+        // until posted — see LinkedIn's Events docs). Returns (eventId,
+        // liveVideoUrn, vanityName).
+        public async Task<(string EventId, string? LiveVideoUrn, string VanityName)> CreateEventAsync(
+            string accessToken, string organizerUrn, string name, string? description,
+            string eventType, long startsAt, long? endsAt, string? externalUrl,
+            string? privacyPolicyUrlForLeadGen = null)
+        {
+            object type = eventType switch
+            {
+                "online_livevideo" => new { online = new { format = new { liveVideo = new { endsAt } } } },
+                "online_external" => new { online = new { format = new { external = new { endsAt, url = externalUrl } } } },
+                "inperson" => new { inPerson = new { endsAt, url = externalUrl, address = new { } } },
+                _ => throw new ArgumentException("Unknown eventType: " + eventType)
+            };
+
+            var body = new Dictionary<string, object?>
+            {
+                ["name"] = new { localized = new Dictionary<string, string> { ["en_US"] = name } },
+                ["type"] = type,
+                ["organizer"] = organizerUrn,
+                ["startsAt"] = startsAt
+            };
+            if (!string.IsNullOrEmpty(description))
+                body["description"] = new { localized = new Dictionary<string, object> { ["en_US"] = new { rawText = description } } };
+            if (!string.IsNullOrEmpty(privacyPolicyUrlForLeadGen))
+                body["leadGenFormSpec"] = new { privacyPolicyUrl = privacyPolicyUrlForLeadGen };
+
+            var req = _RestRequest(HttpMethod.Post, "https://api.linkedin.com/rest/events", accessToken, body);
+            var resp = await _http.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn event creation failed ({(int)resp.StatusCode}): {json}");
+
+            using var doc = JsonDocument.Parse(json);
+            var eventId = doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetRawText().Trim('"') : "";
+            string? liveVideoUrn = null;
+            if (doc.RootElement.TryGetProperty("type", out var typeEl) &&
+                typeEl.TryGetProperty("online", out var onlineEl) &&
+                onlineEl.TryGetProperty("format", out var fmtEl) &&
+                fmtEl.TryGetProperty("liveVideo", out var lvEl) &&
+                lvEl.TryGetProperty("liveVideo", out var lvUrnEl))
+                liveVideoUrn = lvUrnEl.GetString();
+            var vanityName = doc.RootElement.TryGetProperty("vanityName", out var vn) ? vn.GetString() ?? "" : "";
+
+            return (eventId, liveVideoUrn, vanityName);
+        }
+
+        // Makes a created event publicly visible. contentReferenceUrn is
+        // urn:li:liveVideo:{id} for live-video events, urn:li:event:{id}
+        // for external/in-person. Returns the created post's URN.
+        public async Task<string> PostEventAsync(string accessToken, string organizerUrn, string contentReferenceUrn)
+        {
+            var body = new
+            {
+                author = organizerUrn,
+                commentary = "",
+                visibility = "PUBLIC",
+                distribution = new { feedDistribution = "MAIN_FEED", targetEntities = Array.Empty<object>(), thirdPartyDistributionChannels = Array.Empty<object>() },
+                content = new { reference = new { id = contentReferenceUrn } },
+                lifecycleState = "PUBLISHED",
+                isReshareDisabledByAuthor = false
+            };
+
+            var req = _RestRequest(HttpMethod.Post, "https://api.linkedin.com/rest/posts", accessToken, body);
+            var resp = await _http.SendAsync(req);
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn event post failed ({(int)resp.StatusCode}): {await resp.Content.ReadAsStringAsync()}");
+
+            return resp.Headers.TryGetValues("x-restli-id", out var vals) ? vals.FirstOrDefault() ?? "" : "";
+        }
+
+        public async Task<string> GetEventsByOrganizerAsync(string accessToken, string organizerUrn, int count = 20)
+        {
+            var url = $"https://api.linkedin.com/rest/events?q=eventsByOrganizer&organizer={Uri.EscapeDataString(organizerUrn)}&start=0&count={count}";
+            var req = _RestRequest(HttpMethod.Get, url, accessToken);
+            var resp = await _http.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn events fetch failed ({(int)resp.StatusCode}): {json}");
+            return json;
+        }
+
+        // ── Conversions API (rw_conversions / r_ads) — requires the
+        // connected account to hold a role on the given ad account ──────
+        public async Task<string> CreateConversionRuleAsync(string accessToken, string name, string adAccountUrn, string conversionType)
+        {
+            var body = new
+            {
+                name,
+                account = adAccountUrn,
+                conversionMethod = "CONVERSIONS_API",
+                postClickAttributionWindowSize = 90,
+                viewThroughAttributionWindowSize = 30,
+                attributionType = "LAST_TOUCH_BY_CAMPAIGN",
+                type = conversionType
+            };
+
+            var req = _RestRequest(HttpMethod.Post, "https://api.linkedin.com/rest/conversions", accessToken, body);
+            var resp = await _http.SendAsync(req);
+            var json = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn conversion rule creation failed ({(int)resp.StatusCode}): {json}");
+
+            if (resp.Headers.TryGetValues("x-restli-id", out var vals))
+                return vals.FirstOrDefault() ?? "";
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("id", out var idEl) ? idEl.GetRawText() : "";
+        }
+
+        public async Task StreamConversionEventAsync(
+            string accessToken, string conversionUrn, string eventId, long conversionHappenedAtMs,
+            decimal? amount, string? currencyCode, string userIdentifierType, string userIdentifierValue)
+        {
+            var body = new Dictionary<string, object?>
+            {
+                ["conversion"] = conversionUrn,
+                ["conversionHappenedAt"] = conversionHappenedAtMs,
+                ["user"] = new
+                {
+                    userIds = new[] { new { idType = userIdentifierType, idValue = userIdentifierValue } }
+                },
+                ["eventId"] = eventId
+            };
+            if (amount.HasValue && !string.IsNullOrEmpty(currencyCode))
+                body["conversionValue"] = new { currencyCode, amount = amount.Value.ToString("F2") };
+
+            var req = _RestRequest(HttpMethod.Post, "https://api.linkedin.com/rest/conversionEvents", accessToken, body);
+            var resp = await _http.SendAsync(req);
+
+            if (!resp.IsSuccessStatusCode)
+                throw new Exception($"LinkedIn conversion event stream failed ({(int)resp.StatusCode}): {await resp.Content.ReadAsStringAsync()}");
         }
 
         // ── Posting ──────────────────────────────────────────────────

@@ -14,6 +14,8 @@
     bool hasPosting = ViewBag.HasPosting ?? false;
     bool hasOrgAccess = ViewBag.HasOrgAccess ?? false;
     bool hasLeadsAccess = ViewBag.HasLeadsAccess ?? false;
+    bool hasEventsAccess = ViewBag.HasEventsAccess ?? false;
+    bool hasAdsAccess = ViewBag.HasAdsAccess ?? false;
 
     var organizations = ViewBag.Organizations as List<(string Urn, string Name, string? LogoUrl)> ?? new();
     var leads = ViewBag.Leads as List<Dictionary<string, JsonElement>> ?? new();
@@ -121,7 +123,7 @@
 
     /* Not-connected bar variant */
     .li-profile-bar.disc {
-        background: #fff;
+        background: var(--surface, #fff);
         border: 1px dashed var(--border);
         color: var(--text);
         box-shadow: none;
@@ -320,7 +322,7 @@
     }
 
     .li-stat-card {
-        background: #fff;
+        background: var(--surface, #fff);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 18px 20px;
@@ -355,7 +357,7 @@
         .li-stat-icon.blue svg { fill: #0A66C2; }
 
         .li-stat-icon.green { background: rgba(75,181,67,.12); }
-        .li-stat-icon.green svg { stroke: var(--green); fill: none; }
+        .li-stat-icon.green svg { stroke: var(--accent, var(--green)); fill: none; }
 
         .li-stat-icon.red { background: rgba(239,68,68,.12); }
         .li-stat-icon.red svg { stroke: #ef4444; fill: none; }
@@ -384,11 +386,55 @@
         text-overflow: ellipsis;
     }
 
+    /* ── 3-column dashboard layout (LinkedIn-style) ──────────── */
+    .li-3col {
+        display: grid;
+        grid-template-columns: 225px 1fr 280px;
+        gap: 20px;
+        align-items: start;
+    }
+    @@media (max-width: 980px) { .li-3col { grid-template-columns: 1fr; } }
+    .li-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    .li-profile-card2 { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .li-profile-cover { height: 44px; background: linear-gradient(120deg,#0a66c2,#78b5e8); }
+    .li-profile-card2-body { padding: 0 14px 14px; margin-top: -22px; }
+    .li-profile-card2-avatar {
+        width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--surface, #fff);
+        background: #cfe0f2; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; color: #0a66c2; font-size: 20px; overflow: hidden;
+    }
+        .li-profile-card2-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .li-profile-card2-body h3 { font-size: 14.5px; margin: 8px 0 2px; color: var(--text); }
+    .li-profile-card2-body p { font-size: 11.5px; color: var(--muted); margin: 0 0 10px; }
+    .li-profile-card2-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+    .li-pc-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(10,102,194,.1); color: #0a66c2; }
+
+    .li-quick-card { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 10px; padding: 6px; }
+    .li-quick-link {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        padding: 10px 10px; border-radius: 7px; text-decoration: none; color: var(--text);
+        font-size: 12.5px; font-weight: 600;
+    }
+    .li-quick-link:hover { background: rgba(10,102,194,.06); color: #0a66c2; }
+    .li-quick-link .cnt { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+    .li-insight-card { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .li-insight-card h4 { font-size: 13px; margin: 0 0 10px; color: var(--text); }
+    .li-insight-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); padding: 5px 0; }
+    .li-insight-row b { color: var(--text); font-weight: 700; }
+
+    .li-mini-notice { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+    .li-mini-notice h4 { font-size: 12.5px; margin: 0 0 4px; color: var(--text); }
+    .li-mini-notice p { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 0 0 8px; }
+    .li-mini-notice a { font-size: 11.5px; color: #0a66c2; font-weight: 700; text-decoration: none; }
+    .li-mini-notice.ready { border-color: rgba(10,102,194,.25); background: rgba(10,102,194,.04); }
+
     /* ── Cards ──────────────────────────────────── */
     .li-card {
-        background: #fff;
+        background: var(--surface, #fff);
         border: 1px solid var(--border);
-        border-radius: 16px;
+        border-radius: 10px;
         overflow: hidden;
     }
 
@@ -447,7 +493,7 @@
         font-family: 'DM Sans',sans-serif;
         color: var(--text);
         outline: none;
-        background: #fff;
+        background: var(--surface, #fff);
         transition: border-color .15s;
     }
 
@@ -587,7 +633,7 @@
 
     .li-post-row {
         padding: 16px 18px;
-        background: #fff;
+        background: var(--surface, #fff);
         border: 1px solid var(--border);
         border-radius: 14px;
         box-shadow: 0 1px 4px rgba(0,0,0,.03);
@@ -667,7 +713,7 @@
 
         .li-post-status.posted {
             background: rgba(75,181,67,.1);
-            color: var(--green);
+            color: var(--accent, var(--green));
         }
 
         .li-post-status.failed {
@@ -890,132 +936,72 @@
 }
 
 <div class="li-page-wrap">
+    @await Html.PartialAsync("_SubNav")
 
     @* ── Simple profile header — name, email, status. No connect/disconnect buttons. ── *@
     @if (connected)
     {
-        <div class="li-profile-bar">
-            <div class="li-pb-avatar">
-                @if (hasProfile && !string.IsNullOrEmpty(integration!.ProfilePicture))
-                {
-                    <img src="@integration.ProfilePicture" alt="@integration.DisplayName" />
-                }
-                else
-                {
-                    @((hasProfile ? integration!.DisplayName : "?").Substring(0, 1).ToUpper())
-                }
-            </div>
-            <div class="li-pb-info">
-                <div class="li-pb-name">@(hasProfile? integration!.DisplayName : "LinkedIn Account")</div>
-                <div class="li-pb-email">@(hasProfile ? (integration!.Email ?? "") : "Profile permission not granted")</div>
-                <div class="li-pb-badges">
-                    @if (hasProfile)
-                    {
-                        <span class="li-pb-badge">Profile</span>
-                    }
-                    @if (hasPosting)
-                    {
-                        <span class="li-pb-badge">Posting</span>
-                    }
-                    @if (hasOrgAccess)
-                    {
-                        <span class="li-pb-badge">Org Pages</span>
-                    }
-                    @if (hasLeadsAccess)
-                    {
-                        <span class="li-pb-badge">Leads</span>
-                    }
-                </div>
-            </div>
-            <div class="li-pb-status">
-                <div class="li-pb-status-dot"></div>
-                Connected
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="li-hero">
-            <div class="li-hero-card">
-                <div class="li-hero-icon">
-                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-                </div>
-                <h2>Connect LinkedIn</h2>
-                <p>Link your account to publish posts, manage your Company Page, and track engagement — all without leaving this panel.</p>
-                <a href="/LinkedIn/Connect" class="btn-connect-linkedin">
-                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-                    Connect with LinkedIn
-                </a>
-
-                <div class="li-hero-benefits">
-                    <div class="li-hero-benefit">
-                        <div class="li-hero-benefit-icon">
-                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
-                        </div>
-                        <strong>Publish Posts</strong>
-                        <span>Share updates and articles to your profile straight from Compose.</span>
+        <div class="li-3col">
+        <div class="li-col">
+            <div class="li-profile-card2">
+                <div class="li-profile-cover"></div>
+                <div class="li-profile-card2-body">
+                    <div class="li-profile-card2-avatar">
+                        @if (hasProfile && !string.IsNullOrEmpty(integration!.ProfilePicture))
+                        {
+                            <img src="@integration.ProfilePicture" alt="@integration.DisplayName" />
+                        }
+                        else
+                        {
+                            @((hasProfile ? integration!.DisplayName : "?").Substring(0, 1).ToUpper())
+                        }
                     </div>
-                    <div class="li-hero-benefit">
-                        <div class="li-hero-benefit-icon">
-                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></svg>
-                        </div>
-                        <strong>Company Pages</strong>
-                        <span>Manage your organization's Page once Community Management API is approved.</span>
-                    </div>
-                    <div class="li-hero-benefit">
-                        <div class="li-hero-benefit-icon">
-                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
-                        </div>
-                        <strong>Engagement Tracking</strong>
-                        <span>Keep an eye on your LinkedIn activity from the same Reports page.</span>
+                    <h3>@(hasProfile ? integration!.DisplayName : "LinkedIn Account")</h3>
+                    <p>@(hasProfile ? (integration!.Email ?? "") : "Profile permission not granted")</p>
+                    <div class="li-profile-card2-badges">
+                        <span class="li-pc-badge" style="background:rgba(37,211,102,.12);color:#1a8a45;">● Connected</span>
+                        @if (hasProfile) { <span class="li-pc-badge">Profile</span> }
+                        @if (hasPosting) { <span class="li-pc-badge">Posting</span> }
+                        @if (hasOrgAccess) { <span class="li-pc-badge">Org Pages</span> }
+                        @if (hasLeadsAccess) { <span class="li-pc-badge">Leads</span> }
                     </div>
                 </div>
             </div>
-        </div>
-    }
 
-    @if (connected)
-    {
-        @* ── Dashboard-style stats bar ── *@
-        <div class="li-stats-bar">
-            <div class="li-stat-card">
-                <div class="li-stat-icon blue">
-                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
-                </div>
-                <div class="li-stat-info">
-                    <div class="li-stat-value">@posts.Count</div>
-                    <div class="li-stat-label">Total Posts</div>
-                </div>
+            <div class="li-quick-card">
+                <a href="/LinkedIn/Leads" class="li-quick-link">📋 Leads <span class="cnt">@leads.Count</span></a>
+                <a href="/LinkedIn/Events" class="li-quick-link">📅 Events</a>
+                <a href="/LinkedIn/Conversions" class="li-quick-link">🎯 Conversions</a>
+                <a href="/LinkedIn/Settings" class="li-quick-link">⚙️ Settings</a>
             </div>
-            <div class="li-stat-card">
-                <div class="li-stat-icon green">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><polyline points="20 6 9 17 4 12" /></svg>
+
+            @if (hasOrgAccess && organizations.Any())
+            {
+                <div class="li-quick-card" style="padding:10px;">
+                    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:2px 6px 8px;">Organization Pages</div>
+                    @foreach (var org in organizations)
+                    {
+                        <div class="li-org-row">
+                            <div class="li-org-logo">
+                                @if (!string.IsNullOrEmpty(org.LogoUrl))
+                                {
+                                    <img src="@org.LogoUrl" alt="@org.Name" />
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2" /></svg>
+                                }
+                            </div>
+                            <div>
+                                <div class="li-org-name">@org.Name</div>
+                            </div>
+                        </div>
+                    }
                 </div>
-                <div class="li-stat-info">
-                    <div class="li-stat-value">@posts.Count(p => p.Status == "posted")</div>
-                    <div class="li-stat-label">Posted Successfully</div>
-                </div>
-            </div>
-            <div class="li-stat-card">
-                <div class="li-stat-icon red">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                </div>
-                <div class="li-stat-info">
-                    <div class="li-stat-value">@posts.Count(p => p.Status == "failed")</div>
-                    <div class="li-stat-label">Failed</div>
-                </div>
-            </div>
-            <div class="li-stat-card">
-                <div class="li-stat-icon purple">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                </div>
-                <div class="li-stat-info">
-                    <div class="li-stat-value">@organizations.Count</div>
-                    <div class="li-stat-label">Org Pages</div>
-                </div>
-            </div>
+            }
         </div>
 
+        <div class="li-col">
         @* ── Create Post — or a no-permission notice if posting isn't granted ── *@
         <div class="li-card">
             <div class="li-card-head"><h3>Create Post</h3></div>
@@ -1167,119 +1153,80 @@
             }
         </div>
 
-        @* ── Organization Pages — or no-permission notice ── *@
-        <div class="li-card">
-            <div class="li-card-head">
-                <h3>Organization Pages</h3>
-                @if (hasOrgAccess)
-                {
-                    <span style="font-size:12px;color:var(--muted);">@organizations.Count linked</span>
-                }
+        </div><!-- /.li-col (center) -->
+
+        <div class="li-col">
+            <div class="li-insight-card">
+                <h4>This account's stats</h4>
+                <div class="li-insight-row"><span>Total Posts</span><b>@posts.Count</b></div>
+                <div class="li-insight-row"><span>Posted</span><b>@posts.Count(p => p.Status == "posted")</b></div>
+                <div class="li-insight-row"><span>Failed</span><b>@posts.Count(p => p.Status == "failed")</b></div>
+                <div class="li-insight-row"><span>Org Pages</span><b>@organizations.Count</b></div>
             </div>
 
-            @if (!hasOrgAccess)
-            {
-                <div class="li-empty no-permission">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    <h4>No permission for organization pages</h4>
-                    <p>The <strong>r_organization_admin</strong> permission wasn't granted for this connection.</p>
-                </div>
-            }
-            else if (!organizations.Any())
-            {
-                <div class="li-empty">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <rect x="3" y="7" width="18" height="14" rx="2" />
-                        <path d="M8 7V3h8v4" />
-                    </svg>
-                    <h4>No organization pages found</h4>
-                    <p>You need to be an admin on a LinkedIn Page for it to show up here.</p>
-                </div>
-            }
-            else
-            {
-                @foreach (var org in organizations)
-                {
-                    <div class="li-org-row">
-                        <div class="li-org-logo">
-                            @if (!string.IsNullOrEmpty(org.LogoUrl))
-                            {
-                                <img src="@org.LogoUrl" alt="@org.Name" />
-                            }
-                            else
-                            {
-                                <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2" /></svg>
-                            }
-                        </div>
-                        <div>
-                            <div class="li-org-name">@org.Name</div>
-                            <div class="li-org-urn">@org.Urn</div>
-                        </div>
-                    </div>
-                }
-            }
+            <div class="li-mini-notice @(hasOrgAccess ? "ready" : "")">
+                <h4>@(hasOrgAccess ? "✅ Organization Pages" : "🔒 Organization Pages")</h4>
+                <p>@(hasOrgAccess ? (organizations.Any() ? $"{organizations.Count} page(s) linked — see the list on the left." : "No pages found — you need to be an admin on a LinkedIn Page.") : "The r_organization_admin permission wasn't granted.")</p>
+            </div>
+
+            <div class="li-mini-notice @(hasLeadsAccess ? "ready" : "")">
+                <h4>@(hasLeadsAccess ? "✅ Leads access is ready" : "🔒 Leads")</h4>
+                <p>@(hasLeadsAccess ? $"{leads.Count} total lead(s) received." : "The r_marketing_leadgen_automation permission wasn't granted.")</p>
+                <a href="/LinkedIn/Leads">Manage webhook & stored leads →</a>
+            </div>
+
+            <div class="li-mini-notice @(hasEventsAccess ? "ready" : "")">
+                <h4>@(hasEventsAccess ? "✅ Events access is ready" : "🔒 Events")</h4>
+                <p>@(hasEventsAccess ? "Create live-video, external, or in-person LinkedIn Events." : "The r_events / rw_events permissions weren't granted.")</p>
+                <a href="/LinkedIn/Events">Create & manage events →</a>
+            </div>
+
+            <div class="li-mini-notice @(hasAdsAccess ? "ready" : "")">
+                <h4>@(hasAdsAccess ? "✅ Conversions access is ready" : "🔒 Conversions")</h4>
+                <p>@(hasAdsAccess ? "Stream conversion events to LinkedIn Ads." : "The rw_conversions / r_ads permissions weren't granted.")</p>
+                <a href="/LinkedIn/Conversions">Manage conversion rules →</a>
+            </div>
         </div>
-
-        @* ── Leads — or no-permission notice ── *@
-        <div class="li-card">
-            <div class="li-card-head">
-                <h3>LinkedIn Leads</h3>
-                @if (hasLeadsAccess)
-                {
-                    <span style="font-size:12px;color:var(--muted);">@leads.Count total</span>
-                }
-            </div>
-
-            @if (!hasLeadsAccess)
-            {
-                <div class="li-empty no-permission">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                    <h4>No permission for leads</h4>
-                    <p>The <strong>r_marketing_leadgen_automation</strong> / <strong>r_ads_leadgen_automation</strong> permissions weren't granted for this connection.</p>
+        </div><!-- /.li-3col -->
+    }
+    else
+    {
+        <div class="li-hero">
+            <div class="li-hero-card">
+                <div class="li-hero-icon">
+                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
                 </div>
-            }
-            else if (!leads.Any())
-            {
-                <div class="li-empty">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
-                        <circle cx="12" cy="8" r="4" />
-                        <path d="M4 21v-1a8 8 0 0 1 16 0v1" />
-                    </svg>
-                    <h4>No leads found</h4>
-                    <p>Leads submitted through your LinkedIn Lead Gen Forms will appear here.</p>
-                </div>
-            }
-            else
-            {
-                <div class="li-leads-list">
-                    @foreach (var lead in leads)
-                    {
-                        var leadType = lead.TryGetValue("leadType", out var lt) ? lt.ToString() : "Lead";
-                        var submitted = lead.TryGetValue("submittedAt", out var sa) ? sa.ToString() : "";
-                        var initial = string.IsNullOrEmpty(leadType) ? "L" : leadType.Substring(0, 1).ToUpper();
+                <h2>Connect LinkedIn</h2>
+                <p>Link your account to publish posts, manage your Company Page, and track engagement — all without leaving this panel.</p>
+                <a href="/LinkedIn/Connect" class="btn-connect-linkedin">
+                    <svg viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                    Connect with LinkedIn
+                </a>
 
-                        <div class="li-lead-row">
-                            <div class="li-lead-avatar">@initial</div>
-                            <div class="li-lead-main">
-                                <div class="li-lead-name">@leadType</div>
-                                <div class="li-lead-tags">
-                                    <span class="li-lead-tag form">LinkedIn</span>
-                                    <span class="li-lead-tag">Lead Gen Form</span>
-                                </div>
-                            </div>
-                            <div class="li-lead-date">@submitted</div>
+                <div class="li-hero-benefits">
+                    <div class="li-hero-benefit">
+                        <div class="li-hero-benefit-icon">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
                         </div>
-                    }
+                        <strong>Publish Posts</strong>
+                        <span>Share updates and articles to your profile straight from Compose.</span>
+                    </div>
+                    <div class="li-hero-benefit">
+                        <div class="li-hero-benefit-icon">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></svg>
+                        </div>
+                        <strong>Company Pages</strong>
+                        <span>Manage your organization's Page once Community Management API is approved.</span>
+                    </div>
+                    <div class="li-hero-benefit">
+                        <div class="li-hero-benefit-icon">
+                            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6" /></svg>
+                        </div>
+                        <strong>Engagement Tracking</strong>
+                        <span>Keep an eye on your LinkedIn activity from the same Reports page.</span>
+                    </div>
                 </div>
-            }
+            </div>
         </div>
     }
 

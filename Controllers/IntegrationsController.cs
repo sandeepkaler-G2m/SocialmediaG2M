@@ -443,6 +443,8 @@ namespace SocialMediaPanel.Controllers
         private readonly ActivePageService _activePages;
         private readonly GmailIntegrationService _gmailIntegration;
 
+        private readonly ILogger<IntegrationsController> _logger;
+
         public IntegrationsController(
             FacebookService facebook,
             GmailService gmail,
@@ -452,7 +454,8 @@ namespace SocialMediaPanel.Controllers
             IDataProtectionProvider dataProtection,
             LinkedInService linkedInService,
             ActivePageService activePages,
-            GmailIntegrationService gmailIntegration)
+            GmailIntegrationService gmailIntegration,
+            ILogger<IntegrationsController> logger)
         {
             _context = context;
             _gmail = gmail;
@@ -463,6 +466,7 @@ namespace SocialMediaPanel.Controllers
             _linkedInService = linkedInService;
             _activePages = activePages;
             _gmailIntegration = gmailIntegration;
+            _logger = logger;
         }
 
         // ══════════════════════════════════════════════════════════════
@@ -1002,6 +1006,11 @@ namespace SocialMediaPanel.Controllers
                 }
                 else
                 {
+                    // Logged (not just shown in TempData) so the real Google
+                    // error body — invalid_grant / redirect_uri_mismatch /
+                    // invalid_client / etc. — is captured server-side even
+                    // when nobody screenshots the on-screen banner.
+                    _logger.LogError("Gmail connection failed for user {UserId}: {Msg}", userid, ex.Message);
                     TempData["IntegrationError"] = "Gmail connection failed: " + ex.Message;
                 }
             }

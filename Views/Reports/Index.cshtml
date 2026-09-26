@@ -10,19 +10,19 @@
     .rep-tiles { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin-bottom:24px; }
     @@media (max-width: 1100px) { .rep-tiles { grid-template-columns:repeat(3,1fr); } }
 
-    .rep-tile { background:#fff; border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+    .rep-tile { background:var(--surface, #fff); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
     .rep-tile-label { font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
     .rep-tile-val { font-family:'Sora',sans-serif; font-size:26px; font-weight:800; color:var(--text); line-height:1; }
     .rep-tile-val.zero { color:var(--muted); }
 
-    .rep-section { background:#fff; border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:20px; }
+    .rep-section { background:var(--surface, #fff); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin-bottom:20px; }
     .rep-sec-title { font-family:'Sora',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin-bottom:16px; }
 
     .rep-bar-row { margin-bottom:14px; }
     .rep-bar-label { display:flex; justify-content:space-between; font-size:12.5px; color:var(--text); margin-bottom:5px; }
     .rep-bar-label .plat { color:var(--muted); font-weight:500; text-transform:capitalize; }
     .rep-bar-track { height:8px; background:var(--bg); border-radius:5px; overflow:hidden; }
-    .rep-bar-fill { height:100%; background:linear-gradient(90deg,var(--green),var(--teal)); border-radius:5px; }
+    .rep-bar-fill { height:100%; background:linear-gradient(90deg,var(--accent, var(--green)),var(--teal)); border-radius:5px; }
 
     .rep-empty { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
     .rep-loading { text-align:center; padding:40px 0; color:var(--muted); font-size:13px; }
@@ -36,7 +36,7 @@
     .rep-trend { display:flex; align-items:baseline; gap:10px; }
     .rep-trend-val { font-family:'Sora',sans-serif; font-size:22px; font-weight:800; }
     .rep-trend-badge { font-size:12px; font-weight:700; padding:3px 9px; border-radius:20px; }
-    .rep-trend-badge.up { background:rgba(75,181,67,.12); color:var(--green); }
+    .rep-trend-badge.up { background:rgba(75,181,67,.12); color:var(--accent, var(--green)); }
     .rep-trend-badge.down { background:rgba(220,53,69,.1); color:#dc3545; }
     .rep-trend-badge.flat { background:var(--bg); color:var(--muted); }
 
@@ -52,7 +52,7 @@
         <div class="rep-subtitle">Reach, engagement and follower growth across your connected pages.</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-        <a href="/Reports/Export" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text)">
+        <a href="/Reports/Export" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;background:var(--surface, #fff);border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text)">
             <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Export CSV
         </a>

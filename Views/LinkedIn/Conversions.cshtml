@@ -1,0 +1,124 @@
+@using SocialMediaPanel.Models
+@model List<LinkedInConversionRule>
+@{
+    ViewData["Title"] = "LinkedIn Conversions";
+    ViewData["PageTitle"] = "LinkedIn Conversions";
+    var integration = ViewBag.Integration as LinkedInIntegration;
+    var recentEvents = ViewBag.RecentEvents as List<LinkedInConversionEvent> ?? new();
+    var success = ViewBag.Success as string;
+    var error = ViewBag.Error as string;
+}
+
+<style>
+    .li-page-wrap2 { max-width: 1000px; margin: 0 auto; }
+    .li-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; }
+    .li-alert.success { background: rgba(10,102,194,.08); border: 1px solid rgba(10,102,194,.3); color: #0a66c2; }
+    .li-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
+    .li-panel { background: #fff; border: 1px solid #e2e8e4; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 20px; }
+    .li-panel h3 { font-family:'Sora',sans-serif; font-size: 15px; margin: 0 0 6px; }
+    .li-panel p.hint { font-size: 12px; color: #6b7d74; margin: 0 0 14px; }
+    .li-form-row { margin-bottom: 12px; }
+    .li-form-row label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+    .li-form-row select, .li-form-row input { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8e4; border-radius: 8px; font-size: 13px; box-sizing: border-box; }
+    .li-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-li-primary { padding: 10px 20px; background: #0a66c2; color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-li-secondary { padding: 7px 14px; background: #fff; border: 1.5px solid #0a66c2; color: #0a66c2; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+    .li-rule-row { padding: 14px 0; border-bottom: 1px solid #f0f2f0; font-size: 12.5px; }
+    .li-rule-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+    .li-rule-status.created { background: rgba(37,211,102,.12); color: #1a8a45; }
+    .li-rule-status.failed { background: #fff0f0; color: #c62828; }
+    .li-empty { text-align: center; padding: 40px 20px; color: #6b7d74; font-size: 12.5px; }
+    .li-test-form { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+    .li-test-form input, .li-test-form select { padding: 6px 9px; border: 1.5px solid #e2e8e4; border-radius: 7px; font-size: 11.5px; }
+    .li-event-log { font-size: 11px; padding: 6px 0; border-bottom: 1px solid #f4f5f7; }
+</style>
+
+<div class="li-page-wrap2">
+    @await Html.PartialAsync("_SubNav")
+
+    @if (success != null) { <div class="li-alert success">✅ @success</div> }
+    @if (error != null) { <div class="li-alert error">⚠️ @error</div> }
+
+    @if (integration == null)
+    {
+        <div class="li-panel"><div class="li-empty">Connect LinkedIn first from the <a href="/LinkedIn/Index">Dashboard</a>.</div></div>
+    }
+    else
+    {
+        <div class="li-panel">
+            <h3>🎯 Create Conversion Rule</h3>
+            <p class="hint">Requires the connected LinkedIn account to have a role (Billing Admin / Manager / Campaign Manager / Creative Manager) on the ad account.</p>
+            <form asp-action="CreateConversionRule" asp-controller="LinkedIn" method="post">
+                <input type="hidden" name="id" value="@integration.Id" />
+                <div class="li-form-grid">
+                    <div class="li-form-row"><label>Rule Name</label><input type="text" name="name" required /></div>
+                    <div class="li-form-row"><label>Ad Account URN</label><input type="text" name="adAccountUrn" placeholder="urn:li:sponsoredAccount:12345" required /></div>
+                </div>
+                <div class="li-form-row">
+                    <label>Conversion Type</label>
+                    <select name="conversionType">
+                        <option value="LEAD">Lead</option>
+                        <option value="QUALIFIED_LEAD">Qualified Lead</option>
+                        <option value="MARKETING_QUALIFIED_LEAD">Marketing Qualified Lead</option>
+                        <option value="SALES_QUALIFIED_LEAD">Sales Qualified Lead</option>
+                        <option value="PURCHASE">Purchase</option>
+                        <option value="SIGN_UP">Sign Up</option>
+                        <option value="ADD_TO_CART">Add to Cart</option>
+                        <option value="SUBMIT_APPLICATION">Submit Application</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-li-primary">Create Rule</button>
+            </form>
+        </div>
+    }
+
+    <div class="li-panel">
+        <h3>📊 Conversion Rules (@Model.Count)</h3>
+        @if (!Model.Any())
+        {
+            <div class="li-empty">No conversion rules created yet.</div>
+        }
+        else
+        {
+            @foreach (var rule in Model)
+            {
+                <div class="li-rule-row">
+                    <div><strong>@rule.Name</strong> <span class="li-rule-status @rule.Status">@rule.Status</span></div>
+                    <div style="color:#6b7d74;">@rule.ConversionType · @rule.AdAccountUrn</div>
+                    @if (rule.Status == "failed")
+                    {
+                        <div style="color:#c62828;font-size:11px;">@rule.ErrorMessage</div>
+                    }
+                    @if (rule.Status == "created")
+                    {
+                        <form asp-action="SendConversionEvent" asp-controller="LinkedIn" method="post" class="li-test-form">
+                            <input type="hidden" name="ruleId" value="@rule.Id" />
+                            <input type="hidden" name="id" value="@integration?.Id" />
+                            <select name="userIdentifierType">
+                                <option value="SHA256_EMAIL">SHA256 Email</option>
+                                <option value="PLAINTEXT_IP_ADDRESS">IP Address</option>
+                            </select>
+                            <input type="text" name="userIdentifierValue" placeholder="identifier value" required style="flex:1;min-width:160px;" />
+                            <input type="number" step="0.01" name="amount" placeholder="Amount (optional)" style="width:120px;" />
+                            <input type="text" name="currencyCode" placeholder="USD" style="width:60px;" />
+                            <button type="submit" class="btn-li-secondary">Send Test Event</button>
+                        </form>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @if (recentEvents.Any())
+    {
+        <div class="li-panel">
+            <h3>🕓 Recent Conversion Events</h3>
+            @foreach (var evt in recentEvents)
+            {
+                <div class="li-event-log">
+                    @evt.SentAt.ToString("dd MMM, hh:mm tt") — @(evt.Success ? "✅ sent" : "❌ " + evt.ErrorMessage) — @evt.UserIdentifierType
+                </div>
+            }
+        </div>
+    }
+</div>

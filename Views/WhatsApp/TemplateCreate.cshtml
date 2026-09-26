@@ -1,0 +1,487 @@
+@{
+    ViewData["Title"] = "Create Template";
+    ViewData["PageTitle"] = "Create Template";
+}
+
+<style>
+    .wtc-wrap { max-width: 1100px; margin: 0 auto; }
+    .wtc-back { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); text-decoration: none; margin-bottom: 14px; font-weight: 600; }
+    .wtc-back:hover { color: #128C7E; }
+
+    .wtc-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+    @@media (max-width: 900px) { .wtc-layout { grid-template-columns: 1fr; } }
+
+    .wtc-card { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 16px; }
+    .wtc-card-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+    .wtc-step-num { width: 26px; height: 26px; border-radius: 50%; background: rgba(37,211,102,.12); color: #128C7E; font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .wtc-card-head h3 { font-family:'Sora',sans-serif; font-size: 14px; font-weight: 700; color: var(--text); margin: 0; }
+    .wtc-card-head p { font-size: 11.5px; color: var(--muted); margin: 2px 0 0; line-height: 1.5; }
+    .wtc-required { color: #c62828; }
+
+    .wtc-input, .wtc-select, .wtc-textarea {
+        width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px;
+        font-family: 'DM Sans',sans-serif; color: var(--text); outline: none; box-sizing: border-box; transition: border-color .15s;
+    }
+    .wtc-input:focus, .wtc-select:focus, .wtc-textarea:focus { border-color: #25D366; }
+    .wtc-textarea { min-height: 90px; resize: vertical; }
+    .wtc-field-error { font-size: 11px; color: #c62828; margin-top: 5px; display: none; }
+    .wtc-field-error.show { display: block; }
+    .wtc-char-count { font-size: 10.5px; color: var(--muted); text-align: right; margin-top: 4px; }
+
+    /* Category cards */
+    .wtc-category-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .wtc-category-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 12px; cursor: pointer; text-align: center; transition: border-color .15s, background .15s; }
+    .wtc-category-card:hover { border-color: #25D366; }
+    .wtc-category-card.selected { border-color: #25D366; background: rgba(37,211,102,.06); }
+    .wtc-category-card .icon { font-size: 20px; margin-bottom: 6px; }
+    .wtc-category-card strong { display: block; font-size: 12.5px; color: var(--text); font-family:'Sora',sans-serif; }
+    .wtc-category-card span { font-size: 10.5px; color: var(--muted); line-height: 1.4; display: block; margin-top: 3px; }
+
+    /* Body toolbar */
+    .wtc-body-toolbar { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+    .wtc-toolbar-btn { padding: 6px 10px; border: 1.5px dashed var(--border); border-radius: 8px; background: var(--surface, #fff); font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; }
+    .wtc-toolbar-btn:hover { border-color: #25D366; color: #128C7E; }
+    .wtc-fmt-btn { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface, #fff); font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .wtc-fmt-btn:hover { border-color: #25D366; }
+
+    .wtc-var-example-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .wtc-var-example-row label { font-size: 11px; font-weight: 700; color: var(--muted); width: 60px; flex-shrink: 0; }
+    .wtc-var-example-row input { flex: 1; padding: 7px 10px; font-size: 12px; border: 1.5px solid var(--border); border-radius: 8px; }
+
+    /* Header type conditional panels */
+    .wtc-header-panel { display: none; margin-top: 12px; }
+    .wtc-header-panel.active { display: block; }
+
+    /* Buttons list */
+    .wtc-add-btn-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .wtc-add-btn { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--surface, #fff); font-size: 11.5px; font-weight: 600; color: var(--text); cursor: pointer; }
+    .wtc-add-btn:hover { border-color: #25D366; color: #128C7E; }
+    .wtc-btn-row { display: flex; align-items: center; gap: 8px; background: #f8f9fb; border-radius: 9px; padding: 8px 10px; margin-bottom: 8px; }
+    .wtc-btn-row .wtc-btn-type-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; background: #eef1ff; color: #4c5fd5; flex-shrink: 0; }
+    .wtc-btn-row input { flex: 1; padding: 6px 9px; font-size: 11.5px; border: 1.5px solid var(--border); border-radius: 7px; }
+    .wtc-btn-row .wtc-btn-remove { background: none; border: none; color: #c62828; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+
+    .wtc-submit-bar { display: flex; justify-content: flex-end; }
+    .btn-wtc-submit { padding: 13px 30px; background: #25D366; border: none; border-radius: 11px; color: #fff; font-size: 14px; font-weight: 700; font-family: 'DM Sans',sans-serif; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 16px rgba(37,211,102,.28); }
+    .btn-wtc-submit:hover { transform: translateY(-1px); }
+    .btn-wtc-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* Live preview */
+    .wtc-preview-sticky { position: sticky; top: 20px; }
+    .wtc-preview-label { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .wtc-phone { width: 100%; max-width: 260px; margin: 0 auto; background: #111; border-radius: 28px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .wtc-phone-screen { background: #e5ddd5; border-radius: 20px; overflow: hidden; min-height: 320px; display: flex; flex-direction: column; }
+    .wtc-phone-head { background: #128C7E; color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 8px; }
+    .wtc-phone-head .avatar { width: 26px; height: 26px; border-radius: 50%; background: #25D366; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+    .wtc-phone-head .name { font-size: 12px; font-weight: 700; }
+    .wtc-phone-head .status { font-size: 9.5px; opacity: .8; }
+    .wtc-phone-body { flex: 1; padding: 16px 10px; }
+    .wtc-preview-bubble { background: var(--surface, #fff); border-radius: 4px 10px 10px 10px; padding: 8px 10px; font-size: 11.5px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,.1); max-width: 92%; }
+    .wtc-preview-header-media { background: #f0f0f0; border-radius: 6px; height: 70px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 10px; margin-bottom: 6px; }
+    .wtc-preview-header-text { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+    .wtc-preview-footer-text { font-size: 10px; color: #8a8a8a; margin-top: 5px; }
+    .wtc-preview-time { font-size: 9px; color: #999; text-align: right; margin-top: 4px; }
+    .wtc-preview-buttons { margin-top: 2px; max-width: 92%; }
+    .wtc-preview-btn { background: var(--surface, #fff); text-align: center; padding: 7px; font-size: 11px; color: #128C7E; font-weight: 600; border-top: 1px solid #f0f0f0; }
+    .wtc-preview-btn:first-child { border-radius: 0 0 8px 8px; }
+
+    .wtc-tips-box { background: #fffdf5; border: 1px solid #ffe9a8; border-radius: 12px; padding: 14px 16px; margin-top: 16px; font-size: 11px; color: #8a6d1a; line-height: 1.7; }
+    .wtc-tips-box strong { display: block; margin-bottom: 4px; font-size: 12px; }
+</style>
+
+<div class="wtc-wrap">
+    <a href="/WhatsApp/Templates" class="wtc-back">← Back to Templates</a>
+
+    <div class="wtc-layout">
+        <div>
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">1</div>
+                    <div>
+                        <h3>Template Name <span class="wtc-required">*</span></h3>
+                        <p>Only lowercase letters, numbers, and underscores — e.g. order_update</p>
+                    </div>
+                </div>
+                <input type="text" class="wtc-input" id="wtcName" placeholder="Template Name" oninput="wtcValidateName(); wtcUpdatePreview();" />
+                <div class="wtc-field-error" id="wtcNameError">Only lowercase letters, numbers, and underscores allowed.</div>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">2</div>
+                    <div>
+                        <h3>Category <span class="wtc-required">*</span></h3>
+                        <p>Choose the type of message template you want to create.</p>
+                    </div>
+                </div>
+                <div class="wtc-category-grid" id="wtcCategoryGrid">
+                    <div class="wtc-category-card selected" data-category="MARKETING" onclick="wtcSelectCategory('MARKETING')">
+                        <div class="icon">📣</div><strong>Marketing</strong><span>Promotions, offers and announcements</span>
+                    </div>
+                    <div class="wtc-category-card" data-category="UTILITY" onclick="wtcSelectCategory('UTILITY')">
+                        <div class="icon">⚙️</div><strong>Utility</strong><span>Order confirmations and transactional updates</span>
+                    </div>
+                    <div class="wtc-category-card" data-category="AUTHENTICATION" onclick="wtcSelectCategory('AUTHENTICATION')">
+                        <div class="icon">🛡️</div><strong>Authentication</strong><span>One-time passwords for secure logins</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">3</div>
+                    <div><h3>Language <span class="wtc-required">*</span></h3><p>Choose a supported language for localisation.</p></div>
+                </div>
+                <select class="wtc-select" id="wtcLanguage">
+                    <option value="en">English</option>
+                    <option value="en_US">English (US)</option>
+                    <option value="en_GB">English (UK)</option>
+                    <option value="hi">Hindi</option>
+                    <option value="es">Spanish</option>
+                    <option value="pt_BR">Portuguese (Brazil)</option>
+                    <option value="fr">French</option>
+                    <option value="ar">Arabic</option>
+                    <option value="id">Indonesian</option>
+                </select>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">4</div>
+                    <div><h3>Template Label <span class="wtc-required">*</span></h3><p>Short description of this template in a few words.</p></div>
+                </div>
+                <input type="text" class="wtc-input" id="wtcLabel" placeholder="Template Label" />
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">5</div>
+                    <div><h3>Header</h3><p>Supports text, image, video or document for branding or key details.</p></div>
+                </div>
+                <select class="wtc-select" id="wtcHeaderType" onchange="wtcSwitchHeader(); wtcUpdatePreview();">
+                    <option value="NONE">None</option>
+                    <option value="TEXT">Text</option>
+                    <option value="IMAGE">Image</option>
+                    <option value="VIDEO">Video</option>
+                    <option value="DOCUMENT">Document</option>
+                    <option value="LOCATION">Location</option>
+                </select>
+
+                <div class="wtc-header-panel" id="wtcHeaderPanel-TEXT">
+                    <input type="text" class="wtc-input" id="wtcHeaderText" maxlength="60" placeholder="e.g. Our {{1}} is on!" oninput="wtcUpdatePreview()" style="margin-top:10px;" />
+                    <div class="wtc-char-count"><span id="wtcHeaderTextCount">0</span>/60</div>
+                    <div class="wtc-var-example-row" id="wtcHeaderExampleRow" style="display:none;">
+                        <label>Example</label>
+                        <input type="text" id="wtcHeaderExample" placeholder="e.g. Summer Sale" oninput="wtcUpdatePreview()" />
+                    </div>
+                </div>
+                <div class="wtc-header-panel" id="wtcHeaderPanel-MEDIA">
+                    <input type="url" class="wtc-input" id="wtcHeaderMediaUrl" placeholder="Media URL (https://...)" oninput="wtcUpdatePreview()" style="margin-top:10px;" />
+                    <div class="wtc-field-error show" style="color:var(--muted);">A public URL for now — this gets uploaded to Meta directly once real submission is wired.</div>
+                </div>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">6</div>
+                    <div><h3>Body <span class="wtc-required">*</span></h3><p>Main message, up to 1024 characters. Use {{1}}, {{2}} for dynamic content.</p></div>
+                </div>
+                <textarea class="wtc-textarea" id="wtcBody" maxlength="1024" placeholder="Body Text" oninput="wtcOnBodyInput()"></textarea>
+                <div class="wtc-body-toolbar">
+                    <button type="button" class="wtc-toolbar-btn" onclick="wtcInsertVariable()">+ Add Variable</button>
+                    <button type="button" class="wtc-fmt-btn" onclick="wtcWrapSelection('*')" title="Bold"><b>B</b></button>
+                    <button type="button" class="wtc-fmt-btn" onclick="wtcWrapSelection('_')" title="Italic"><i>I</i></button>
+                    <button type="button" class="wtc-fmt-btn" onclick="wtcWrapSelection('~')" title="Strikethrough"><s>S</s></button>
+                    <span style="flex:1;"></span>
+                    <span class="wtc-char-count"><span id="wtcBodyCount">0</span>/1024</span>
+                </div>
+                <div id="wtcBodyVarExamples"></div>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">7</div>
+                    <div><h3>Footer</h3><p>Short text-only section for disclaimers or extra info. Max 60 chars.</p></div>
+                </div>
+                <input type="text" class="wtc-input" id="wtcFooter" maxlength="60" placeholder="Footer Text" oninput="wtcUpdatePreview()" />
+                <div class="wtc-char-count"><span id="wtcFooterCount">0</span>/60</div>
+            </div>
+
+            <div class="wtc-card">
+                <div class="wtc-card-head">
+                    <div class="wtc-step-num">8</div>
+                    <div><h3>Buttons <span style="font-weight:400;color:var(--muted);">(Optional)</span></h3><p>Quick replies, call-to-action URLs, phone numbers or copy codes.</p></div>
+                </div>
+                <div class="wtc-add-btn-row">
+                    <button type="button" class="wtc-add-btn" onclick="wtcAddButton('QUICK_REPLY')">+ Quick Reply</button>
+                    <button type="button" class="wtc-add-btn" onclick="wtcAddButton('URL')">+ URL</button>
+                    <button type="button" class="wtc-add-btn" onclick="wtcAddButton('PHONE_NUMBER')">+ Phone Number</button>
+                    <button type="button" class="wtc-add-btn" onclick="wtcAddButton('COPY_CODE')">+ Copy Code</button>
+                    <button type="button" class="wtc-add-btn" onclick="wtcAddButton('FLOW')">+ Flow</button>
+                </div>
+                <div id="wtcButtonsList"></div>
+            </div>
+
+            <div class="wtc-submit-bar">
+                <button type="button" class="btn-wtc-submit" id="wtcSubmitBtn" onclick="wtcSubmit()">📤 Preview &amp; Submit Template</button>
+            </div>
+        </div>
+
+        <div>
+            <div class="wtc-preview-sticky">
+                <div class="wtc-preview-label">📱 Live Preview</div>
+                <div class="wtc-phone">
+                    <div class="wtc-phone-screen">
+                        <div class="wtc-phone-head">
+                            <div class="avatar" id="wtcPreviewAvatar">W</div>
+                            <div>
+                                <div class="name" id="wtcPreviewName">Template Name</div>
+                                <div class="status">online</div>
+                            </div>
+                        </div>
+                        <div class="wtc-phone-body">
+                            <div class="wtc-preview-bubble" id="wtcPreviewBubble">
+                                <div style="color:#999;font-style:italic;">Fill in the form to see your template here…</div>
+                            </div>
+                            <div class="wtc-preview-buttons" id="wtcPreviewButtons"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wtc-tips-box">
+                    <strong>💡 Tips</strong>
+                    Use {{1}}, {{2}} for dynamic variables in body<br />
+                    Header text max 60 chars<br />
+                    Max 3 quick reply buttons<br />
+                    Authentication templates support Copy Code only
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var wtcButtons = [];
+        var wtcButtonSeq = 0;
+
+        function wtcValidateName() {
+            var input = document.getElementById('wtcName');
+            var err = document.getElementById('wtcNameError');
+            var valid = /^[a-z0-9_]*$/.test(input.value);
+            err.classList.toggle('show', !valid && input.value.length > 0);
+            input.value = input.value.replace(/[^a-z0-9_]/g, '');
+        }
+
+        function wtcSelectCategory(cat) {
+            document.querySelectorAll('.wtc-category-card').forEach(function (c) { c.classList.toggle('selected', c.dataset.category === cat); });
+            wtcUpdatePreview();
+        }
+
+        function wtcSwitchHeader() {
+            var type = document.getElementById('wtcHeaderType').value;
+            document.getElementById('wtcHeaderPanel-TEXT').classList.toggle('active', type === 'TEXT');
+            document.getElementById('wtcHeaderPanel-MEDIA').classList.toggle('active', type === 'IMAGE' || type === 'VIDEO' || type === 'DOCUMENT');
+        }
+
+        function wtcInsertVariable() {
+            var ta = document.getElementById('wtcBody');
+            var existing = (ta.value.match(/\{\{\d+\}\}/g) || []).length;
+            var next = existing + 1;
+            var pos = ta.selectionStart || ta.value.length;
+            ta.value = ta.value.slice(0, pos) + '{{' + next + '}}' + ta.value.slice(pos);
+            ta.focus();
+            wtcOnBodyInput();
+        }
+
+        function wtcWrapSelection(marker) {
+            var ta = document.getElementById('wtcBody');
+            var start = ta.selectionStart, end = ta.selectionEnd;
+            var selected = ta.value.slice(start, end) || 'text';
+            ta.value = ta.value.slice(0, start) + marker + selected + marker + ta.value.slice(end);
+            ta.focus();
+            wtcOnBodyInput();
+        }
+
+        function wtcOnBodyInput() {
+            var body = document.getElementById('wtcBody').value;
+            document.getElementById('wtcBodyCount').textContent = body.length;
+
+            var varNumbers = [];
+            (body.match(/\{\{(\d+)\}\}/g) || []).forEach(function (m) {
+                var n = parseInt(m.replace(/[^\d]/g, ''), 10);
+                if (varNumbers.indexOf(n) === -1) varNumbers.push(n);
+            });
+            varNumbers.sort(function (a, b) { return a - b; });
+
+            var wrap = document.getElementById('wtcBodyVarExamples');
+            var existingValues = {};
+            wrap.querySelectorAll('input').forEach(function (inp) { existingValues[inp.dataset.varNum] = inp.value; });
+
+            wrap.innerHTML = varNumbers.map(function (n) {
+                var val = existingValues[n] || '';
+                return '<div class="wtc-var-example-row"><label>{{' + n + '}} ex.</label><input type="text" data-var-num="' + n + '" value="' + val.replace(/"/g, '&quot;') + '" placeholder="Example value" oninput="wtcUpdatePreview()" /></div>';
+            }).join('');
+
+            wtcUpdatePreview();
+        }
+
+        function wtcAddButton(type) {
+            var quickReplyCount = wtcButtons.filter(function (b) { return b.type === 'QUICK_REPLY'; }).length;
+            if (type === 'QUICK_REPLY' && quickReplyCount >= 3) { alert('Maximum 3 Quick Reply buttons.'); return; }
+            if (wtcButtons.length >= 10) { alert('Maximum 10 buttons total.'); return; }
+
+            wtcButtonSeq++;
+            wtcButtons.push({ id: wtcButtonSeq, type: type, text: '', url: '', urlExample: '', phoneNumber: '', copyCodeExample: '' });
+            wtcRenderButtons();
+        }
+
+        function wtcRemoveButton(id) {
+            wtcButtons = wtcButtons.filter(function (b) { return b.id !== id; });
+            wtcRenderButtons();
+        }
+
+        function wtcButtonLabel(type) {
+            return { QUICK_REPLY: 'Quick Reply', URL: 'URL', PHONE_NUMBER: 'Phone', COPY_CODE: 'Copy Code', FLOW: 'Flow' }[type] || type;
+        }
+
+        function wtcRenderButtons() {
+            var wrap = document.getElementById('wtcButtonsList');
+            wrap.innerHTML = wtcButtons.map(function (b) {
+                var extra = '';
+                if (b.type === 'URL') extra = '<input type="url" placeholder="https://..." value="' + (b.url || '') + '" oninput="wtcUpdateButtonField(' + b.id + ',\'url\',this.value)" />';
+                else if (b.type === 'PHONE_NUMBER') extra = '<input type="text" placeholder="Phone number" value="' + (b.phoneNumber || '') + '" oninput="wtcUpdateButtonField(' + b.id + ',\'phoneNumber\',this.value)" />';
+                else if (b.type === 'COPY_CODE') extra = '<input type="text" placeholder="Example code" value="' + (b.copyCodeExample || '') + '" oninput="wtcUpdateButtonField(' + b.id + ',\'copyCodeExample\',this.value)" />';
+
+                return '<div class="wtc-btn-row">' +
+                    '<span class="wtc-btn-type-tag">' + wtcButtonLabel(b.type) + '</span>' +
+                    '<input type="text" placeholder="Button text" value="' + (b.text || '') + '" oninput="wtcUpdateButtonField(' + b.id + ',\'text\',this.value)" />' +
+                    extra +
+                    '<button type="button" class="wtc-btn-remove" onclick="wtcRemoveButton(' + b.id + ')">✕</button>' +
+                    '</div>';
+            }).join('');
+            wtcUpdatePreview();
+        }
+
+        function wtcUpdateButtonField(id, field, value) {
+            var btn = wtcButtons.find(function (b) { return b.id === id; });
+            if (btn) btn[field] = value;
+            wtcUpdatePreview();
+        }
+
+        function wtcSelectedCategory() {
+            var el = document.querySelector('.wtc-category-card.selected');
+            return el ? el.dataset.category : 'MARKETING';
+        }
+
+        function wtcResolvedBody() {
+            var body = document.getElementById('wtcBody').value;
+            document.querySelectorAll('#wtcBodyVarExamples input').forEach(function (inp) {
+                if (inp.value) body = body.replace(new RegExp('\\{\\{' + inp.dataset.varNum + '\\}\\}', 'g'), inp.value);
+            });
+            return body;
+        }
+
+        function wtcUpdatePreview() {
+            var name = document.getElementById('wtcName').value || 'Template Name';
+            document.getElementById('wtcPreviewName').textContent = name;
+            document.getElementById('wtcPreviewAvatar').textContent = name.substring(0, 1).toUpperCase();
+
+            var headerType = document.getElementById('wtcHeaderType').value;
+            var headerHtml = '';
+            if (headerType === 'TEXT') {
+                var htext = document.getElementById('wtcHeaderText').value;
+                var hexample = document.getElementById('wtcHeaderExample').value;
+                document.getElementById('wtcHeaderExampleRow').style.display = htext.indexOf('{{1}}') > -1 ? 'flex' : 'none';
+                document.getElementById('wtcHeaderTextCount').textContent = htext.length;
+                var resolvedHeader = hexample ? htext.replace('{{1}}', hexample) : htext;
+                if (resolvedHeader) headerHtml = '<div class="wtc-preview-header-text">' + esc(resolvedHeader) + '</div>';
+            } else if (headerType === 'IMAGE') {
+                headerHtml = '<div class="wtc-preview-header-media">🖼 Image</div>';
+            } else if (headerType === 'VIDEO') {
+                headerHtml = '<div class="wtc-preview-header-media">🎬 Video</div>';
+            } else if (headerType === 'DOCUMENT') {
+                headerHtml = '<div class="wtc-preview-header-media">📄 Document</div>';
+            } else if (headerType === 'LOCATION') {
+                headerHtml = '<div class="wtc-preview-header-media">📍 Location</div>';
+            }
+
+            var body = wtcResolvedBody() || 'Your message text will appear here…';
+            var footer = document.getElementById('wtcFooter').value;
+            document.getElementById('wtcFooterCount').textContent = footer.length;
+            var footerHtml = footer ? '<div class="wtc-preview-footer-text">' + esc(footer) + '</div>' : '';
+
+            document.getElementById('wtcPreviewBubble').innerHTML =
+                headerHtml +
+                '<div>' + esc(body).replace(/\n/g, '<br/>') + '</div>' +
+                footerHtml +
+                '<div class="wtc-preview-time">12:00 AM ✓✓</div>';
+
+            document.getElementById('wtcPreviewButtons').innerHTML = wtcButtons.map(function (b) {
+                var icon = b.type === 'URL' ? '↗ ' : b.type === 'PHONE_NUMBER' ? '📞 ' : b.type === 'COPY_CODE' ? '📋 ' : b.type === 'FLOW' ? '⚡ ' : '';
+                return '<div class="wtc-preview-btn">' + icon + esc(b.text || wtcButtonLabel(b.type)) + '</div>';
+            }).join('');
+        }
+
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        function wtcSubmit() {
+            var name = document.getElementById('wtcName').value.trim();
+            var category = wtcSelectedCategory();
+            var language = document.getElementById('wtcLanguage').value;
+            var label = document.getElementById('wtcLabel').value.trim();
+            var body = document.getElementById('wtcBody').value.trim();
+
+            if (!name || !/^[a-z0-9_]+$/.test(name)) { alert('Enter a valid template name (lowercase, numbers, underscores only).'); return; }
+            if (!label) { alert('Enter a template label.'); return; }
+            if (!body) { alert('Enter body text.'); return; }
+
+            var headerType = document.getElementById('wtcHeaderType').value;
+            var bodyVarExamples = [];
+            document.querySelectorAll('#wtcBodyVarExamples input').forEach(function (inp) { bodyVarExamples[parseInt(inp.dataset.varNum, 10) - 1] = inp.value; });
+
+            var payload = {
+                name: name,
+                category: category,
+                languageCode: language,
+                label: label,
+                definition: {
+                    headerType: headerType,
+                    headerText: headerType === 'TEXT' ? document.getElementById('wtcHeaderText').value : null,
+                    headerExample: headerType === 'TEXT' ? document.getElementById('wtcHeaderExample').value : null,
+                    headerMediaUrl: (headerType === 'IMAGE' || headerType === 'VIDEO' || headerType === 'DOCUMENT') ? document.getElementById('wtcHeaderMediaUrl').value : null,
+                    bodyText: body,
+                    bodyVariableExamples: bodyVarExamples,
+                    footerText: document.getElementById('wtcFooter').value.trim() || null,
+                    buttons: wtcButtons.map(function (b) {
+                        return { type: b.type, text: b.text, url: b.url, urlExample: b.urlExample, phoneNumber: b.phoneNumber, copyCodeExample: b.copyCodeExample };
+                    })
+                }
+            };
+
+            var btn = document.getElementById('wtcSubmitBtn');
+            btn.disabled = true; btn.textContent = 'Submitting…';
+
+            fetch('/WhatsApp/Templates/Create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) {
+                        alert(data.message);
+                        window.location.href = '/WhatsApp/Templates';
+                    } else {
+                        alert(data.message || 'Could not save template.');
+                        btn.disabled = false; btn.textContent = '📤 Preview & Submit Template';
+                    }
+                })
+                .catch(function () { alert('Network error — template not saved.'); btn.disabled = false; btn.textContent = '📤 Preview & Submit Template'; });
+        }
+
+        wtcSwitchHeader();
+        wtcUpdatePreview();
+    </script>
+}

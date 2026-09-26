@@ -54,6 +54,12 @@ namespace SocialMediaPanel.Services
                 existing.IsActive = true;
                 existing.DisconnectedAt = null;
                 existing.LastError = null;
+                // GetAsync picks whichever row has the newest ConnectedAt —
+                // without this, reconnecting an OLDER account never updated
+                // its ConnectedAt, so a different (possibly stale/broken)
+                // Gmail account connected more recently kept winning forever,
+                // no matter how many times the real one was reconnected.
+                existing.ConnectedAt = DateTime.UtcNow;
             }
             else
             {

@@ -13,5 +13,12 @@
         public bool IsSuccess { get; set; }
         public string? ErrorMessage { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // WhatsApp-only: the message id G2M's send API returned, so an
+        // incoming "statuses" webhook event (sent/delivered/read/failed) can
+        // be matched back to the row it's reporting on. Null for every other
+        // platform and for WhatsApp rows sent before this existed.
+        public string? WaMessageId { get; set; }
+        public string? DeliveryStatus { get; set; }
     }
 }

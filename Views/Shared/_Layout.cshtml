@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Http
 
 @{
     var userName = ViewBag.UserName as string ?? Context.Session.GetString("UserName") ?? "User";
@@ -16,6 +16,39 @@
 
     bool IsCtrl(string ctrl) =>
         controller.Equals(ctrl, StringComparison.OrdinalIgnoreCase);
+
+    // ── Theme (persisted via cookie, switched from the user menu) ──
+    var theme = Context.Request.Cookies["panel_theme"] ?? "linkedin";
+    if (theme != "linkedin" && theme != "x-dark" && theme != "x-light") theme = "linkedin";
+    bool isX = theme.StartsWith("x");
+    var returnUrl = Uri.EscapeDataString(Context.Request.Path + Context.Request.QueryString);
+
+    // ── Nav icons (shared between the top-bar and sidebar layouts) ──
+    var svgHome = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><rect x='3' y='3' width='7' height='7'/><rect x='14' y='3' width='7' height='7'/><rect x='3' y='14' width='7' height='7'/><rect x='14' y='14' width='7' height='7'/></svg>";
+    var svgInbox = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/></svg>";
+    var svgLeads = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><path d='M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z'/><path d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/></svg>";
+    var svgPosts = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><path d='M3 18v-6a9 9 0 0 1 18 0v6'/><path d='M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z'/></svg>";
+    var svgCalendar = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg>";
+    var svgEnvelope = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><path d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/><polyline points='22,6 12,13 2,6'/></svg>";
+    var svgTwitter = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8' fill='none'><path d='M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z' fill='currentColor' stroke='none'/></svg>";
+    var svgWhatsApp = @"<svg viewBox='0 0 24 24' fill='#25D366' stroke='none'><path d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z'/></svg>";
+    var svgAds = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><path d='M3 3v18h18'/><path d='M18.7 8l-5.1 5.2-4-4L3 15.9'/></svg>";
+    var svgReports = @"<svg viewBox='0 0 24 24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.8'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/></svg>";
+
+    var navItems = new (string Label, string Ctrl, string Act, string Svg, bool Active)[]
+    {
+        ("Home", "Dashboard", "Index", svgHome, IsActive("Dashboard", "Index")),
+        ("Inbox", "Inbox", "Index", svgInbox, IsCtrl("Inbox")),
+        ("Leads", "Dashboard", "Leads", svgLeads, IsCtrl("Leads")),
+        ("Posts", "Posts", "Index", svgPosts, IsCtrl("Posts")),
+        ("Calendar", "Calendar", "Index", svgCalendar, IsCtrl("Calendar")),
+        ("LinkedIn", "LinkedIn", "Index", svgEnvelope, IsCtrl("LinkedIn")),
+        ("Gmail", "Gmail", "Inbox", svgEnvelope, IsCtrl("Gmail")),
+        ("Twitter", "Twitter", "Index", svgTwitter, IsCtrl("Twitter")),
+        ("WhatsApp", "WhatsApp", "Index", svgWhatsApp, IsCtrl("WhatsApp") || IsCtrl("WhatsAppCampaign")),
+        ("Ads", "Ads", "Index", svgAds, IsCtrl("Ads")),
+        ("Reports", "Reports", "Index", svgReports, IsCtrl("Reports")),
+    };
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -36,802 +69,393 @@
             --green: #4BB543;
             --green-d: #3a9e34;
             --teal: #1DA1A1;
-            --bg: #f4f5f7;
             --border: #e3e6ea;
-            --text: #1a2332;
             --muted: #8a97a8;
-            --topbar-h: 56px;
-            --navbar-h: 48px;
+        }
+
+        /* ══ THEME TOKENS ══════════════════════════════════════════════
+           Every page's existing cards/buttons keep working as before;
+           these variables drive the shell (header/sidebar/background)
+           and are available to page-level styles too. ═══════════════ */
+        body.theme-linkedin {
+            --bg: #f4f2ee;
+            --surface: #ffffff;
+            --shell-border: #dce6f1;
+            --text: #14181c;
+            --text-2: #566573;
+            --accent: #0a66c2;
+            --accent-ink: #ffffff;
+            --accent-soft: #e8f2ff;
+            --chip-bg: #eef3f8;
+            --radius-card: 8px;
+        }
+
+        body.theme-x-dark {
+            --bg: #000000;
+            --surface: #16181c;
+            --shell-border: #2f3336;
+            --text: #e7e9ea;
+            --text-2: #71767b;
+            --accent: #1d9bf0;
+            --accent-ink: #ffffff;
+            --accent-soft: rgba(29,155,240,.15);
+            --chip-bg: #202327;
+            --radius-card: 14px;
+        }
+
+        body.theme-x-light {
+            --bg: #ffffff;
+            --surface: #ffffff;
+            --shell-border: #eff3f4;
+            --text: #0f1419;
+            --text-2: #536471;
+            --accent: #1d9bf0;
+            --accent-ink: #ffffff;
+            --accent-soft: rgba(29,155,240,.10);
+            --chip-bg: #f7f8f8;
+            --radius-card: 14px;
         }
 
         html, body {
             height: 100%;
-            overflow: hidden;
         }
 
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--bg);
             color: var(--text);
-            display: flex;
-            flex-direction: column;
         }
 
-        /* ══ TOP HEADER BAR (like Zoho's brand bar) ═════════════════ */
-        .top-header {
-            height: var(--topbar-h);
-            background: #1a2332; /* dark brand bar */
+        /* ══════════════════════════════════════════════════════════════
+           LINKEDIN-STYLE SHELL — top bar, horizontal icon+label nav
+           ══════════════════════════════════════════════════════════════ */
+        body.theme-linkedin { display: flex; flex-direction: column; overflow: hidden; }
+
+        .li-shell-top {
+            flex-shrink: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--shell-border);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 20px;
+            height: 56px;
+            gap: 16px;
+            overflow-x: auto;
+        }
+
+        .li-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .li-logo { width: 34px; height: 34px; border-radius: 7px; overflow: hidden; flex-shrink: 0; }
+        .li-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .li-workspace {
+            display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+            background: var(--chip-bg); border-radius: 8px; flex-shrink: 0;
+        }
+        .li-ws-icon {
+            width: 22px; height: 22px; border-radius: 5px; background: var(--accent);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; flex-shrink: 0;
+        }
+        .li-ws-name { font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
+
+        .li-nav { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .li-nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            color: var(--text-2); font-size: 10px; font-weight: 600;
+            padding: 6px 10px 4px; border-bottom: 2px solid transparent;
+            text-decoration: none; white-space: nowrap;
+        }
+        .li-nav-item svg { width: 19px; height: 19px; stroke: currentColor; fill: none; }
+        .li-nav-item:hover { color: var(--text); }
+        .li-nav-item.active { color: var(--text); border-bottom-color: var(--text); font-weight: 700; }
+
+        .li-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        /* ══════════════════════════════════════════════════════════════
+           X-STYLE SHELL — left sidebar, icon+label vertical nav
+           ══════════════════════════════════════════════════════════════ */
+        .x-shell { display: flex; height: 100vh; overflow: hidden; }
+
+        .x-sidebar {
+            width: 240px;
             flex-shrink: 0;
-            z-index: 200;
-            border-bottom: 1px solid rgba(255,255,255,.08);
-        }
-
-        /* Brand / workspace selector */
-        .th-brand {
+            border-right: 1px solid var(--shell-border);
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            padding: 16px 12px;
+            gap: 4px;
+            overflow-y: auto;
         }
 
-        .th-logo {
-            width: 32px;
-            height: 32px;
-            background: transparent; /* remove gradient since image has its own bg */
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
+        .x-brand { display: flex; align-items: center; gap: 9px; padding: 6px 8px 14px; }
+        .x-logo { width: 28px; height: 28px; border-radius: 7px; overflow: hidden; flex-shrink: 0; }
+        .x-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .x-brand-name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14.5px; color: var(--text); }
+
+        .x-nav-item {
+            display: flex; align-items: center; gap: 14px; padding: 10px 12px;
+            border-radius: 999px; color: var(--text); font-size: 14.5px; font-weight: 500;
+            text-decoration: none;
+        }
+        .x-nav-item svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.8; flex-shrink: 0; }
+        .x-nav-item:hover { background: var(--chip-bg); }
+        .x-nav-item.active { font-weight: 800; }
+
+        .x-new-post-btn {
+            margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 7px;
+            background: var(--accent); color: var(--accent-ink); border: none; border-radius: 999px;
+            padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+        }
+        .x-new-post-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+
+        .x-sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+        .x-bell-row {
+            display: flex; align-items: center; gap: 14px; padding: 10px 12px; border-radius: 999px;
+            color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; position: relative;
+        }
+        .x-bell-row:hover { background: var(--chip-bg); }
+        .x-bell-row svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+        .x-bell-badge {
+            position: absolute; left: 26px; top: 4px; background: #f4212e; color: #fff;
+            font-size: 9px; font-weight: 700; border-radius: 8px; padding: 0 4px; min-width: 14px; text-align: center;
         }
 
-            .th-logo img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-
-        .th-app-name {
-            font-family: 'Sora', sans-serif;
-            font-size: 15px;
-            font-weight: 700;
-            color: #fff;
+        .x-profile-mini {
+            display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 999px; cursor: pointer;
         }
-
-        .th-sep {
-            width: 1px;
-            height: 22px;
-            background: rgba(255,255,255,.15);
-            margin: 0 8px;
+        .x-profile-mini:hover { background: var(--chip-bg); }
+        .x-mini-avatar {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff;
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; flex-shrink: 0;
         }
+        .x-mini-name { font-size: 13px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+        .x-mini-email { font-size: 11px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
 
-        .th-workspace {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 5px 10px;
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.12);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background .15s;
-        }
-
-            .th-workspace:hover {
-                background: rgba(255,255,255,.14);
-            }
-
-        .th-ws-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: #fff;
-            flex-shrink: 0;
-        }
-
-        .th-ws-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .th-ws-caret {
-            width: 12px;
-            height: 12px;
-            stroke: rgba(255,255,255,.5);
-            fill: none;
-        }
-
-        /* Right side of header */
-        .th-right {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .th-icon-btn {
-            width: 34px;
-            height: 34px;
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.1);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background .15s;
-            position: relative;
-        }
-
-            .th-icon-btn:hover {
-                background: rgba(255,255,255,.16);
-            }
-
-            .th-icon-btn svg {
-                width: 16px;
-                height: 16px;
-                stroke: rgba(255,255,255,.7);
-                fill: none;
-            }
-
-        /* Connect button */
-        .th-connect-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(75,181,67,.2);
-            border: 1px solid rgba(75,181,67,.4);
-            border-radius: 8px;
-            color: #6ee36d;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer;
-            transition: background .15s;
-        }
-
-            .th-connect-btn:hover {
-                background: rgba(75,181,67,.32);
-            }
-
-            .th-connect-btn svg {
-                width: 14px;
-                height: 14px;
-                stroke: currentColor;
-                fill: none;
-            }
-
-        .th-connect-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--green);
-            flex-shrink: 0;
-            box-shadow: 0 0 0 2px rgba(75,181,67,.3);
-        }
-
-        /* New Post button */
-        .th-new-post {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 14px;
-            background: var(--green);
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 700;
-            font-family: 'DM Sans', sans-serif;
-            cursor: pointer;
-            transition: background .15s;
-        }
-
-            .th-new-post:hover {
-                background: var(--green-d);
-            }
-
-            .th-new-post svg {
-                width: 14px;
-                height: 14px;
-                stroke: #fff;
-                fill: none;
-            }
-
-        /* User avatar */
-        .th-user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--green), var(--teal));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-            cursor: pointer;
-            flex-shrink: 0;
-            border: 2px solid rgba(255,255,255,.2);
-            position: relative;
-        }
-
-        /* User dropdown */
-        .th-user-menu {
-            position: relative;
-        }
+        /* ══ shared dropdown menu (used by both shells) ══════════════ */
+        .th-user-menu { position: relative; }
 
         .th-user-dropdown {
             display: none;
             position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            width: 200px;
-            background: #fff;
-            border: 1px solid var(--border);
+            width: 220px;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--shell-border);
             border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,.16);
+            box-shadow: 0 8px 32px rgba(0,0,0,.18);
             z-index: 500;
             overflow: hidden;
         }
+        body.theme-linkedin .th-user-dropdown { top: calc(100% + 8px); right: 0; }
+        body.theme-x-dark .th-user-dropdown, body.theme-x-light .th-user-dropdown { bottom: calc(100% + 8px); left: 0; }
 
-        .th-user-menu.open .th-user-dropdown {
-            display: block;
-        }
+        .th-user-menu.open .th-user-dropdown { display: block; }
 
-        .th-ud-head {
-            padding: 14px 16px 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .th-ud-name {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .th-ud-email {
-            font-size: 11px;
-            color: var(--muted);
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .th-ud-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--shell-border); }
+        .th-ud-name { font-size: 13px; font-weight: 700; color: var(--text); }
+        .th-ud-email { font-size: 11px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .th-ud-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); }
 
         .th-ud-item {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 10px 16px;
-            font-size: 13px;
-            color: var(--text);
-            text-decoration: none;
-            cursor: pointer;
-            transition: background .12s;
+            display: flex; align-items: center; gap: 9px; padding: 10px 16px;
+            font-size: 13px; color: var(--text); text-decoration: none; cursor: pointer;
         }
+        .th-ud-item svg { width: 14px; height: 14px; stroke: var(--text-2); fill: none; }
+        .th-ud-item:hover { background: var(--chip-bg); }
+        .th-ud-item.danger { color: #dc3545; }
+        .th-ud-item.danger svg { stroke: #dc3545; }
+        .th-ud-item.theme-current { color: var(--accent); font-weight: 700; }
+        .th-ud-sep { height: 1px; background: var(--shell-border); }
 
-            .th-ud-item svg {
-                width: 14px;
-                height: 14px;
-                stroke: var(--muted);
-                fill: none;
-            }
-
-            .th-ud-item:hover {
-                background: #f4f5f7;
-            }
-
-            .th-ud-item.danger {
-                color: #dc3545;
-            }
-
-                .th-ud-item.danger svg {
-                    stroke: #dc3545;
-                }
-
-        .th-ud-sep {
-            height: 1px;
-            background: var(--border);
+        .th-icon-btn {
+            width: 34px; height: 34px; background: var(--chip-bg); border: 1px solid var(--shell-border);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; position: relative;
         }
-
-        /* ══ NAV TAB BAR (Zoho-style horizontal nav) ════════════════ */
-        .nav-tabbar {
-            height: var(--navbar-h);
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: stretch;
-            padding: 0 20px;
-            flex-shrink: 0;
-            z-index: 100;
-            box-shadow: 0 1px 4px rgba(0,0,0,.04);
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-
-            .nav-tabbar::-webkit-scrollbar {
-                display: none;
-            }
-
-        .nav-tab {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 0 16px;
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 500;
-            text-decoration: none;
-            border-bottom: 2px solid transparent;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: color .15s, border-color .15s;
-            position: relative;
-        }
-
-            .nav-tab svg {
-                width: 15px;
-                height: 15px;
-                stroke: currentColor;
-                fill: none;
-                flex-shrink: 0;
-            }
-
-            .nav-tab:hover {
-                color: var(--text);
-            }
-
-            .nav-tab.active {
-                color: var(--green);
-                border-bottom-color: var(--green);
-                font-weight: 600;
-            }
-
-                .nav-tab.active svg {
-                    stroke: var(--green);
-                }
-
-        /* Badge on nav tab */
+        .th-icon-btn svg { width: 16px; height: 16px; stroke: var(--text-2); fill: none; }
         .nav-tab-badge {
-            background: #EA4335;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 700;
-            border-radius: 10px;
-            padding: 1px 5px;
-            min-width: 18px;
-            text-align: center;
+            background: #EA4335; color: #fff; font-size: 10px; font-weight: 700;
+            border-radius: 10px; padding: 1px 5px; min-width: 18px; text-align: center;
         }
 
-        /* ══ PAGE CONTENT ════════════════════════════════════════════ */
-        .page-shell {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        .th-new-post {
+            display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+            background: var(--accent); border: none; border-radius: 8px; color: var(--accent-ink);
+            font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer;
         }
+        .th-new-post svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
 
-        .page-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 28px;
-        }
-
-        .page-title {
-            font-family: 'Sora', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 20px;
-        }
+        /* ══ PAGE CONTENT ═════════════════════════════════════════════ */
+        .page-shell { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .page-content { flex: 1; overflow-y: auto; padding: 28px; }
+        .page-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 20px; }
 
         /* ══ CONNECT POPUP ════════════════════════════════════════════ */
-        .popup-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.18);
-            z-index: 399;
-        }
-
-            .popup-backdrop.visible {
-                display: block;
-            }
+        .popup-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.18); z-index: 399; }
+        .popup-backdrop.visible { display: block; }
 
         .connect-popup {
-            display: none;
-            position: fixed;
-            top: 70px;
-            right: 16px;
-            width: 310px;
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 12px 40px rgba(0,0,0,.14);
-            z-index: 400;
-            overflow: hidden;
-            flex-direction: column;
-            max-height: calc(100vh - 90px);
+            display: none; position: fixed; top: 70px; right: 16px; width: 310px;
+            background: var(--surface); color: var(--text); border: 1px solid var(--shell-border);
+            border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.16); z-index: 400;
+            overflow: hidden; flex-direction: column; max-height: calc(100vh - 90px);
         }
+        .connect-popup.visible { display: flex; }
 
-            .connect-popup.visible {
-                display: flex;
-            }
+        .popup-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 18px 14px; border-bottom: 1px solid var(--shell-border); flex-shrink: 0; }
+        .popup-header h3 { font-family: 'Sora',sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+        .popup-header p { font-size: 12px; color: var(--text-2); }
+        .popup-close { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 5px; flex-shrink: 0; margin-left: 8px; }
+        .popup-close:hover { background: var(--chip-bg); color: var(--text); }
 
-        .popup-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            padding: 18px 18px 14px;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
+        .popup-body { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
 
-            .popup-header h3 {
-                font-family: 'Sora',sans-serif;
-                font-size: 15px;
-                font-weight: 700;
-                color: var(--text);
-                margin-bottom: 3px;
-            }
-
-            .popup-header p {
-                font-size: 12px;
-                color: var(--muted);
-            }
-
-        .popup-close {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--muted);
-            font-size: 20px;
-            line-height: 1;
-            padding: 2px 6px;
-            border-radius: 5px;
-            transition: background .15s;
-            flex-shrink: 0;
-            margin-left: 8px;
-        }
-
-            .popup-close:hover {
-                background: #f4f5f7;
-                color: var(--text);
-            }
-
-        .popup-body {
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex: 1;
-        }
-
-        .platform-row {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 11px;
-            background: #fafafa;
-            transition: border-color .15s,background .15s;
-        }
-
-            .platform-row:hover {
-                border-color: var(--green);
-                background: rgba(75,181,67,.03);
-            }
-
-        .platform-logo {
-            width: 38px;
-            height: 38px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .platform-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-            .platform-info strong {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--text);
-                display: block;
-            }
-
-            .platform-info span {
-                font-size: 11px;
-                color: var(--muted);
-            }
+        .platform-row { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--shell-border); border-radius: 11px; background: var(--chip-bg); }
+        .platform-row:hover { border-color: var(--accent); }
+        .platform-logo { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .platform-info { flex: 1; min-width: 0; }
+        .platform-info strong { font-size: 12px; font-weight: 600; color: var(--text); display: block; }
+        .platform-info span { font-size: 11px; color: var(--text-2); }
 
         .connect-btn {
-            padding: 5px 11px;
-            border-radius: 7px;
-            font-size: 11px;
-            font-weight: 600;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
-            white-space: nowrap;
-            border: 1px solid rgba(75,181,67,.4);
-            background: rgba(75,181,67,.08);
-            color: var(--green-d);
-            transition: background .15s,border-color .15s;
+            padding: 5px 11px; border-radius: 7px; font-size: 11px; font-weight: 600;
+            font-family: 'DM Sans',sans-serif; cursor: pointer; white-space: nowrap;
+            border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent);
             flex-shrink: 0;
         }
+        .connect-btn.connected { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 
-            .connect-btn:hover {
-                background: rgba(75,181,67,.18);
-            }
+        .popup-footer { padding: 12px 16px; border-top: 1px solid var(--shell-border); display: flex; justify-content: flex-end; flex-shrink: 0; }
+        .btn-done { padding: 8px 18px; background: var(--accent); border: none; border-radius: 8px; color: var(--accent-ink); font-size: 13px; font-weight: 600; font-family: 'DM Sans',sans-serif; cursor: pointer; }
 
-            .connect-btn.connected {
-                background: rgba(75,181,67,.12);
-                border-color: var(--green);
-                color: var(--green);
-            }
-
-        .popup-footer {
-            padding: 12px 16px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            flex-shrink: 0;
-        }
-
-        .btn-done {
-            padding: 8px 18px;
-            background: linear-gradient(135deg,var(--green),var(--green-d));
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: 'DM Sans',sans-serif;
-            cursor: pointer;
-        }
-
-        /* Auth modal styles */
-
+        /* ── WhatsApp section sub-nav (Dashboard/Inbox/Campaigns/Templates/Settings) ── */
+        .wa-subnav { display: inline-flex; gap: 4px; background: #f0f2f0; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .wa-subnav-link { display: flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; color: #5b6b60; text-decoration: none; font-family: 'DM Sans',sans-serif; transition: background .15s, color .15s; }
+        .wa-subnav-link svg { width: 15px; height: 15px; flex-shrink: 0; }
+        .wa-subnav-link:hover { color: #128C7E; }
+        .wa-subnav-link.active { background: #fff; color: #128C7E; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
 
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="theme-@theme">
 
-    <!-- ══ TOP HEADER ════════════════════════════════════════════════ -->
-    <header class="top-header">
-
-        <!-- Left: Logo + workspace -->
-        <div class="th-brand">
-            <div class="th-logo">
-                <img src="~/images/g2m_logo.png" alt="Logo" />
-            </div>
-            <span class="th-app-name">Go2Market</span>
-            <div class="th-sep"></div>
-            <div class="th-workspace">
-                <div class="th-ws-icon">@FirstChar(companyName)</div>
-                <span class="th-ws-name">@companyName</span>
-               @*  <svg class="th-ws-caret" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <polyline points="6 9 12 15 18 9" />
-                </svg> *@
+@if (!isX)
+{
+    <!-- ══════════════ LINKEDIN-STYLE TOP BAR ══════════════ -->
+    <header class="li-shell-top">
+        <div class="li-brand">
+            <div class="li-logo"><img src="~/images/g2m_logo.png" alt="Logo" /></div>
+            <div class="li-workspace">
+                <div class="li-ws-icon">@FirstChar(companyName)</div>
+                <span class="li-ws-name">@companyName</span>
             </div>
         </div>
 
-        <!-- Right: actions + user -->
-        <div class="th-right">
+        <nav class="li-nav">
+            @foreach (var item in navItems)
+            {
+                <a asp-controller="@item.Ctrl" asp-action="@item.Act" class="li-nav-item @(item.Active ? "active" : "")">
+                    @Html.Raw(item.Svg)
+                    <span>@item.Label</span>
+                </a>
+            }
+        </nav>
 
-            <!-- Connect platforms -->
-         @*    <button class="th-connect-btn" onclick="toggleConnectPopup()" title="Connect Platforms">
-                <div class="th-connect-dot"></div>
-                Connect
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-            </button> *@
-
-            <!-- New Post -->
+        <div class="li-right">
             <a href="/Dashboard/Compose" style="text-decoration:none">
                 <button class="th-new-post">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     New Post
                 </button>
             </a>
-
-            <!-- Notifications -->
             <div class="th-user-menu" id="notifMenu">
-                <button class="th-icon-btn" title="Notifications" onclick="toggleNotifMenu()" style="position:relative">
-                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
+                <button class="th-icon-btn" title="Notifications" onclick="toggleNotifMenu()">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                     <span id="notifBadge" class="nav-tab-badge" style="display:none;position:absolute;top:-4px;right:-4px;">0</span>
                 </button>
                 <div class="th-user-dropdown" id="notifDropdown" style="width:260px">
                     <div class="th-ud-head"><div class="th-ud-name">Notifications</div></div>
                     <div id="notifList" style="max-height:260px;overflow-y:auto;">
-                        <div class="th-ud-item" style="color:var(--muted);cursor:default">Loading…</div>
+                        <div class="th-ud-item" style="color:var(--text-2);cursor:default">Loading…</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Settings -->
-          @*   <button class="th-icon-btn" title="Settings">
-                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
-            </button> *@
-
-            <!-- User avatar + dropdown -->
             <div class="th-user-menu" id="userMenu">
-                <div class="th-user-avatar" onclick="toggleUserMenu()">@FirstChar(userName)</div>
-                <div class="th-user-dropdown">
-                    <div class="th-ud-head">
-                        <div class="th-ud-name">@userName</div>
-                        <div class="th-ud-email" title="@userEmail">@userEmail</div>
-                    </div>
-                    <a asp-controller="Integrations" asp-action="ConnectedAccounts" class="th-ud-item">
-                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                            <circle cx="9" cy="7" r="4" />
-                            <path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
-                            <line x1="19" y1="8" x2="19" y2="14" />
-                            <line x1="16" y1="11" x2="22" y2="11" />
-                        </svg>
-                        Connected Accounts
-                    </a>
-                    <a asp-controller="Account" asp-action="AuditLog" class="th-ud-item">
-                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                            <polyline points="14 2 14 8 20 8" />
-                            <line x1="16" y1="13" x2="8" y2="13" />
-                            <line x1="16" y1="17" x2="8" y2="17" />
-                        </svg>
-                        Audit Log
-                    </a>
-                    <a asp-controller="Account" asp-action="Logout" class="th-ud-item danger">
-                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        Logout
-                    </a>
-                </div>
+                <div class="x-mini-avatar" style="cursor:pointer;" onclick="toggleUserMenu()">@FirstChar(userName)</div>
+                <div class="th-user-dropdown">@await Html.PartialAsync("_AccountMenu", new { userName, userEmail, theme, returnUrl })</div>
             </div>
         </div>
     </header>
 
-    <!-- ══ NAV TAB BAR ═══════════════════════════════════════════════ -->
-    <nav class="nav-tabbar">
-
-        <a asp-controller="Dashboard" asp-action="Index"
-           class="nav-tab @(IsActive("Dashboard", "Index") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-            </svg>
-            Home
-        </a>
-
-        <a asp-controller="Inbox" asp-action="Index"
-           class="nav-tab @(IsCtrl("Inbox") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Inbox
-        </a>
-
-        <a asp-controller="Dashboard" asp-action="Leads"
-           class="nav-tab @(IsCtrl("Leads") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-            </svg>
-            Leads
-        </a>
-
-              <a asp-controller="Posts" asp-action="Index"
-           class="nav-tab @(IsCtrl("Posts") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-            </svg>
-            Posts
-        </a>
-        <a asp-controller="Calendar" asp-action="Index"
-           class="nav-tab @(IsCtrl("Calendar") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            Calendar
-        </a>
-        <a asp-controller="LinkedIn" asp-action="Index"
-           class="nav-tab @(IsCtrl("LinkedIn") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-            </svg>
-            LinkedIn
-        </a>
-        <a asp-controller="Gmail" asp-action="Inbox"
-           class="nav-tab @(IsCtrl("Gmail") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-            </svg>
-            Gmail
-        </a>
-
-        <a asp-controller="Twitter" asp-action="Index"
-           class="nav-tab @(IsCtrl("Twitter") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" fill="none">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" fill="currentColor" stroke="none" />
-            </svg>
-            Twitter
-        </a>
-
-        <a asp-controller="WhatsApp" asp-action="Index"
-           class="nav-tab @(IsCtrl("WhatsApp") ? "active" : "")">
-            <svg viewBox="0 0 24 24" fill="#25D366" stroke="none">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
-            </svg>
-            WhatsApp
-        </a>
-
-        <a asp-controller="Ads" asp-action="Index"
-           class="nav-tab @(IsCtrl("Ads") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <path d="M3 3v18h18" />
-                <path d="M18.7 8l-5.1 5.2-4-4L3 15.9" />
-            </svg>
-            Ads
-        </a>
-
-        <a asp-controller="Reports" asp-action="Index"
-           class="nav-tab @(IsCtrl("Reports") ? "active" : "")">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
-                <line x1="18" y1="20" x2="18" y2="10" />
-                <line x1="12" y1="20" x2="12" y2="4" />
-                <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
-            Reports
-        </a>
-
-    </nav>
-
-    <!-- ══ PAGE SHELL ═════════════════════════════════════════════════ -->
     <div class="page-shell">
         <main class="page-content">
             @RenderBody()
         </main>
     </div>
+}
+else
+{
+    <!-- ══════════════ X-STYLE LEFT SIDEBAR ══════════════ -->
+    <div class="x-shell">
+        <aside class="x-sidebar">
+            <div class="x-brand">
+                <div class="x-logo"><img src="~/images/g2m_logo.png" alt="Logo" /></div>
+                <div class="x-brand-name">@companyName</div>
+            </div>
+
+            <nav style="display:flex;flex-direction:column;gap:2px;">
+                @foreach (var item in navItems)
+                {
+                    <a asp-controller="@item.Ctrl" asp-action="@item.Act" class="x-nav-item @(item.Active ? "active" : "")">
+                        @Html.Raw(item.Svg)
+                        <span>@item.Label</span>
+                    </a>
+                }
+            </nav>
+
+            <a href="/Dashboard/Compose" style="text-decoration:none">
+                <button class="x-new-post-btn">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Post
+                </button>
+            </a>
+
+            <div class="x-sidebar-footer">
+                <div class="th-user-menu" id="notifMenu">
+                    <div class="x-bell-row" onclick="toggleNotifMenu()">
+                        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span>Notifications</span>
+                        <span id="notifBadge" class="x-bell-badge" style="display:none;">0</span>
+                    </div>
+                    <div class="th-user-dropdown" id="notifDropdown" style="width:260px;bottom:auto;top:calc(100% + 4px);">
+                        <div class="th-ud-head"><div class="th-ud-name">Notifications</div></div>
+                        <div id="notifList" style="max-height:260px;overflow-y:auto;">
+                            <div class="th-ud-item" style="color:var(--text-2);cursor:default">Loading…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="th-user-menu" id="userMenu">
+                    <div class="x-profile-mini" onclick="toggleUserMenu()">
+                        <div class="x-mini-avatar">@FirstChar(userName)</div>
+                        <div>
+                            <div class="x-mini-name">@userName</div>
+                            <div class="x-mini-email">@userEmail</div>
+                        </div>
+                    </div>
+                    <div class="th-user-dropdown">@await Html.PartialAsync("_AccountMenu", new { userName, userEmail, theme, returnUrl })</div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="page-shell">
+            <main class="page-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
 
     <!-- ══ CONNECT PLATFORMS POPUP ═══════════════════════════════════ -->
     <div class="popup-backdrop" id="connectBackdrop" onclick="toggleConnectPopup()"></div>
@@ -846,42 +470,42 @@
         <div class="popup-body">
             <div class="platform-row">
                 <div class="platform-logo" style="background:#e8f0fe;">
-                    <svg viewBox="0 0 24 24" fill="#0A66C2" width="20" height="20"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+                    <svg viewBox="0 0 24 24" fill="#0A66C2" width="20" height="20"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                 </div>
                 <div class="platform-info"><strong>LinkedIn</strong><span>Pages, profiles &amp; ads</span></div>
                 <button class="connect-btn" data-platform="linkedin" onclick="toggleConnect(this)">Connect</button>
             </div>
             <div class="platform-row">
                 <div class="platform-logo" style="background:#e7f0ff;">
-                    <svg viewBox="0 0 24 24" fill="#1877F2" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                    <svg viewBox="0 0 24 24" fill="#1877F2" width="20" height="20"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                 </div>
                 <div class="platform-info"><strong>Facebook</strong><span>Pages &amp; groups</span></div>
                 <button class="connect-btn connected" data-platform="facebook" onclick="toggleConnect(this)">&#10003; Connected</button>
             </div>
             <div class="platform-row">
                 <div class="platform-logo" style="background:#f0f0f0;">
-                    <svg viewBox="0 0 24 24" fill="#000" width="20" height="20"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    <svg viewBox="0 0 24 24" fill="#000" width="20" height="20"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                 </div>
                 <div class="platform-info"><strong>X (Twitter)</strong><span>Tweets &amp; analytics</span></div>
                 <button class="connect-btn" data-platform="twitter" onclick="toggleConnect(this)">Connect</button>
             </div>
             <div class="platform-row">
                 <div class="platform-logo" style="background:#fef0f8;">
-                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><defs><linearGradient id="igL" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433" /><stop offset=".5" stop-color="#dc2743" /><stop offset="1" stop-color="#bc1888" /></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igL)" /><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8" /><circle cx="17" cy="7" r="1.2" fill="#fff" /></svg>
+                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><defs><linearGradient id="igL" x1="0" y1="24" x2="24" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#f09433"/><stop offset=".5" stop-color="#dc2743"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs><rect x="2" y="2" width="20" height="20" rx="5" fill="url(#igL)"/><circle cx="12" cy="12" r="4.5" stroke="#fff" stroke-width="1.8"/><circle cx="17" cy="7" r="1.2" fill="#fff"/></svg>
                 </div>
                 <div class="platform-info"><strong>Instagram</strong><span>Feed, Reels &amp; Stories</span></div>
                 <button class="connect-btn" data-platform="instagram" onclick="toggleConnect(this)">Connect</button>
             </div>
             <div class="platform-row">
                 <div class="platform-logo" style="background:#e8f8f0;">
-                    <svg viewBox="0 0 24 24" fill="#25D366" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" /></svg>
+                    <svg viewBox="0 0 24 24" fill="#25D366" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
                 </div>
                 <div class="platform-info"><strong>WhatsApp</strong><span>Business messaging</span></div>
                 <button class="connect-btn" data-platform="whatsapp" onclick="toggleConnect(this)">Connect</button>
             </div>
             <div class="platform-row">
                 <div class="platform-logo" style="background:#fef2f2;">
-                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335" /></svg>
+                    <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.548l8.073-6.053C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
                 </div>
                 <div class="platform-info"><strong>Gmail</strong><span>Email &amp; newsletter sync</span></div>
                 <button class="connect-btn" data-platform="gmail" onclick="toggleConnect(this)">Connect</button>
@@ -938,7 +562,7 @@
                         if (d.newLeads > 0) rows.push('<div class="th-ud-item" style="cursor:default">🎯 ' + d.newLeads + ' new lead(s) — check the Leads tab</div>');
                         if (d.newComments > 0) rows.push('<div class="th-ud-item" style="cursor:default">💬 ' + d.newComments + ' new comment(s)</div>');
                         if (d.newMessages > 0) rows.push('<div class="th-ud-item" style="cursor:default">✉️ ' + d.newMessages + ' new message(s) — check Inbox</div>');
-                        list.innerHTML = rows.length ? rows.join('') : '<div class="th-ud-item" style="color:var(--muted);cursor:default">You\'re all caught up.</div>';
+                        list.innerHTML = rows.length ? rows.join('') : '<div class="th-ud-item" style="color:var(--text-2);cursor:default">You\'re all caught up.</div>';
                     }
                 })
                 .catch(function () {});

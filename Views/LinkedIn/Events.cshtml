@@ -1,0 +1,127 @@
+@using SocialMediaPanel.Models
+@model List<LinkedInEvent>
+@{
+    ViewData["Title"] = "LinkedIn Events";
+    ViewData["PageTitle"] = "LinkedIn Events";
+    var integration = ViewBag.Integration as LinkedInIntegration;
+    var organizations = ViewBag.Organizations as List<(string Urn, string Name, string? LogoUrl)> ?? new();
+    var success = ViewBag.Success as string;
+    var error = ViewBag.Error as string;
+}
+
+<style>
+    .li-page-wrap2 { max-width: 1000px; margin: 0 auto; }
+    .li-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; }
+    .li-alert.success { background: rgba(10,102,194,.08); border: 1px solid rgba(10,102,194,.3); color: #0a66c2; }
+    .li-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
+    .li-panel { background: #fff; border: 1px solid #e2e8e4; border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 20px; }
+    .li-panel h3 { font-family:'Sora',sans-serif; font-size: 15px; margin: 0 0 14px; }
+    .li-form-row { margin-bottom: 12px; }
+    .li-form-row label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+    .li-form-row select, .li-form-row input, .li-form-row textarea { width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8e4; border-radius: 8px; font-size: 13px; box-sizing: border-box; font-family: 'DM Sans',sans-serif; }
+    .li-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-li-primary { padding: 10px 20px; background: #0a66c2; color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .li-event-row { padding: 12px 0; border-bottom: 1px solid #f0f2f0; font-size: 12.5px; }
+    .li-event-status { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
+    .li-event-status.posted { background: rgba(37,211,102,.12); color: #1a8a45; }
+    .li-event-status.failed { background: #fff0f0; color: #c62828; }
+    .li-event-status.draft { background: #f0f0f0; color: #666; }
+    .li-empty { text-align: center; padding: 40px 20px; color: #6b7d74; font-size: 12.5px; }
+    .li-ext-panel, .li-inperson-panel { display: none; }
+    .li-ext-panel.active, .li-inperson-panel.active { display: block; }
+</style>
+
+<div class="li-page-wrap2">
+    @await Html.PartialAsync("_SubNav")
+
+    @if (success != null) { <div class="li-alert success">✅ @success</div> }
+    @if (error != null) { <div class="li-alert error">⚠️ @error</div> }
+
+    @if (integration == null)
+    {
+        <div class="li-panel"><div class="li-empty">Connect LinkedIn first from the <a href="/LinkedIn/Index">Dashboard</a>.</div></div>
+    }
+    else
+    {
+        <div class="li-panel">
+            <h3>📅 Create Event</h3>
+            @if (!organizations.Any())
+            {
+                <div class="li-empty">No organization pages found (needs Page Admin/Content Admin role).</div>
+            }
+            else
+            {
+                <form asp-action="CreateEvent" asp-controller="LinkedIn" method="post">
+                    <input type="hidden" name="id" value="@integration.Id" />
+                    <div class="li-form-grid">
+                        <div class="li-form-row">
+                            <label>Organization</label>
+                            <select name="organizerUrn">
+                                @foreach (var org in organizations)
+                                {
+                                    <option value="@org.Urn">@org.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="li-form-row">
+                            <label>Event Type</label>
+                            <select name="eventType" id="liEventType" onchange="liSwitchEventType()">
+                                <option value="online_livevideo">Live Video (streamed on LinkedIn)</option>
+                                <option value="online_external">External (streamed elsewhere)</option>
+                                <option value="inperson">In-Person</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="li-form-row"><label>Event Name</label><input type="text" name="name" required /></div>
+                    <div class="li-form-row"><label>Description (optional)</label><textarea name="description" rows="2"></textarea></div>
+                    <div class="li-form-grid">
+                        <div class="li-form-row"><label>Starts At</label><input type="datetime-local" name="startsAt" required /></div>
+                        <div class="li-form-row"><label>Ends At</label><input type="datetime-local" name="endsAt" /></div>
+                    </div>
+                    <div class="li-form-row li-ext-panel" id="liExtUrlRow">
+                        <label>External / Venue URL</label>
+                        <input type="url" name="externalUrl" placeholder="https://..." />
+                    </div>
+                    <button type="submit" class="btn-li-primary">Create &amp; Post Event</button>
+                </form>
+            }
+        </div>
+    }
+
+    <div class="li-panel">
+        <h3>📋 Your Events (@Model.Count)</h3>
+        @if (!Model.Any())
+        {
+            <div class="li-empty">No events created yet.</div>
+        }
+        else
+        {
+            @foreach (var ev in Model)
+            {
+                <div class="li-event-row">
+                    <div><strong>@ev.Name</strong> <span class="li-event-status @ev.Status">@ev.Status</span></div>
+                    <div style="color:#6b7d74;">@ev.EventType · starts @DateTimeOffset.FromUnixTimeMilliseconds(ev.StartsAt).ToLocalTime().ToString("dd MMM yyyy, hh:mm tt")</div>
+                    @if (ev.Status == "posted" && !string.IsNullOrEmpty(ev.VanityName))
+                    {
+                        <div><a href="https://www.linkedin.com/events/@ev.VanityName" target="_blank" style="color:#0a66c2;">View on LinkedIn →</a></div>
+                    }
+                    @if (ev.Status == "failed")
+                    {
+                        <div style="color:#c62828;font-size:11px;">@ev.ErrorMessage</div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function liSwitchEventType() {
+            var type = document.getElementById('liEventType').value;
+            var row = document.getElementById('liExtUrlRow');
+            row.classList.toggle('active', type === 'online_external' || type === 'inperson');
+        }
+        liSwitchEventType();
+    </script>
+}

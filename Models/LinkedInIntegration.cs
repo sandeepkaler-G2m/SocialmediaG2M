@@ -33,6 +33,11 @@ namespace SocialMediaPanel.Models
 
         public bool IsActive { get; set; } = true;
 
+        // A user can connect multiple LinkedIn accounts — exactly one is
+        // the default at a time (mirrors the same pattern used for
+        // WhatsApp's multi-number support).
+        public bool IsDefault { get; set; } = false;
+
         public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? DisconnectedAt { get; set; }

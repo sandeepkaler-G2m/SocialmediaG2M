@@ -19,7 +19,7 @@
     .posts-nav {
         width: 200px;
         min-width: 200px;
-        background: #fff;
+        background: var(--surface, #fff);
         border-right: 1px solid var(--border);
         display: flex;
         flex-direction: column;
@@ -58,15 +58,15 @@
 
         .posts-nav-item.active {
             background: rgba(75,181,67,.07) !important;
-            border-left-color: var(--green) !important;
-            color: var(--green) !important;
+            border-left-color: var(--accent, var(--green)) !important;
+            color: var(--accent, var(--green)) !important;
             font-weight: 600 !important;
         }
 
     .posts-nav-badge {
         font-size: 10px;
         font-weight: 700;
-        background: var(--green);
+        background: var(--accent, var(--green));
         color: #fff;
         border-radius: 10px;
         padding: 1px 6px;
@@ -96,7 +96,7 @@
         align-items: center;
         justify-content: space-between;
         padding: 10px 20px;
-        background: #fff;
+        background: var(--surface, #fff);
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
     }
@@ -165,8 +165,8 @@
     }
 
         .view-icon-btn:hover, .view-icon-btn.active {
-            border-color: var(--green);
-            color: var(--green);
+            border-color: var(--accent, var(--green));
+            color: var(--accent, var(--green));
         }
 
         .view-icon-btn svg {
@@ -202,7 +202,7 @@
         display: flex;
         align-items: center;
         padding: 0 20px;
-        background: #fff;
+        background: var(--surface, #fff);
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
         overflow-x: auto;
@@ -235,12 +235,12 @@
             }
 
             .posts-subnav a.active {
-                color: var(--green);
-                border-bottom-color: var(--green);
+                color: var(--accent, var(--green));
+                border-bottom-color: var(--accent, var(--green));
             }
 
                 .posts-subnav a.active svg {
-                    stroke: var(--green);
+                    stroke: var(--accent, var(--green));
                 }
 
     .subnav-sep {
@@ -255,7 +255,7 @@
     .posts-table-wrap {
         flex: 1;
         overflow-y: auto;
-        background: #fff;
+        background: var(--surface, #fff);
     }
 
     .posts-tbl {
@@ -321,7 +321,7 @@
         justify-content: center;
         flex-shrink: 0;
         overflow: hidden;
-        color: var(--green);
+        color: var(--accent, var(--green));
         position: relative;
     }
 
@@ -372,7 +372,7 @@
     .p-engage-num {
         font-size: 16px;
         font-weight: 800;
-        color: var(--green);
+        color: var(--accent, var(--green));
         font-family: 'Sora',sans-serif;
     }
 
@@ -403,7 +403,7 @@
         align-items: center;
         justify-content: center;
         margin: 0 auto 14px;
-        color: var(--green);
+        color: var(--accent, var(--green));
     }
 
         .posts-empty-icon svg {
@@ -437,7 +437,7 @@
         right: 0;
         width: 40%;
         height: 100vh;
-        background: #fff;
+        background: var(--surface, #fff);
         box-shadow: -4px 0 28px rgba(0,0,0,.14);
         display: none;
         flex-direction: column;
@@ -517,8 +517,8 @@
         }
 
         .pm-tab.active {
-            color: var(--green);
-            border-bottom-color: var(--green);
+            color: var(--accent, var(--green));
+            border-bottom-color: var(--accent, var(--green));
         }
 
     .pm-export {
@@ -546,7 +546,7 @@
         }
 
         .pm-export:hover {
-            border-color: var(--green);
+            border-color: var(--accent, var(--green));
             color: var(--green-d);
         }
 
@@ -579,7 +579,7 @@
         width: 26px;
         height: 26px;
         border: 3px solid var(--border);
-        border-top-color: var(--green);
+        border-top-color: var(--accent, var(--green));
         border-radius: 50%;
         animation: spin .65s linear infinite;
     }
@@ -916,7 +916,7 @@
                     body.innerHTML =
                         '<select id="boostAdAccount" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;margin-bottom:8px">' + options + '</select>' +
                         '<input id="boostBudget" type="number" min="1" value="100" placeholder="Daily budget (in the account\'s currency)" style="width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;margin-bottom:8px" />' +
-                        '<button class="pm-cmt-action" style="color:var(--green);font-weight:700" onclick="submitBoost()">Create Boost Campaign (paused)</button>';
+                        '<button class="pm-cmt-action" style="color:var(--accent, var(--green));font-weight:700" onclick="submitBoost()">Create Boost Campaign (paused)</button>';
                 })
                 .catch(() => { body.innerHTML = '<span style="color:#dc3545;font-size:12px">Failed to load ad accounts.</span>'; });
         }

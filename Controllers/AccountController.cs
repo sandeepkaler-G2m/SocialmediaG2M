@@ -5,6 +5,7 @@ using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
 using SocialMediaPanel.Models.ViewModels;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -21,6 +22,28 @@ namespace SocialMediaPanel.Controllers
             _context = context;
             _cache = cache;
             _audit = audit;
+        }
+
+        // ─── APPEARANCE / THEME ──────────────────────────────────
+
+        private static readonly string[] ValidThemes = { "linkedin", "x-dark", "x-light" };
+
+        [HttpGet]
+        public IActionResult SetTheme(string theme, string? returnUrl = null)
+        {
+            if (!ValidThemes.Contains(theme)) theme = "linkedin";
+
+            Response.Cookies.Append("panel_theme", theme, new CookieOptions
+            {
+                Expires = DateTimeOffset.UtcNow.AddYears(1),
+                IsEssential = true,
+                HttpOnly = false,
+                SameSite = SameSiteMode.Lax
+            });
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+            return RedirectToAction("Index", "Dashboard");
         }
 
         // ─── AUDIT LOG ───────────────────────────────────────────

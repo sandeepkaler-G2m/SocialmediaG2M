@@ -9,6 +9,10 @@ public class LinkedinPosts
 
     public string UserId { get; set; }
 
+    // Which connected LinkedIn account this post was made through — nullable
+    // because posts made before multi-account support won't have one.
+    public int? LinkedInIntegrationId { get; set; }
+
     public string? PostId { get; set; }          // ✅ nullable
     public string PostText { get; set; }
 

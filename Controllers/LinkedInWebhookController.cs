@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SocialMediaPanel.Data;
 using SocialMediaPanel.Models;
+using SocialMediaPanel.Services;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -44,12 +45,14 @@ namespace SocialMediaPanel.Controllers
         private readonly AppDbContext _db;
         private readonly IConfiguration _config;
         private readonly ILogger<LinkedInWebhookController> _logger;
+        private readonly LinkedInService _linkedin;
 
-        public LinkedInWebhookController(AppDbContext db, IConfiguration config, ILogger<LinkedInWebhookController> logger)
+        public LinkedInWebhookController(AppDbContext db, IConfiguration config, ILogger<LinkedInWebhookController> logger, LinkedInService linkedin)
         {
             _db = db;
             _config = config;
             _logger = logger;
+            _linkedin = linkedin;
         }
 
         private string ClientSecret => _config["LinkedIn:ClientSecret"]!;
@@ -150,7 +153,7 @@ namespace SocialMediaPanel.Controllers
                         LeadId = dedupeKey,
                         PageId = ownerUrn,
                         FormId = null,
-                        FullName = null, // needs a follow-up leadFormResponses fetch — see class comment
+                        FullName = null,
                         Email = null,
                         Phone = null,
                         Platform = "linkedin",
@@ -159,7 +162,18 @@ namespace SocialMediaPanel.Controllers
                         CreatedAt = DateTime.UtcNow
                     });
                     await _db.SaveChangesAsync();
-                    _logger.LogInformation("LinkedIn lead saved (details pending Lead Sync approval) — leadType={LeadType} owner={Owner}", leadType, ownerUrn);
+                    _logger.LogInformation("LinkedIn lead notification saved — leadType={LeadType} owner={Owner}", leadType, ownerUrn);
+
+                    // Fetch the full form-answer detail and store it in the
+                    // dedicated LinkedInLeads table. The webhook payload only
+                    // ever carries IDs/URNs — this follow-up authenticated
+                    // GET is required to get the actual answers. There's no
+                    // per-org token mapping stored yet, so every active
+                    // LinkedIn integration's token is tried until one works
+                    // (fine while only a handful of accounts are connected —
+                    // see class-level note if that stops scaling).
+                    if (!await _db.LinkedInLeads.AnyAsync(l => l.LeadId == leadGenFormResponse))
+                        await _TryFetchAndSaveLeadDetailAsync(leadGenFormResponse!);
                 }
                 // leadAction == "DELETED" — nothing to reconcile yet since we don't
                 // persist enough identity to find the original row without the
@@ -174,6 +188,36 @@ namespace SocialMediaPanel.Controllers
                 // and the raw body above is already logged for follow-up.
                 return Ok();
             }
+        }
+
+        private async Task _TryFetchAndSaveLeadDetailAsync(string leadGenFormResponseId)
+        {
+            var activeIntegrations = await _db.LinkedInIntegrations
+                .Where(l => l.IsActive && l.AccessToken != null)
+                .ToListAsync();
+
+            foreach (var integration in activeIntegrations)
+            {
+                try
+                {
+                    var json = await _linkedin.GetLeadFormResponseAsync(integration.AccessToken!, leadGenFormResponseId);
+                    _db.LinkedInLeads.Add(new LinkedInLead
+                    {
+                        LeadId = leadGenFormResponseId,
+                        RawJson = json,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    await _db.SaveChangesAsync();
+                    _logger.LogInformation("LinkedIn lead form response fetched and saved: {Id}", leadGenFormResponseId);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogInformation("LinkedIn lead detail fetch failed with integration {IntId}: {Msg}", integration.Id, ex.Message);
+                }
+            }
+
+            _logger.LogWarning("LinkedIn lead detail fetch failed with every connected account for {Id}", leadGenFormResponseId);
         }
 
         private static string HexHmacSha256(string message, string key)

@@ -120,10 +120,32 @@ namespace SocialMediaPanel.Controllers
             }
             catch (Exception ex)
             {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    return Json(new { success = false, message = ex.Message });
+                // "invalid_grant" on a token REFRESH (not the initial code
+                // exchange) means Google has permanently rejected this
+                // stored refresh token — most commonly because the Google
+                // Cloud OAuth consent screen is still in "Testing" status,
+                // where every refresh token expires after 7 days regardless
+                // of use (the fix is publishing the app in Google Cloud
+                // Console), or because the user revoked access on Google's
+                // side. Either way the stored token is dead, not just
+                // stale, so mark this integration inactive and point the
+                // user at reconnecting instead of showing raw Google JSON.
+                var isDeadGrant = ex.Message.Contains("invalid_grant", StringComparison.OrdinalIgnoreCase);
+                if (isDeadGrant)
+                {
+                    integration.IsActive = false;
+                    await _db.SaveChangesAsync();
+                }
 
-                ViewBag.Error = "Failed to load inbox: " + ex.Message;
+                var friendlyMessage = isDeadGrant
+                    ? "Your Gmail connection has expired and needs to be reconnected."
+                    : "Failed to load inbox: " + ex.Message;
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = friendlyMessage, needsReconnect = isDeadGrant });
+
+                ViewBag.Error = friendlyMessage;
+                ViewBag.NeedsReconnect = isDeadGrant;
                 return View();
             }
         }

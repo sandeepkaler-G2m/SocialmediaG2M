@@ -1,0 +1,17 @@
+@{
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    string cls(string action) => "li-subnav-link" + (currentAction == action ? " active" : "");
+}
+<style>
+    .li-subnav { display: inline-flex; gap: 4px; background: #eef2f5; border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .li-subnav-link { padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600; color: #52626e; text-decoration: none; font-family: 'DM Sans',sans-serif; transition: background .15s, color .15s; }
+    .li-subnav-link:hover { color: #0a66c2; }
+    .li-subnav-link.active { background: #fff; color: #0a66c2; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+</style>
+<div class="li-subnav">
+    <a href="/LinkedIn/Index" class="@cls("Index")">Dashboard</a>
+    <a href="/LinkedIn/Leads" class="@cls("Leads")">Leads</a>
+    <a href="/LinkedIn/Events" class="@cls("Events")">Events</a>
+    <a href="/LinkedIn/Conversions" class="@cls("Conversions")">Conversions</a>
+    <a href="/LinkedIn/Settings" class="@cls("Settings")">Settings</a>
+</div>

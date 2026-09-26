@@ -571,7 +571,7 @@ namespace SocialMediaPanel.Controllers
                             if (value.TryGetProperty("messages", out _))
                                 await HandleWhatsAppMessages(value, context, logger, hub);
                             if (value.TryGetProperty("statuses", out var statuses))
-                                await HandleWhatsAppStatuses(statuses, logger, hub);
+                                await HandleWhatsAppStatuses(statuses, context, logger, hub);
                             break;
 
                         // Meta approved/rejected/paused/disabled a message template.
@@ -773,14 +773,15 @@ namespace SocialMediaPanel.Controllers
         }
 
         // ── Outbound delivery/read/failed status updates for messages we
-        // sent. Not linked back to a specific PageReply row yet — page_replies
-        // has no column to store the WhatsApp-assigned message id it would
-        // need to match on — so this logs every status transition (failures
-        // at WARNING level, since those need attention) rather than silently
-        // dropping it. Fully queryable later from the raw WebhookEvents log
-        // even before that column exists. ─────────────────────────────────
+        // sent. Matched back to the exact PageReply row via WaMessageId
+        // (populated at send time — see WhatsAppController.SendMessage /
+        // WhatsAppCampaignController) so the dashboard's Delivered count is
+        // real, not estimated. A status for a message this app didn't send
+        // (WaMessageId not found — e.g. sent from G2M's own panel) is still
+        // logged, just has no row to update. ──────────────────────────────
         private static async Task HandleWhatsAppStatuses(
             JsonElement statuses,
+            AppDbContext context,
             ILogger logger,
             IHubContext<InboxHub> hub)
         {
@@ -789,20 +790,40 @@ namespace SocialMediaPanel.Controllers
                 var messageId = status.TryGetProperty("id", out var idP) ? idP.GetString() : null;
                 var statusValue = status.TryGetProperty("status", out var sP) ? sP.GetString() : null; // sent|delivered|read|failed
                 var recipientId = status.TryGetProperty("recipient_id", out var rP) ? rP.GetString() : null;
+                string? errTitle = null;
 
                 if (statusValue == "failed" && status.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
                 {
-                    var errTitle = errors[0].TryGetProperty("title", out var et) ? et.GetString() : "unknown error";
+                    errTitle = errors[0].TryGetProperty("title", out var et) ? et.GetString() : "unknown error";
                     logger.LogWarning("WhatsApp message FAILED — id={MsgId} to={To} error={Err}", messageId, recipientId, errTitle);
                 }
                 else
                 {
                     logger.LogInformation("WhatsApp status update — id={MsgId} to={To} status={Status}", messageId, recipientId, statusValue);
                 }
+
+                if (string.IsNullOrEmpty(messageId) || string.IsNullOrEmpty(statusValue)) continue;
+
+                var reply = await context.PageReplies.FirstOrDefaultAsync(r => r.Platform == "whatsapp" && r.WaMessageId == messageId);
+                if (reply == null) continue;
+
+                // Never downgrade — a message already marked "read" shouldn't
+                // revert to "delivered" if a delayed/duplicate status arrives.
+                var rank = new Dictionary<string, int> { ["sent"] = 1, ["delivered"] = 2, ["read"] = 3, ["failed"] = 4 };
+                var currentRank = reply.DeliveryStatus != null && rank.TryGetValue(reply.DeliveryStatus, out var cr) ? cr : 0;
+                var newRank = rank.TryGetValue(statusValue, out var nr) ? nr : 0;
+                if (newRank < currentRank && statusValue != "failed") continue;
+
+                reply.DeliveryStatus = statusValue;
+                if (statusValue == "failed")
+                {
+                    reply.IsSuccess = false;
+                    reply.ErrorMessage = errTitle ?? reply.ErrorMessage;
+                }
+                await context.SaveChangesAsync();
             }
 
-            // Let an open WhatsApp conversation view refresh — harmless even
-            // though it can't yet show per-message ticks from this data.
+            // Let an open WhatsApp conversation view / dashboard refresh.
             await hub.Clients.All.SendAsync("whatsappChanged");
         }
 

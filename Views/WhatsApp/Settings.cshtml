@@ -1,0 +1,187 @@
+@using SocialMediaPanel.Models
+@model List<WhatsAppIntegration>
+@{
+    ViewData["Title"] = "WhatsApp Settings";
+    ViewData["PageTitle"] = "WhatsApp Settings";
+    var success = TempData["WhatsAppSuccess"] as string;
+    var error = TempData["WhatsAppError"] as string;
+}
+
+<style>
+    .wa-page-wrap { max-width: 900px; margin: 0 auto; }
+    .wa-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wa-alert.success { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.3); color: #1a8a45; }
+    .wa-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
+    .wa-alert button { background: none; border: none; cursor: pointer; color: inherit; font-size: 16px; }
+
+    .wa-panel { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 20px; }
+    .wa-panel h3 { font-family:'Sora',sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 16px; }
+
+    .wa-num-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .wa-num-toolbar select { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 12.5px; font-family: 'DM Sans',sans-serif; }
+
+    .wa-num-card { border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+    .wa-num-card:last-child { margin-bottom: 0; }
+    .wa-num-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .wa-num-name { font-size: 14.5px; font-weight: 700; color: var(--text); font-family: 'Sora',sans-serif; }
+    .wa-num-actions { display: flex; gap: 8px; }
+    .wa-num-actions button { padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: 'DM Sans',sans-serif; }
+    .btn-wa-default { background: var(--surface, #fff); border: 1.5px solid #25D366; color: #128C7E; }
+    .btn-wa-disconnect { background: #fff5f5; border: 1px solid #f5c2c2; color: #d33; }
+    .wa-default-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: rgba(37,211,102,.12); color: #1a8a45; margin-left: 8px; }
+
+    .wa-detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 20px; }
+    @@media (max-width: 600px) { .wa-detail-grid { grid-template-columns: 1fr; } }
+    .wa-detail-item label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 3px; }
+    .wa-detail-value { font-size: 12.5px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .wa-detail-value code { background: #f6f8f7; padding: 2px 7px; border-radius: 6px; font-family: monospace; font-size: 11.5px; }
+    .wa-reveal-btn { background: none; border: none; color: #25D366; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0; }
+
+    .wa-form label { display:block; font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .wa-form-row { margin-bottom:14px; }
+    .wa-form input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:9px; font-size:13px; font-family:'DM Sans',sans-serif; outline:none; box-sizing:border-box; }
+    .btn-connect-whatsapp { padding:11px 24px; background:#25D366; border:none; border-radius:10px; color:#fff; font-size:13.5px; font-weight:700; cursor:pointer; }
+</style>
+
+<div class="wa-page-wrap">
+    @await Html.PartialAsync("_SubNav")
+
+    @if (success != null)
+    {
+        <div class="wa-alert success"><span>✅ @success</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+    @if (error != null)
+    {
+        <div class="wa-alert error"><span>⚠️ @error</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+
+    <div class="wa-panel">
+        <div class="wa-num-toolbar">
+            <h3 style="margin:0;">Connected Numbers (@Model.Count)</h3>
+            @if (Model.Count > 1)
+            {
+                <select onchange="document.getElementById('wa-num-' + this.value).scrollIntoView({behavior:'smooth', block:'center'});">
+                    <option value="">Jump to number…</option>
+                    @foreach (var i in Model)
+                    {
+                        <option value="@i.Id">@(i.DisplayPhoneNumber ?? i.PhoneNumberId)@(i.IsDefault ? " (Default)" : "")</option>
+                    }
+                </select>
+            }
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div style="color:var(--muted);font-size:12.5px;">No numbers connected yet — add one below.</div>
+        }
+        else
+        {
+            @foreach (var i in Model)
+            {
+                <div class="wa-num-card" id="wa-num-@i.Id">
+                    <div class="wa-num-head">
+                        <div class="wa-num-name">@(i.DisplayPhoneNumber ?? i.PhoneNumberId) @(i.IsDefault ? Html.Raw("<span class='wa-default-badge'>Default</span>") : null)</div>
+                        <div class="wa-num-actions">
+                            @if (!i.IsDefault)
+                            {
+                                <form asp-action="SetDefault" asp-controller="WhatsApp" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@i.Id" />
+                                    <button type="submit" class="btn-wa-default">Set Default</button>
+                                </form>
+                            }
+                            <form asp-action="Disconnect" asp-controller="WhatsApp" method="post" style="display:inline;" onsubmit="return confirm('Disconnect @(i.DisplayPhoneNumber ?? i.PhoneNumberId)?');">
+                                <input type="hidden" name="id" value="@i.Id" />
+                                <button type="submit" class="btn-wa-disconnect">Disconnect</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="wa-detail-grid">
+                        <div class="wa-detail-item">
+                            <label>Phone Number</label>
+                            <div class="wa-detail-value"><code>@(i.DisplayPhoneNumber ?? i.PhoneNumberId)</code></div>
+                        </div>
+                        <div class="wa-detail-item">
+                            <label>WABA ID</label>
+                            <div class="wa-detail-value"><code>@(string.IsNullOrEmpty(i.WabaId) ? "—" : i.WabaId)</code></div>
+                        </div>
+                        <div class="wa-detail-item">
+                            <label>Username</label>
+                            <div class="wa-detail-value"><code>@(string.IsNullOrEmpty(i.Username) ? "—" : i.Username)</code></div>
+                        </div>
+                        <div class="wa-detail-item">
+                            <label>User ID</label>
+                            <div class="wa-detail-value"><code>@(string.IsNullOrEmpty(i.G2MUserId) ? "—" : i.G2MUserId)</code></div>
+                        </div>
+                        <div class="wa-detail-item">
+                            <label>Access Token</label>
+                            <div class="wa-detail-value">
+                                <code id="wa-token-@i.Id">••••@(i.AccessToken.Length > 4 ? i.AccessToken.Substring(i.AccessToken.Length - 4) : i.AccessToken)</code>
+                                <button type="button" class="wa-reveal-btn" onclick="waRevealToken(@i.Id, this)" data-full="@i.AccessToken">Show</button>
+                            </div>
+                        </div>
+                        <div class="wa-detail-item">
+                            <label>Password</label>
+                            <div class="wa-detail-value">
+                                @if (string.IsNullOrEmpty(i.PasswordEncrypted))
+                                {
+                                    <code>—</code>
+                                }
+                                else
+                                {
+                                    <code id="wa-pass-@i.Id">••••••••</code>
+                                    <button type="button" class="wa-reveal-btn" onclick="waRevealPassword(@i.Id, this)">Show</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:10.5px;color:var(--muted);margin-top:10px;">Connected @i.ConnectedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="wa-panel">
+        <h3>Add a Number</h3>
+        <form class="wa-form" asp-action="Connect" asp-controller="WhatsApp" method="post">
+            <div class="wa-form-row"><label>Phone Number</label><input type="text" name="phoneNumberId" placeholder="e.g. 919876543210" required /></div>
+            <div class="wa-form-row"><label>Access Token</label><input type="password" name="accessToken" placeholder="G2M WhatsApp API key" required /></div>
+            <div class="wa-form-row"><label>Username (optional)</label><input type="text" name="username" /></div>
+            <div class="wa-form-row"><label>Password (optional)</label><input type="password" name="password" /></div>
+            <div class="wa-form-row"><label>User ID (optional)</label><input type="text" name="userId" /></div>
+            <button type="submit" class="btn-connect-whatsapp">Connect Number</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function waRevealToken(id, btn) {
+            var code = document.getElementById('wa-token-' + id);
+            if (btn.textContent === 'Show') {
+                code.textContent = btn.dataset.full;
+                btn.textContent = 'Hide';
+            } else {
+                code.textContent = '••••' + btn.dataset.full.slice(-4);
+                btn.textContent = 'Show';
+            }
+        }
+
+        function waRevealPassword(id, btn) {
+            var code = document.getElementById('wa-pass-' + id);
+            if (btn.textContent === 'Hide') {
+                code.textContent = '••••••••';
+                btn.textContent = 'Show';
+                return;
+            }
+            btn.textContent = '…';
+            fetch('/WhatsApp/RevealPassword/' + id)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) { code.textContent = data.password; btn.textContent = 'Hide'; }
+                    else { alert(data.message || 'Could not reveal password.'); btn.textContent = 'Show'; }
+                })
+                .catch(function () { alert('Network error.'); btn.textContent = 'Show'; });
+        }
+    </script>
+}

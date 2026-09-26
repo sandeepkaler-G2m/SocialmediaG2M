@@ -1,0 +1,90 @@
+@using SocialMediaPanel.Models
+@model List<WhatsAppTemplate>
+@{
+    ViewData["Title"] = "WhatsApp Templates";
+    ViewData["PageTitle"] = "WhatsApp Templates";
+    var success = TempData["WhatsAppTemplateSuccess"] as string;
+    var error = TempData["WhatsAppTemplateError"] as string;
+}
+
+<style>
+    .wa-page-wrap { max-width: 900px; margin: 0 auto; }
+    .wa-alert { padding: 12px 18px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .wa-alert.success { background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.3); color: #1a8a45; }
+    .wa-alert.error { background: #fff0f0; border: 1px solid #ffcdd2; color: #c62828; }
+    .wa-alert button { background: none; border: none; cursor: pointer; color: inherit; font-size: 16px; }
+
+    .wa-tpl-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .wa-tpl-toolbar strong { font-family:'Sora',sans-serif; font-size: 16px; color: var(--text); }
+    .btn-wa-create-tpl { padding: 9px 18px; background: #25D366; border: none; border-radius: 9px; font-size: 12.5px; font-weight: 700; color: #fff; cursor: pointer; text-decoration: none; box-shadow: 0 4px 12px rgba(37,211,102,.28); }
+    .btn-wa-create-tpl:hover { transform: translateY(-1px); }
+
+    .wa-panel { background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); margin-bottom: 20px; }
+
+    .wa-tpl-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f4f5f7; }
+    .wa-tpl-row:last-child { border-bottom: none; }
+    .wa-tpl-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+    .wa-tpl-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .btn-wa-delete { padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; background: #fff5f5; border: 1px solid #f5c2c2; color: #d33; font-family: 'DM Sans',sans-serif; }
+
+    .wa-tpl-status { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: .3px; margin-left: 8px; }
+    .wa-tpl-status.pending { background: #fff8e6; color: #93650a; }
+    .wa-tpl-status.approved { background: rgba(37,211,102,.12); color: #1a8a45; }
+    .wa-tpl-status.rejected { background: #fff0f0; color: #c62828; }
+    .wa-tpl-type-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #eef1ff; color: #4c5fd5; margin-left: 6px; }
+
+    .wa-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 12.5px; }
+</style>
+
+<div class="wa-page-wrap">
+    @await Html.PartialAsync("_SubNav")
+
+    @if (success != null)
+    {
+        <div class="wa-alert success"><span>✅ @success</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+    @if (error != null)
+    {
+        <div class="wa-alert error"><span>⚠️ @error</span><button onclick="this.parentElement.remove()">✕</button></div>
+    }
+
+    <div class="wa-tpl-toolbar">
+        <strong>Templates (@Model.Count)</strong>
+        <a href="/WhatsApp/Templates/Create" class="btn-wa-create-tpl">+ Create Template</a>
+    </div>
+
+    <div class="wa-panel">
+        @if (!Model.Any())
+        {
+            <div class="wa-empty">No templates yet. <a href="/WhatsApp/Templates/Create" style="color:#25D366;font-weight:700;text-decoration:none;">Create your first one →</a></div>
+        }
+        else
+        {
+            @foreach (var t in Model)
+            {
+                var isUsable = t.UsableAt == null || t.UsableAt <= DateTime.UtcNow;
+                <div class="wa-tpl-row">
+                    <div>
+                        <div class="wa-tpl-name">
+                            @t.Name
+                            <span style="font-weight:400;color:var(--muted);font-size:11.5px;">(@t.LanguageCode)</span>
+                            <span class="wa-tpl-type-tag">@t.TemplateType</span>
+                            <span class="wa-tpl-status @t.Status">@t.Status</span>
+                        </div>
+                        <div class="wa-tpl-meta">
+                            @(t.Description ?? "")
+                            @if (!isUsable)
+                            {
+                                <span> · usable in campaigns from @t.UsableAt?.ToString("hh:mm tt, dd MMM")</span>
+                            }
+                        </div>
+                    </div>
+                    <form asp-action="DeleteTemplate" asp-controller="WhatsApp" method="post" onsubmit="return confirm('Delete template @t.Name?');">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <button type="submit" class="btn-wa-delete">Delete</button>
+                    </form>
+                </div>
+            }
+        }
+    </div>
+</div>
